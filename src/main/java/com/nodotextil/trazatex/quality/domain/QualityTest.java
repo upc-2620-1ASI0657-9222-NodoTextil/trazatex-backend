@@ -25,7 +25,6 @@ public record QualityTest(
         if (value == null || value.isBlank()) {
             throw new InvalidQualityControlException(message);
         }
-
         return value;
     }
 }

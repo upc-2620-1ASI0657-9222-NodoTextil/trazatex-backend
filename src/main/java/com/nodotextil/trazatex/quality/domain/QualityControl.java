@@ -28,6 +28,22 @@ public final class QualityControl {
         this.tests = new ArrayList<>();
     }
 
+    public void addTest(QualityTest test) {
+        Objects.requireNonNull(test, "Quality test is required");
+
+        if (isCompleted()) {
+            throw new InvalidQualityControlException(
+                    "Tests cannot be added to a completed quality control"
+            );
+        }
+
+        tests.add(test);
+    }
+
+    public boolean isCompleted() {
+        return completedAt != null;
+    }
+
     public UUID getId() {
         return id;
     }

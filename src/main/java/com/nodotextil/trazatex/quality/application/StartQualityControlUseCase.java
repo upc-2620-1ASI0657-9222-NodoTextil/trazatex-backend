@@ -45,9 +45,6 @@ public final class StartQualityControlUseCase {
 
         ControlType controlType = determineControlType(batchQuality.getStatus());
 
-        // Production owns the operational phase of the batch.
-        // This contract validates the batch and moves it to quality control
-        // without exposing Production entities or repositories to Quality.
         productionQualityPort.startQualityControl(batchId);
 
         QualityControl qualityControl = new QualityControl(
