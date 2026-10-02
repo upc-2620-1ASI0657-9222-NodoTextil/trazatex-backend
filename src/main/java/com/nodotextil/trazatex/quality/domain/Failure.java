@@ -48,6 +48,72 @@ public final class Failure {
         this.status = FailureStatus.PENDING_DECISION;
     }
 
+    public void completeDetails(
+            String cause,
+            BigDecimal affectedQuantityKg,
+            String observations) {
+
+        ensureStatus(FailureStatus.PENDING_DECISION);
+
+        if (cause == null || cause.isBlank()) {
+            throw new InvalidQualityControlException("Failure cause is required");
+        }
+
+        if (affectedQuantityKg == null || affectedQuantityKg.signum() <= 0) {
+            throw new InvalidQualityControlException(
+                    "Affected quantity must be greater than zero"
+            );
+        }
+
+        if (observations == null || observations.isBlank()) {
+            throw new InvalidQualityControlException(
+                    "Failure observations are required"
+            );
+        }
+
+        this.cause = cause;
+        this.affectedQuantityKg = affectedQuantityKg;
+        this.observations = observations;
+    }
+
+    public void sendToReevaluation() {
+        ensureStatus(FailureStatus.PENDING_DECISION);
+        ensureDetailsCompleted();
+        this.status = FailureStatus.IN_REEVALUATION;
+    }
+
+    public void confirm() {
+        ensureStatus(FailureStatus.PENDING_DECISION);
+        ensureDetailsCompleted();
+        this.status = FailureStatus.CONFIRMED;
+    }
+
+    public void resolve() {
+        ensureStatus(FailureStatus.IN_REEVALUATION);
+        this.status = FailureStatus.RESOLVED;
+    }
+
+    public void returnToPendingDecision() {
+        ensureStatus(FailureStatus.IN_REEVALUATION);
+        this.status = FailureStatus.PENDING_DECISION;
+    }
+
+    private void ensureDetailsCompleted() {
+        if (cause == null || affectedQuantityKg == null || observations == null) {
+            throw new InvalidQualityControlException(
+                    "Failure details must be completed before making a decision"
+            );
+        }
+    }
+
+    private void ensureStatus(FailureStatus expected) {
+        if (status != expected) {
+            throw new InvalidQualityControlException(
+                    "Failure action is not allowed for status " + status
+            );
+        }
+    }
+
     public UUID getId() {
         return id;
     }

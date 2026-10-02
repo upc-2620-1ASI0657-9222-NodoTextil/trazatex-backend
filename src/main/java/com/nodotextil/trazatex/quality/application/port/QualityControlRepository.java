@@ -9,6 +9,8 @@ public interface QualityControlRepository {
 
     Optional<QualityControl> findById(UUID controlId);
 
+    boolean existsByBatchId(UUID batchId);
+
     boolean existsActiveByBatchId(UUID batchId);
 
     QualityControl save(QualityControl qualityControl);

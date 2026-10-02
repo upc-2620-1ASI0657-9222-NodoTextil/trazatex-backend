@@ -43,7 +43,10 @@ public final class StartQualityControlUseCase {
                         "Quality information was not found for the batch"
                 ));
 
-        ControlType controlType = determineControlType(batchQuality.getStatus());
+        ControlType controlType = determineControlType(
+                batchId,
+                batchQuality.getStatus()
+        );
 
         productionQualityPort.startQualityControl(batchId);
 
@@ -57,10 +60,14 @@ public final class StartQualityControlUseCase {
         return qualityControlRepository.save(qualityControl);
     }
 
-    private ControlType determineControlType(QualityStatus status) {
+    private ControlType determineControlType(UUID batchId, QualityStatus status) {
         return switch (status) {
             case NOT_REVIEWED -> ControlType.EVALUATION;
             case PENDING_REEVALUATION -> ControlType.REEVALUATION;
+            case POTENTIAL_DERIVED_FAILURE ->
+                    qualityControlRepository.existsByBatchId(batchId)
+                            ? ControlType.REEVALUATION
+                            : ControlType.EVALUATION;
             default -> throw new InvalidQualityControlException(
                     "A quality control cannot be started for status " + status
             );
