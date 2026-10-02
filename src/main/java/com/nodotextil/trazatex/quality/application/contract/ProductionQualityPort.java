@@ -5,4 +5,6 @@ import java.util.UUID;
 public interface ProductionQualityPort {
 
     void startQualityControl(UUID batchId);
+
+    void finishQualityControl(UUID batchId);
 }

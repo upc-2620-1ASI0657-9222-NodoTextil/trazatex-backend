@@ -40,6 +40,42 @@ public final class QualityControl {
         tests.add(test);
     }
 
+    public void complete(LocalDateTime completionDate) {
+        Objects.requireNonNull(completionDate, "Control completion date is required");
+
+        if (isCompleted()) {
+            throw new InvalidQualityControlException(
+                    "Quality control is already completed"
+            );
+        }
+
+        if (tests.isEmpty()) {
+            throw new InvalidQualityControlException(
+                    "A quality control requires at least one test before completion"
+            );
+        }
+
+        if (completionDate.isBefore(startedAt)) {
+            throw new InvalidQualityControlException(
+                    "Control completion date cannot be before its start date"
+            );
+        }
+
+        this.completedAt = completionDate;
+    }
+
+    public boolean hasFailedTests() {
+        return tests.stream()
+                .anyMatch(test -> test.result() == TestResult.FAILED);
+    }
+
+    public List<UUID> getFailedTestIds() {
+        return tests.stream()
+                .filter(test -> test.result() == TestResult.FAILED)
+                .map(QualityTest::id)
+                .toList();
+    }
+
     public boolean isCompleted() {
         return completedAt != null;
     }
