@@ -1,5 +1,6 @@
 package com.nodotextil.trazatex.organizationaccess.domain;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -8,6 +9,10 @@ import java.util.UUID;
  * other role belongs to exactly one.
  */
 public final class OrganizationUser {
+
+	/** Failed logins that lock the account (RNF-06). */
+	public static final int MAX_FAILED_LOGIN_ATTEMPTS = 3;
+	public static final Duration LOGIN_LOCK_DURATION = Duration.ofMinutes(15);
 
 	private final UUID id;
 	private final String email;
@@ -57,6 +62,29 @@ public final class OrganizationUser {
 
 	public boolean isActive() {
 		return status == UserStatus.ACTIVE;
+	}
+
+	public boolean isLockedAt(LocalDateTime now) {
+		return lockedUntil != null && lockedUntil.isAfter(now);
+	}
+
+	/**
+	 * The user after a failed login. A previous lock that already expired starts the count over;
+	 * the third consecutive failure locks the account for {@link #LOGIN_LOCK_DURATION}.
+	 */
+	public OrganizationUser withFailedLogin(LocalDateTime now) {
+		boolean previousLockExpired = lockedUntil != null && !lockedUntil.isAfter(now);
+		int attempts = (previousLockExpired ? 0 : failedLoginAttempts) + 1;
+		LocalDateTime lock = attempts >= MAX_FAILED_LOGIN_ATTEMPTS
+				? now.plus(LOGIN_LOCK_DURATION) : null;
+		return new OrganizationUser(id, email, firstName, lastName, jobTitle, passwordHash, role,
+				companyId, status, attempts, lock, createdAt);
+	}
+
+	/** The user after a successful login: no failed attempts and no lock. */
+	public OrganizationUser withSuccessfulLogin() {
+		return new OrganizationUser(id, email, firstName, lastName, jobTitle, passwordHash, role,
+				companyId, status, 0, null, createdAt);
 	}
 
 	public UUID id() {
