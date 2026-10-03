@@ -11,12 +11,9 @@ import com.nodotextil.trazatex.organizationaccess.domain.InvalidCredentialsExcep
 import com.nodotextil.trazatex.organizationaccess.domain.OrganizationUser;
 import com.nodotextil.trazatex.organizationaccess.domain.Role;
 import com.nodotextil.trazatex.organizationaccess.domain.UserStatus;
+import com.nodotextil.trazatex.organizationaccess.support.FixedClocks;
 import com.nodotextil.trazatex.organizationaccess.support.InMemoryOrganizationUserRepository;
-import java.time.Clock;
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +28,7 @@ class AuthenticateUserUseCaseTest {
 
 	private final PasswordEncoder encoder = new BCryptPasswordEncoder(4);
 	private final InMemoryOrganizationUserRepository users = new InMemoryOrganizationUserRepository();
-	private final MutableClock clock = new MutableClock(START);
+	private final FixedClocks.Mutable clock = new FixedClocks.Mutable(START);
 	private final AccessTokenIssuer issuer = user -> new IssuedAccessToken(
 			"token-for-" + user.id(), 3600);
 	private AuthenticateUserUseCase useCase;
@@ -170,34 +167,5 @@ class AuthenticateUserUseCaseTest {
 	private void fail() {
 		assertThatThrownBy(() -> useCase.execute("ana@example.com", "wrong-password"))
 				.isInstanceOf(InvalidCredentialsException.class);
-	}
-
-	/** A clock the test can move forward. */
-	private static final class MutableClock extends Clock {
-
-		private Instant instant;
-
-		MutableClock(LocalDateTime start) {
-			this.instant = start.toInstant(ZoneOffset.UTC);
-		}
-
-		void advanceMinutes(long minutes) {
-			instant = instant.plusSeconds(minutes * 60);
-		}
-
-		@Override
-		public ZoneId getZone() {
-			return ZoneOffset.UTC;
-		}
-
-		@Override
-		public Clock withZone(ZoneId zone) {
-			return this;
-		}
-
-		@Override
-		public Instant instant() {
-			return instant;
-		}
 	}
 }

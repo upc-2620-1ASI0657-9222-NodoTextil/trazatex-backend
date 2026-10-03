@@ -1,5 +1,6 @@
 package com.nodotextil.trazatex.organizationaccess.domain;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -9,6 +10,9 @@ import java.util.UUID;
  * mandatory.
  */
 public final class Invitation {
+
+	/** A pending invitation expires this long after it was created (RF-005). */
+	public static final Duration VALIDITY = Duration.ofDays(7);
 
 	private final UUID id;
 	private final String email;
@@ -42,6 +46,15 @@ public final class Invitation {
 		this.expiresAt = DomainText.notNull(expiresAt, "expiresAt");
 		this.createdByUserId = DomainText.notNull(createdByUserId, "createdByUserId");
 		this.status = DomainText.notNull(status, "status");
+	}
+
+	/** A new pending invitation that expires {@link #VALIDITY} after {@code now}. */
+	public static Invitation issue(String email, UUID companyId, Role role, String token,
+			String firstName, String lastName, String jobTitle, UUID createdByUserId,
+			LocalDateTime now) {
+		return new Invitation(UUID.randomUUID(), email, companyId, role, token, firstName,
+				lastName, jobTitle, now, now.plus(VALIDITY), createdByUserId,
+				InvitationStatus.PENDING);
 	}
 
 	public UUID id() {

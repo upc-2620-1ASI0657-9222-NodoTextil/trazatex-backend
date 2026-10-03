@@ -38,6 +38,11 @@ public final class Company {
 				CompanyStatus.ACTIVE, now);
 	}
 
+	/** The same company with another status; nothing else (history included) is lost. */
+	public Company withStatus(CompanyStatus newStatus) {
+		return new Company(id, licenseId, ruc, legalName, activities, newStatus, createdAt);
+	}
+
 	public boolean isActive() {
 		return status == CompanyStatus.ACTIVE;
 	}
