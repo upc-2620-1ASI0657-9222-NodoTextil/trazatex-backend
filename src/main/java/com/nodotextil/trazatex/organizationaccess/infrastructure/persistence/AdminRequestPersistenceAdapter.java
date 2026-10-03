@@ -2,6 +2,7 @@ package com.nodotextil.trazatex.organizationaccess.infrastructure.persistence;
 
 import com.nodotextil.trazatex.organizationaccess.application.port.AdminRequestRepository;
 import com.nodotextil.trazatex.organizationaccess.domain.AdminRequest;
+import com.nodotextil.trazatex.organizationaccess.domain.AdminRequestStatus;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -30,5 +31,11 @@ class AdminRequestPersistenceAdapter implements AdminRequestRepository {
 	public List<AdminRequest> findAll() {
 		return repository.findAllByOrderByCreatedAtDesc().stream()
 				.map(AdminRequestJpaEntity::toDomain).toList();
+	}
+
+	@Override
+	public boolean existsPendingByCompanyIdAndEmail(UUID companyId, String email) {
+		return repository.existsByCompanyIdAndEmailAndStatus(companyId, email,
+				AdminRequestStatus.PENDING);
 	}
 }

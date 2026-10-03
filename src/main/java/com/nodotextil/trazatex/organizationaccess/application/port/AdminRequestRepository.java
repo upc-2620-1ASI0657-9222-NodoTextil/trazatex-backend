@@ -12,4 +12,6 @@ public interface AdminRequestRepository {
 	Optional<AdminRequest> findById(UUID id);
 
 	List<AdminRequest> findAll();
+
+	boolean existsPendingByCompanyIdAndEmail(UUID companyId, String email);
 }

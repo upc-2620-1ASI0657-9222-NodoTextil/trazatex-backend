@@ -64,6 +64,16 @@ public final class OrganizationUser {
 		return status == UserStatus.ACTIVE;
 	}
 
+	/** The user with another status. A user never goes back to {@code PENDING}. */
+	public OrganizationUser withStatus(UserStatus newStatus) {
+		if (newStatus == null || newStatus == UserStatus.PENDING) {
+			throw new OrganizationValidationException("A user can only be ACTIVE or INACTIVE",
+					java.util.Map.of("status", "Must be ACTIVE or INACTIVE"));
+		}
+		return new OrganizationUser(id, email, firstName, lastName, jobTitle, passwordHash, role,
+				companyId, newStatus, failedLoginAttempts, lockedUntil, createdAt);
+	}
+
 	public boolean isLockedAt(LocalDateTime now) {
 		return lockedUntil != null && lockedUntil.isAfter(now);
 	}

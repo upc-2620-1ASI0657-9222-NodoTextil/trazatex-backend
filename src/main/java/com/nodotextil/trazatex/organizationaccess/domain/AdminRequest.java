@@ -37,6 +37,36 @@ public final class AdminRequest {
 		this.decidedAt = decidedAt;
 	}
 
+	/** A new pending request from a company administrator. */
+	public static AdminRequest create(UUID companyId, String email, String firstName,
+			String lastName, String jobTitle, UUID requestedByUserId, LocalDateTime now) {
+		return new AdminRequest(UUID.randomUUID(), companyId, email, firstName, lastName,
+				jobTitle, requestedByUserId, AdminRequestStatus.PENDING, now, null, null);
+	}
+
+	public boolean isPending() {
+		return status == AdminRequestStatus.PENDING;
+	}
+
+	public AdminRequest approve(UUID decidedByUserId, LocalDateTime now) {
+		return decide(AdminRequestStatus.APPROVED, decidedByUserId, now);
+	}
+
+	public AdminRequest reject(UUID decidedByUserId, LocalDateTime now) {
+		return decide(AdminRequestStatus.REJECTED, decidedByUserId, now);
+	}
+
+	/** Only a pending request can be decided, and only once. */
+	private AdminRequest decide(AdminRequestStatus decision, UUID decidedBy, LocalDateTime now) {
+		if (!isPending()) {
+			throw new OrganizationConflictException(
+					"The request was already " + status + " and cannot be decided again");
+		}
+		return new AdminRequest(id, companyId, email, firstName, lastName, jobTitle,
+				requestedByUserId, decision, createdAt, DomainText.notNull(decidedBy,
+						"decidedByUserId"), now);
+	}
+
 	public UUID id() {
 		return id;
 	}
