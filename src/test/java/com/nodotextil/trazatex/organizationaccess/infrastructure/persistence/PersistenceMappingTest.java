@@ -3,8 +3,11 @@ package com.nodotextil.trazatex.organizationaccess.infrastructure.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.nodotextil.trazatex.organizationaccess.domain.AdminRequest;
+import com.nodotextil.trazatex.organizationaccess.application.contract.PrivacyField;
+import com.nodotextil.trazatex.organizationaccess.application.contract.PrivacyVisibility;
 import com.nodotextil.trazatex.organizationaccess.domain.AdminRequestStatus;
 import com.nodotextil.trazatex.organizationaccess.domain.Company;
+import com.nodotextil.trazatex.organizationaccess.domain.CompanyPrivacySetting;
 import com.nodotextil.trazatex.organizationaccess.domain.Invitation;
 import com.nodotextil.trazatex.organizationaccess.domain.InvitationStatus;
 import com.nodotextil.trazatex.organizationaccess.domain.License;
@@ -73,5 +76,15 @@ class PersistenceMappingTest {
 		AdminRequest restored = AdminRequestJpaEntity.from(request).toDomain();
 
 		assertThat(restored).usingRecursiveComparison().isEqualTo(request);
+	}
+
+	@Test
+	void privacySettingRoundTrip() {
+		CompanyPrivacySetting setting = new CompanyPrivacySetting(UUID.randomUUID(),
+				PrivacyField.WASTE_REASON, PrivacyVisibility.SHARED);
+
+		CompanyPrivacySetting restored = PrivacySettingJpaEntity.from(setting).toDomain();
+
+		assertThat(restored).isEqualTo(setting);
 	}
 }
