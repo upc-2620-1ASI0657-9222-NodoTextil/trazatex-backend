@@ -51,13 +51,15 @@ public final class FinishQualityControlUseCase {
 
         control.complete(completedAt);
 
+        // Production owns the operational phase. Finishing the control returns the
+        // batch from "in quality control" to its normal operational phase.
+        productionQualityPort.finishQualityControl(control.getBatchId());
+
         if (control.hasFailedTests()) {
             handleFailedControl(control, batchQuality, previousStatus, completedAt);
         } else {
             handleConformingControl(batchQuality, previousStatus);
         }
-
-        productionQualityPort.finishQualityControl(control.getBatchId());
 
         qualityControlRepository.save(control);
         batchQualityRepository.save(batchQuality);
@@ -72,6 +74,7 @@ public final class FinishQualityControlUseCase {
             LocalDateTime completedAt) {
 
         batchQuality.markFailed();
+        productionQualityPort.blockBatch(control.getBatchId());
 
         if (previousStatus == QualityStatus.PENDING_REEVALUATION) {
             Failure failure = failureRepository.findActiveByBatchId(control.getBatchId())
