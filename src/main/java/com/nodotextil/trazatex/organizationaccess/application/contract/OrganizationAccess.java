@@ -19,6 +19,7 @@ public interface OrganizationAccess {
 
 	boolean isCompanyActive(UUID companyId);
 
+	/** The membership of an {@code ACTIVE} user; empty if the user does not exist or is not active. */
 	Optional<CompanyMembership> findMembership(UUID userId);
 
 	/** Whether both companies belong to the same license. */
@@ -26,7 +27,8 @@ public interface OrganizationAccess {
 
 	/**
 	 * Snapshot of a user's membership. {@code companyId} is {@code null} for a
-	 * {@code LICENSE_OWNER}; {@code role} is the name of the user's role.
+	 * {@code LICENSE_OWNER}; {@code role} is the name of the user's role. {@code companyActive}
+	 * is {@code false} when the user has no company.
 	 */
 	record CompanyMembership(UUID userId, UUID companyId, String role, boolean companyActive) {
 	}
