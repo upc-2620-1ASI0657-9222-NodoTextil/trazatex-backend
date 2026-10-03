@@ -21,11 +21,34 @@ public final class QualityControl {
             ControlType type,
             LocalDateTime startedAt) {
 
+        this(id, batchId, type, startedAt, null, List.of());
+    }
+
+    private QualityControl(
+            UUID id,
+            UUID batchId,
+            ControlType type,
+            LocalDateTime startedAt,
+            LocalDateTime completedAt,
+            List<QualityTest> tests) {
+
         this.id = Objects.requireNonNull(id, "Control id is required");
         this.batchId = Objects.requireNonNull(batchId, "Batch id is required");
         this.type = Objects.requireNonNull(type, "Control type is required");
         this.startedAt = Objects.requireNonNull(startedAt, "Control start date is required");
-        this.tests = new ArrayList<>();
+        this.completedAt = completedAt;
+        this.tests = new ArrayList<>(Objects.requireNonNull(tests, "Tests are required"));
+    }
+
+    public static QualityControl restore(
+            UUID id,
+            UUID batchId,
+            ControlType type,
+            LocalDateTime startedAt,
+            LocalDateTime completedAt,
+            List<QualityTest> tests) {
+
+        return new QualityControl(id, batchId, type, startedAt, completedAt, tests);
     }
 
     public void addTest(QualityTest test) {
@@ -80,27 +103,10 @@ public final class QualityControl {
         return completedAt != null;
     }
 
-    public UUID getId() {
-        return id;
-    }
-
-    public UUID getBatchId() {
-        return batchId;
-    }
-
-    public ControlType getType() {
-        return type;
-    }
-
-    public LocalDateTime getStartedAt() {
-        return startedAt;
-    }
-
-    public LocalDateTime getCompletedAt() {
-        return completedAt;
-    }
-
-    public List<QualityTest> getTests() {
-        return List.copyOf(tests);
-    }
+    public UUID getId() { return id; }
+    public UUID getBatchId() { return batchId; }
+    public ControlType getType() { return type; }
+    public LocalDateTime getStartedAt() { return startedAt; }
+    public LocalDateTime getCompletedAt() { return completedAt; }
+    public List<QualityTest> getTests() { return List.copyOf(tests); }
 }

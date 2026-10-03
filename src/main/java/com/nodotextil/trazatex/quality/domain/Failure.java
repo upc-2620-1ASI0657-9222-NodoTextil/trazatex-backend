@@ -25,6 +25,30 @@ public final class Failure {
             List<UUID> failedTestIds,
             LocalDateTime createdAt) {
 
+        this(
+                id,
+                qualityControlId,
+                batchId,
+                failedTestIds,
+                FailureStatus.PENDING_DECISION,
+                null,
+                null,
+                null,
+                createdAt
+        );
+    }
+
+    private Failure(
+            UUID id,
+            UUID qualityControlId,
+            UUID batchId,
+            List<UUID> failedTestIds,
+            FailureStatus status,
+            String cause,
+            BigDecimal affectedQuantityKg,
+            String observations,
+            LocalDateTime createdAt) {
+
         this.id = Objects.requireNonNull(id, "Failure id is required");
         this.qualityControlId = Objects.requireNonNull(
                 qualityControlId,
@@ -34,6 +58,10 @@ public final class Failure {
         this.failedTestIds = List.copyOf(
                 Objects.requireNonNull(failedTestIds, "Failed tests are required")
         );
+        this.status = Objects.requireNonNull(status, "Failure status is required");
+        this.cause = cause;
+        this.affectedQuantityKg = affectedQuantityKg;
+        this.observations = observations;
         this.createdAt = Objects.requireNonNull(
                 createdAt,
                 "Failure creation date is required"
@@ -44,8 +72,30 @@ public final class Failure {
                     "A failure requires at least one failed test"
             );
         }
+    }
 
-        this.status = FailureStatus.PENDING_DECISION;
+    public static Failure restore(
+            UUID id,
+            UUID qualityControlId,
+            UUID batchId,
+            List<UUID> failedTestIds,
+            FailureStatus status,
+            String cause,
+            BigDecimal affectedQuantityKg,
+            String observations,
+            LocalDateTime createdAt) {
+
+        return new Failure(
+                id,
+                qualityControlId,
+                batchId,
+                failedTestIds,
+                status,
+                cause,
+                affectedQuantityKg,
+                observations,
+                createdAt
+        );
     }
 
     public void completeDetails(
@@ -114,39 +164,13 @@ public final class Failure {
         }
     }
 
-    public UUID getId() {
-        return id;
-    }
-
-    public UUID getQualityControlId() {
-        return qualityControlId;
-    }
-
-    public UUID getBatchId() {
-        return batchId;
-    }
-
-    public List<UUID> getFailedTestIds() {
-        return failedTestIds;
-    }
-
-    public FailureStatus getStatus() {
-        return status;
-    }
-
-    public String getCause() {
-        return cause;
-    }
-
-    public BigDecimal getAffectedQuantityKg() {
-        return affectedQuantityKg;
-    }
-
-    public String getObservations() {
-        return observations;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
+    public UUID getId() { return id; }
+    public UUID getQualityControlId() { return qualityControlId; }
+    public UUID getBatchId() { return batchId; }
+    public List<UUID> getFailedTestIds() { return failedTestIds; }
+    public FailureStatus getStatus() { return status; }
+    public String getCause() { return cause; }
+    public BigDecimal getAffectedQuantityKg() { return affectedQuantityKg; }
+    public String getObservations() { return observations; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
 }
