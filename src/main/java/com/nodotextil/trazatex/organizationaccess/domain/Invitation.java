@@ -57,6 +57,43 @@ public final class Invitation {
 				InvitationStatus.PENDING);
 	}
 
+	public boolean hasExpiredAt(LocalDateTime now) {
+		return !expiresAt.isAfter(now);
+	}
+
+	/** Pending and not yet expired: the only state in which it can be accepted or cancelled. */
+	public boolean isUsableAt(LocalDateTime now) {
+		return status == InvitationStatus.PENDING && !hasExpiredAt(now);
+	}
+
+	/** The status as seen at {@code now}: a pending invitation past its expiry is expired. */
+	public InvitationStatus effectiveStatusAt(LocalDateTime now) {
+		return status == InvitationStatus.PENDING && hasExpiredAt(now)
+				? InvitationStatus.EXPIRED : status;
+	}
+
+	public Invitation accept() {
+		return transitionTo(InvitationStatus.ACCEPTED);
+	}
+
+	public Invitation cancel() {
+		return transitionTo(InvitationStatus.CANCELLED);
+	}
+
+	public Invitation expire() {
+		return transitionTo(InvitationStatus.EXPIRED);
+	}
+
+	/** Only a pending invitation changes status; the others are final. */
+	private Invitation transitionTo(InvitationStatus next) {
+		if (status != InvitationStatus.PENDING) {
+			throw new OrganizationConflictException(
+					"The invitation is " + status + " and can no longer change");
+		}
+		return new Invitation(id, email, companyId, role, token, firstName, lastName, jobTitle,
+				createdAt, expiresAt, createdByUserId, next);
+	}
+
 	public UUID id() {
 		return id;
 	}

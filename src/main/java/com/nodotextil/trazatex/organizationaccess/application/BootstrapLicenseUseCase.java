@@ -20,8 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class BootstrapLicenseUseCase {
 
-	static final int MIN_PASSWORD_LENGTH = 12;
-
 	private final LicenseRepository licenses;
 	private final OrganizationUserRepository users;
 	private final PasswordEncoder passwordEncoder;
@@ -45,10 +43,10 @@ public class BootstrapLicenseUseCase {
 	public void execute(String licenseCode, int maxCompanies, int maxUsersPerCompany,
 			String ownerEmail, String ownerPassword) {
 		if (ownerEmail == null || ownerEmail.isBlank() || ownerPassword == null
-				|| ownerPassword.length() < MIN_PASSWORD_LENGTH) {
+				|| ownerPassword.length() < PasswordPolicy.MIN_LENGTH) {
 			throw new OrganizationValidationException(
 					"The bootstrap needs an owner email and a password of at least "
-							+ MIN_PASSWORD_LENGTH + " characters");
+							+ PasswordPolicy.MIN_LENGTH + " characters");
 		}
 		LocalDateTime now = LocalDateTime.now(clock);
 		if (licenses.findFirst().isEmpty()) {
