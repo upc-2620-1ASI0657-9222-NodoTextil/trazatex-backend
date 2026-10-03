@@ -4,6 +4,7 @@ import com.nodotextil.trazatex.organizationaccess.application.port.InvitationRep
 import com.nodotextil.trazatex.organizationaccess.domain.Invitation;
 import com.nodotextil.trazatex.organizationaccess.domain.InvitationStatus;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Repository;
@@ -36,5 +37,11 @@ class InvitationPersistenceAdapter implements InvitationRepository {
 	public long countPendingNotExpired(UUID companyId, LocalDateTime now) {
 		return repository.countByCompanyIdAndStatusAndExpiresAtAfter(companyId,
 				InvitationStatus.PENDING, now);
+	}
+
+	@Override
+	public List<Invitation> findPendingExpiringAtOrBefore(LocalDateTime now) {
+		return repository.findByStatusAndExpiresAtLessThanEqual(InvitationStatus.PENDING, now)
+				.stream().map(InvitationJpaEntity::toDomain).toList();
 	}
 }

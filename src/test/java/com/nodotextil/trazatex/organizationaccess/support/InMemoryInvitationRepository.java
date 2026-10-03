@@ -5,6 +5,7 @@ import com.nodotextil.trazatex.organizationaccess.domain.Invitation;
 import com.nodotextil.trazatex.organizationaccess.domain.InvitationStatus;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -40,7 +41,15 @@ public class InMemoryInvitationRepository implements InvitationRepository {
 				.count();
 	}
 
-	public java.util.List<Invitation> all() {
-		return java.util.List.copyOf(store.values());
+	@Override
+	public List<Invitation> findPendingExpiringAtOrBefore(LocalDateTime now) {
+		return store.values().stream()
+				.filter(invitation -> invitation.status() == InvitationStatus.PENDING
+						&& !invitation.expiresAt().isAfter(now))
+				.toList();
+	}
+
+	public List<Invitation> all() {
+		return List.copyOf(store.values());
 	}
 }
