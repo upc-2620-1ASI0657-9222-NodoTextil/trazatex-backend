@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: trazatex
+      POSTGRES_USER: trazatex
+      POSTGRES_PASSWORD: trazatex
+    ports:
+      - "5432:5432"
+
+  neo4j:
+    image: neo4j:5
+    environment:
+      NEO4J_AUTH: neo4j/trazatex-pass
+    ports:
+      - "7474:7474"
+      - "7687:7687"
