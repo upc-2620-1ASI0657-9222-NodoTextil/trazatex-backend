@@ -1,6 +1,8 @@
 package com.nodotextil.trazatex.traceability.infrastructure;
 
+import com.nodotextil.trazatex.traceability.application.GetLineageUseCase;
 import com.nodotextil.trazatex.traceability.application.RecordLineageUseCase;
+import com.nodotextil.trazatex.traceability.application.port.BatchInfoPort;
 import com.nodotextil.trazatex.traceability.domain.LineageRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,5 +13,11 @@ public class TraceabilityConfiguration {
     @Bean
     RecordLineageUseCase recordLineageUseCase(LineageRepository lineageRepository) {
         return new RecordLineageUseCase(lineageRepository);
+    }
+
+    @Bean
+    GetLineageUseCase getLineageUseCase(
+            LineageRepository lineageRepository, BatchInfoPort batchInfo) {
+        return new GetLineageUseCase(lineageRepository, batchInfo);
     }
 }
