@@ -2,6 +2,7 @@ package com.nodotextil.trazatex.production.infrastructure.persistence;
 
 import com.nodotextil.trazatex.production.domain.Batch;
 import com.nodotextil.trazatex.production.domain.BatchRepository;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Repository;
@@ -20,6 +21,17 @@ class PostgresBatchRepository implements BatchRepository {
     @Transactional
     public Batch save(Batch batch) {
         return BatchJpaMapper.toDomain(jpaRepository.save(BatchJpaMapper.toEntity(batch)));
+    }
+
+    @Override
+    @Transactional
+    public List<Batch> saveAll(List<Batch> batches) {
+        List<BatchJpaEntity> entities = batches.stream()
+                .map(BatchJpaMapper::toEntity)
+                .toList();
+        return jpaRepository.saveAll(entities).stream()
+                .map(BatchJpaMapper::toDomain)
+                .toList();
     }
 
     @Override

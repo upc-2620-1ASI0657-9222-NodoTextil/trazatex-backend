@@ -5,6 +5,8 @@ import com.nodotextil.trazatex.production.application.GetBatchUseCase;
 import com.nodotextil.trazatex.production.application.GetMachineUseCase;
 import com.nodotextil.trazatex.production.application.RegisterBatchUseCase;
 import com.nodotextil.trazatex.production.application.RegisterMachineUseCase;
+import com.nodotextil.trazatex.production.application.SplitBatchUseCase;
+import com.nodotextil.trazatex.production.application.event.BatchEventPublisher;
 import com.nodotextil.trazatex.production.domain.BatchRepository;
 import com.nodotextil.trazatex.production.domain.MachineRepository;
 import java.time.Clock;
@@ -22,6 +24,13 @@ public class ProductionConfiguration {
     @Bean
     GetBatchUseCase getBatchUseCase(BatchRepository batchRepository) {
         return new GetBatchUseCase(batchRepository);
+    }
+
+    @Bean
+    SplitBatchUseCase splitBatchUseCase(
+            BatchRepository batchRepository,
+            BatchEventPublisher eventPublisher) {
+        return new SplitBatchUseCase(batchRepository, eventPublisher, Clock.systemUTC());
     }
 
     @Bean

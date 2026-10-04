@@ -19,7 +19,7 @@ public final class Batch {
     private final MaterialType materialType;
     private final BigDecimal quantityKg;
     private final List<CompositionComponent> composition;
-    private final OperationalPhase operationalPhase;
+    private OperationalPhase operationalPhase;
     private final LocalDateTime registeredAt;
     private final String receptionCharacteristics;
 
@@ -136,6 +136,13 @@ public final class Batch {
             throw new InvalidBatchException(message);
         }
         return value;
+    }
+
+    public void markAsSplit() {
+        if (operationalPhase != OperationalPhase.AVAILABLE) {
+            throw new InvalidBatchException("Only an AVAILABLE batch can be split");
+        }
+        operationalPhase = OperationalPhase.SPLIT;
     }
 
     public UUID id() {

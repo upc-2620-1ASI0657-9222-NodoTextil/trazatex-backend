@@ -1,11 +1,14 @@
 package com.nodotextil.trazatex.production.domain;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 public interface BatchRepository {
 
     Batch save(Batch batch);
+
+    List<Batch> saveAll(List<Batch> batches);
 
     Optional<Batch> findById(UUID id);
 

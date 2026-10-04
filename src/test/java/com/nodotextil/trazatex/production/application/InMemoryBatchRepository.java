@@ -3,6 +3,7 @@ package com.nodotextil.trazatex.production.application;
 import com.nodotextil.trazatex.production.domain.Batch;
 import com.nodotextil.trazatex.production.domain.BatchRepository;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,6 +16,12 @@ final class InMemoryBatchRepository implements BatchRepository {
     public Batch save(Batch batch) {
         batches.put(batch.id(), batch);
         return batch;
+    }
+
+    @Override
+    public List<Batch> saveAll(List<Batch> batchesToSave) {
+        batchesToSave.forEach(batch -> batches.put(batch.id(), batch));
+        return List.copyOf(batchesToSave);
     }
 
     @Override

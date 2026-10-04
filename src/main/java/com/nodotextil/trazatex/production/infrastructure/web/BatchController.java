@@ -2,6 +2,7 @@ package com.nodotextil.trazatex.production.infrastructure.web;
 
 import com.nodotextil.trazatex.production.application.GetBatchUseCase;
 import com.nodotextil.trazatex.production.application.RegisterBatchUseCase;
+import com.nodotextil.trazatex.production.application.SplitBatchUseCase;
 import com.nodotextil.trazatex.production.domain.Batch;
 import com.nodotextil.trazatex.production.domain.CompositionComponent;
 import jakarta.validation.Valid;
@@ -21,12 +22,15 @@ public class BatchController {
 
     private final RegisterBatchUseCase registerBatchUseCase;
     private final GetBatchUseCase getBatchUseCase;
+    private final SplitBatchUseCase splitBatchUseCase;
 
     public BatchController(
             RegisterBatchUseCase registerBatchUseCase,
-            GetBatchUseCase getBatchUseCase) {
+            GetBatchUseCase getBatchUseCase,
+            SplitBatchUseCase splitBatchUseCase) {
         this.registerBatchUseCase = registerBatchUseCase;
         this.getBatchUseCase = getBatchUseCase;
+        this.splitBatchUseCase = splitBatchUseCase;
     }
 
     @PostMapping
@@ -52,5 +56,13 @@ public class BatchController {
     @GetMapping("/{id}")
     public BatchResponse getById(@PathVariable UUID id) {
         return BatchResponse.from(getBatchUseCase.execute(id));
+    }
+
+    @PostMapping("/{batchId}/split")
+    public SplitBatchResponse split(
+            @PathVariable UUID batchId,
+            @Valid @RequestBody SplitBatchRequest request) {
+        return SplitBatchResponse.from(
+                splitBatchUseCase.execute(batchId, request.quantitiesKg()));
     }
 }
