@@ -110,6 +110,21 @@ class TransformationUseCasesTest {
     }
 
     @Test
+    void rejectsStartWithOperationallyBlockedBatch() {
+        Batch input = createInput();
+        input.block();
+        batchRepository.save(input);
+
+        assertThatThrownBy(() -> start(List.of(input.id())))
+                .isInstanceOf(InvalidTransformationException.class)
+                .hasMessageContaining("unblocked");
+
+        assertThat(input.operationalPhase()).isEqualTo(OperationalPhase.AVAILABLE);
+        assertThat(input.operationallyBlocked()).isTrue();
+        assertThat(transformationRepository.size()).isZero();
+    }
+
+    @Test
     void movesInputsFromAvailableToInTransformation() {
         Batch input = createInput();
 

@@ -131,6 +131,23 @@ class SplitBatchUseCaseTest {
         assertThat(repository.size()).isEqualTo(1);
     }
 
+    @Test
+    void rejectsOperationallyBlockedParent() {
+        Batch parent = registerParent();
+        parent.block();
+        repository.save(parent);
+
+        assertThatThrownBy(() -> useCase.execute(
+                parent.id(), List.of(new BigDecimal("50"), new BigDecimal("50"))))
+                .isInstanceOf(InvalidBatchException.class)
+                .hasMessageContaining("unblocked");
+
+        assertThat(parent.operationalPhase()).isEqualTo(OperationalPhase.AVAILABLE);
+        assertThat(parent.operationallyBlocked()).isTrue();
+        assertThat(eventPublisher.splitEvents()).isEmpty();
+        assertThat(repository.size()).isEqualTo(1);
+    }
+
     private Batch registerParent() {
         RegisterBatchUseCase registerUseCase = new RegisterBatchUseCase(repository, FIXED_CLOCK);
         return registerUseCase.execute(new RegisterBatchUseCase.Command(

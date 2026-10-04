@@ -136,6 +136,35 @@ class TransferServiceTest {
         assertThat(transferRepository.transfers).isEmpty();
     }
 
+    @Test
+    void rejectsOperationallyBlockedBatchAtTransferStart() {
+        Batch blocked = saveBatch("TRZ-BLOCKED", "QR-BLOCKED", false);
+        blocked.block();
+        batchRepository.save(blocked);
+
+        assertThatThrownBy(() -> service.start(
+                SOURCE, DESTINATION, List.of(blocked.id())))
+                .isInstanceOf(InvalidTransferException.class)
+                .hasMessageContaining("operationally eligible");
+
+        assertThat(blocked.operationalPhase()).isEqualTo(OperationalPhase.AVAILABLE);
+        assertThat(blocked.operationallyBlocked()).isTrue();
+        assertThat(transferRepository.transfers).isEmpty();
+    }
+
+    @Test
+    void rejectsTransferWhenSourceAndDestinationAreTheSame() {
+        Batch batch = saveBatch("TRZ-SAME-COMPANY", "QR-SAME-COMPANY", false);
+
+        assertThatThrownBy(() -> service.start(SOURCE, SOURCE, List.of(batch.id())))
+                .isInstanceOf(InvalidTransferException.class)
+                .hasMessageContaining("differ");
+
+        assertThat(batch.operationalPhase()).isEqualTo(OperationalPhase.AVAILABLE);
+        assertThat(transferRepository.transfers).isEmpty();
+        assertThat(eventPublisher.started).isEmpty();
+    }
+
     private Batch saveBatch(String traceabilityId, String qrCode, boolean finalProduct) {
         Batch batch = Batch.register(
                 UUID.randomUUID(),
