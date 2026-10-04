@@ -11,6 +11,8 @@ import com.nodotextil.trazatex.production.application.RegisterMachineUseCase;
 import com.nodotextil.trazatex.production.application.ProductionEvidenceService;
 import com.nodotextil.trazatex.production.application.SearchBatchesUseCase;
 import com.nodotextil.trazatex.production.application.SplitBatchUseCase;
+import com.nodotextil.trazatex.production.application.BatchSnapshotService;
+import com.nodotextil.trazatex.production.application.contract.BatchSnapshotQuery;
 import com.nodotextil.trazatex.production.application.StartTransformationUseCase;
 import com.nodotextil.trazatex.production.application.TransferService;
 import com.nodotextil.trazatex.production.application.event.BatchEventPublisher;
@@ -63,6 +65,11 @@ public class ProductionConfiguration {
             BatchRepository batchRepository,
             BatchEventPublisher eventPublisher) {
         return new SplitBatchUseCase(batchRepository, eventPublisher, Clock.systemUTC());
+    }
+
+    @Bean
+    BatchSnapshotQuery batchSnapshotQuery(BatchRepository batchRepository) {
+        return new BatchSnapshotService(batchRepository);
     }
 
     @Bean
