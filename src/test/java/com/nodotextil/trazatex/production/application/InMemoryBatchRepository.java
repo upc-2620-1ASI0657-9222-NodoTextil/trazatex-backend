@@ -32,6 +32,13 @@ final class InMemoryBatchRepository implements BatchRepository {
     }
 
     @Override
+    public Optional<Batch> findByQrCode(String qrCode) {
+        return batches.values().stream()
+                .filter(batch -> batch.qrCode().equals(qrCode))
+                .findFirst();
+    }
+
+    @Override
     public List<Batch> search(BatchSearchCriteria criteria) {
         return batches.values().stream()
                 .filter(batch -> criteria.traceabilityId() == null

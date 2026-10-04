@@ -47,6 +47,12 @@ class PostgresBatchRepository implements BatchRepository {
 
     @Override
     @Transactional(readOnly = true)
+    public Optional<Batch> findByQrCode(String qrCode) {
+        return jpaRepository.findByQrCode(qrCode).map(BatchJpaMapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Batch> search(BatchSearchCriteria criteria) {
         Specification<BatchJpaEntity> specification = (root, query, builder) -> {
             List<Predicate> predicates = new ArrayList<>();

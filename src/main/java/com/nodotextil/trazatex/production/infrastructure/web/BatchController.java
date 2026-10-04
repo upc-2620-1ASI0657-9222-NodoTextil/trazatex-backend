@@ -1,6 +1,7 @@
 package com.nodotextil.trazatex.production.infrastructure.web;
 
 import com.nodotextil.trazatex.production.application.GetBatchUseCase;
+import com.nodotextil.trazatex.production.application.GetBatchByQrCodeUseCase;
 import com.nodotextil.trazatex.production.application.RegisterBatchUseCase;
 import com.nodotextil.trazatex.production.application.SearchBatchesUseCase;
 import com.nodotextil.trazatex.production.application.SplitBatchUseCase;
@@ -30,16 +31,19 @@ public class BatchController {
 
     private final RegisterBatchUseCase registerBatchUseCase;
     private final GetBatchUseCase getBatchUseCase;
+    private final GetBatchByQrCodeUseCase getBatchByQrCodeUseCase;
     private final SearchBatchesUseCase searchBatchesUseCase;
     private final SplitBatchUseCase splitBatchUseCase;
 
     public BatchController(
             RegisterBatchUseCase registerBatchUseCase,
             GetBatchUseCase getBatchUseCase,
+            GetBatchByQrCodeUseCase getBatchByQrCodeUseCase,
             SearchBatchesUseCase searchBatchesUseCase,
             SplitBatchUseCase splitBatchUseCase) {
         this.registerBatchUseCase = registerBatchUseCase;
         this.getBatchUseCase = getBatchUseCase;
+        this.getBatchByQrCodeUseCase = getBatchByQrCodeUseCase;
         this.searchBatchesUseCase = searchBatchesUseCase;
         this.splitBatchUseCase = splitBatchUseCase;
     }
@@ -67,6 +71,11 @@ public class BatchController {
     @GetMapping("/{id}")
     public BatchResponse getById(@PathVariable UUID id) {
         return BatchResponse.from(getBatchUseCase.execute(id));
+    }
+
+    @GetMapping("/qr/{qrCode}")
+    public BatchResponse getByQrCode(@PathVariable String qrCode) {
+        return BatchResponse.from(getBatchByQrCodeUseCase.execute(qrCode));
     }
 
     @GetMapping

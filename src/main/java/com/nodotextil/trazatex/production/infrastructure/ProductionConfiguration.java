@@ -3,6 +3,7 @@ package com.nodotextil.trazatex.production.infrastructure;
 import com.nodotextil.trazatex.production.application.ChangeMachineStatusUseCase;
 import com.nodotextil.trazatex.production.application.CompleteTransformationUseCase;
 import com.nodotextil.trazatex.production.application.GetBatchUseCase;
+import com.nodotextil.trazatex.production.application.GetBatchByQrCodeUseCase;
 import com.nodotextil.trazatex.production.application.GetMachineUseCase;
 import com.nodotextil.trazatex.production.application.GetTransformationUseCase;
 import com.nodotextil.trazatex.production.application.RegisterBatchUseCase;
@@ -38,6 +39,11 @@ public class ProductionConfiguration {
     @Bean
     GetBatchUseCase getBatchUseCase(BatchRepository batchRepository) {
         return new GetBatchUseCase(batchRepository);
+    }
+
+    @Bean
+    GetBatchByQrCodeUseCase getBatchByQrCodeUseCase(BatchRepository batchRepository) {
+        return new GetBatchByQrCodeUseCase(batchRepository);
     }
 
     @Bean
