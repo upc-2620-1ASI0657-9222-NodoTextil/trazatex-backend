@@ -1,5 +1,6 @@
 package com.nodotextil.trazatex.quality.application;
 
+import org.springframework.transaction.annotation.Transactional;
 import com.nodotextil.trazatex.quality.application.contract.ProductionQualityPort;
 import com.nodotextil.trazatex.quality.application.port.BatchQualityRepository;
 import com.nodotextil.trazatex.quality.application.port.FailureRepository;
@@ -33,6 +34,7 @@ public final class FinishQualityControlUseCase {
         this.productionQualityPort = Objects.requireNonNull(productionQualityPort);
     }
 
+    @Transactional
     public QualityControl execute(UUID controlId) {
         Objects.requireNonNull(controlId, "Control id is required");
 
@@ -51,8 +53,8 @@ public final class FinishQualityControlUseCase {
 
         control.complete(completedAt);
 
-        // Production owns the operational phase. Finishing the control returns the
-        // batch from "in quality control" to its normal operational phase.
+        
+        
         productionQualityPort.finishQualityControl(control.getBatchId());
 
         if (control.hasFailedTests()) {

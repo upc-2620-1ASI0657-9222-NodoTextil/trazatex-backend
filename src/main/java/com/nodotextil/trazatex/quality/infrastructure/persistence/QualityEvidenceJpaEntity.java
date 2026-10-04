@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "quality_evidence")
+@Table(schema = "quality", name = "quality_evidence")
 class QualityEvidenceJpaEntity {
 
     @Id

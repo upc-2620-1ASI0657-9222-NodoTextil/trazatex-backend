@@ -11,7 +11,7 @@ import jakarta.persistence.Table;
 import java.util.UUID;
 
 @Entity
-@Table(name = "quality_batch_states")
+@Table(schema = "quality", name = "quality_batch_states")
 class BatchQualityJpaEntity {
 
     @Id

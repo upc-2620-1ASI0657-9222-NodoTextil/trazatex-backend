@@ -1,5 +1,6 @@
 package com.nodotextil.trazatex.quality.application;
 
+import org.springframework.transaction.annotation.Transactional;
 import com.nodotextil.trazatex.quality.application.contract.ProductionQualityPort;
 import com.nodotextil.trazatex.quality.application.contract.QualityEventPublisher;
 import com.nodotextil.trazatex.quality.application.port.BatchQualityRepository;
@@ -34,6 +35,7 @@ public final class ManageFailureUseCase {
         this.eventPublisher = Objects.requireNonNull(eventPublisher);
     }
 
+    @Transactional
     public Failure execute(
             UUID failureId,
             String cause,
@@ -53,6 +55,12 @@ public final class ManageFailureUseCase {
                 .orElseThrow(() -> new InvalidQualityControlException(
                         "Quality information was not found for the batch"
                 ));
+
+        if (affectedQuantityKg == null
+                || affectedQuantityKg.compareTo(productionQualityPort.quantityOf(failure.getBatchId())) > 0) {
+            throw new InvalidQualityControlException(
+                    "Affected quantity cannot exceed the batch quantity");
+        }
 
         failure.completeDetails(cause, affectedQuantityKg, observations);
 

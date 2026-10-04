@@ -2,7 +2,9 @@ package com.nodotextil.trazatex.quality.infrastructure.external;
 
 import com.nodotextil.trazatex.quality.application.contract.QualityEvidenceStorage;
 import com.nodotextil.trazatex.quality.domain.InvalidQualityControlException;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -16,6 +18,7 @@ import org.springframework.web.client.RestClientException;
 import java.util.Map;
 
 @Component
+@ConditionalOnProperty(name = "app.external-services.enabled", havingValue = "true")
 public class CloudinaryQualityEvidenceAdapter implements QualityEvidenceStorage {
 
     private final String cloudName;
@@ -38,6 +41,7 @@ public class CloudinaryQualityEvidenceAdapter implements QualityEvidenceStorage 
     }
 
     @Override
+    @CircuitBreaker(name = "cloudinary")
     public StoredEvidence upload(String fileName, String contentType, byte[] content) {
         if (content == null || content.length == 0) {
             throw new InvalidQualityControlException("Evidence file is required");

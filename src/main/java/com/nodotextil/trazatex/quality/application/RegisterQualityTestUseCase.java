@@ -1,5 +1,6 @@
 package com.nodotextil.trazatex.quality.application;
 
+import org.springframework.transaction.annotation.Transactional;
 import com.nodotextil.trazatex.quality.application.port.QualityControlRepository;
 import com.nodotextil.trazatex.quality.domain.InvalidQualityControlException;
 import com.nodotextil.trazatex.quality.domain.QualityControl;
@@ -17,6 +18,7 @@ public final class RegisterQualityTestUseCase {
         this.qualityControlRepository = Objects.requireNonNull(qualityControlRepository);
     }
 
+    @Transactional
     public QualityTest execute(
             UUID controlId,
             String criterion,

@@ -1,5 +1,6 @@
 package com.nodotextil.trazatex.quality.application;
 
+import org.springframework.transaction.annotation.Transactional;
 import com.nodotextil.trazatex.quality.application.contract.QualityEvidenceStorage;
 import com.nodotextil.trazatex.quality.application.port.FailureRepository;
 import com.nodotextil.trazatex.quality.application.port.QualityControlRepository;
@@ -9,6 +10,8 @@ import com.nodotextil.trazatex.quality.domain.InvalidQualityControlException;
 import com.nodotextil.trazatex.quality.domain.QualityEvidence;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -31,6 +34,7 @@ public final class UploadQualityEvidenceUseCase {
         this.evidenceStorage = Objects.requireNonNull(evidenceStorage);
     }
 
+    @Transactional
     public QualityEvidence execute(
             EvidenceOwnerType ownerType,
             UUID ownerId,
@@ -45,11 +49,7 @@ public final class UploadQualityEvidenceUseCase {
             throw new InvalidQualityControlException("Evidence file is required");
         }
 
-        if (contentType == null || !contentType.startsWith("image/")) {
-            throw new InvalidQualityControlException(
-                    "Quality evidence must be a valid image"
-            );
-        }
+        validateImage(content, contentType);
 
         validateOwnerExists(ownerType, ownerId);
 
@@ -69,6 +69,38 @@ public final class UploadQualityEvidenceUseCase {
         );
 
         return evidenceRepository.save(evidence);
+    }
+
+
+    @Transactional(readOnly = true)
+    public List<QualityEvidence> list(EvidenceOwnerType ownerType, UUID ownerId) {
+        validateOwnerExists(ownerType, ownerId);
+        return evidenceRepository.findByOwner(ownerType, ownerId);
+    }
+
+    private static void validateImage(byte[] content, String contentType) {
+        if (contentType == null || contentType.isBlank()) {
+            throw new InvalidQualityControlException("Evidence content type is required");
+        }
+        String type = contentType.toLowerCase(Locale.ROOT);
+        boolean valid = switch (type) {
+            case "image/jpeg" -> content.length >= 3
+                    && Byte.toUnsignedInt(content[0]) == 0xFF
+                    && Byte.toUnsignedInt(content[1]) == 0xD8
+                    && Byte.toUnsignedInt(content[2]) == 0xFF;
+            case "image/png" -> content.length >= 8
+                    && Byte.toUnsignedInt(content[0]) == 0x89
+                    && content[1] == 'P' && content[2] == 'N' && content[3] == 'G';
+            case "image/gif" -> content.length >= 6
+                    && content[0] == 'G' && content[1] == 'I' && content[2] == 'F';
+            case "image/webp" -> content.length >= 12
+                    && content[0] == 'R' && content[1] == 'I' && content[2] == 'F' && content[3] == 'F'
+                    && content[8] == 'W' && content[9] == 'E' && content[10] == 'B' && content[11] == 'P';
+            default -> false;
+        };
+        if (!valid) {
+            throw new InvalidQualityControlException("Only valid JPEG, PNG, GIF, or WEBP images are supported");
+        }
     }
 
     private void validateOwnerExists(EvidenceOwnerType ownerType, UUID ownerId) {

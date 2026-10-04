@@ -1,5 +1,6 @@
 package com.nodotextil.trazatex.quality.application;
 
+import org.springframework.transaction.annotation.Transactional;
 import com.nodotextil.trazatex.quality.application.contract.ProductionQualityPort;
 import com.nodotextil.trazatex.quality.application.port.BatchQualityRepository;
 import com.nodotextil.trazatex.quality.application.port.QualityControlRepository;
@@ -29,6 +30,7 @@ public final class StartQualityControlUseCase {
         this.productionQualityPort = Objects.requireNonNull(productionQualityPort);
     }
 
+    @Transactional
     public QualityControl execute(UUID batchId) {
         Objects.requireNonNull(batchId, "Batch id is required");
 

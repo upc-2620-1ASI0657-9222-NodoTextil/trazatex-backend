@@ -1,5 +1,6 @@
 package com.nodotextil.trazatex.quality.application.contract;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 public interface ProductionQualityPort {
@@ -13,4 +14,8 @@ public interface ProductionQualityPort {
     void unblockBatch(UUID batchId);
 
     void discardBatch(UUID batchId);
+
+    UUID companyIdOf(UUID batchId);
+
+    BigDecimal quantityOf(UUID batchId);
 }

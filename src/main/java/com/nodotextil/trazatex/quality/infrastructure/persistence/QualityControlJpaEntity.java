@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "quality_controls")
+@Table(schema = "quality", name = "quality_controls")
 class QualityControlJpaEntity {
 
     @Id
@@ -34,6 +34,7 @@ class QualityControlJpaEntity {
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(
+            schema = "quality",
             name = "quality_control_tests",
             joinColumns = @JoinColumn(name = "control_id")
     )

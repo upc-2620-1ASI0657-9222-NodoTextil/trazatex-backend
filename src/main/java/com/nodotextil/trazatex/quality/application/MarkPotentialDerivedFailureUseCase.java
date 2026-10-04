@@ -1,5 +1,6 @@
 package com.nodotextil.trazatex.quality.application;
 
+import org.springframework.transaction.annotation.Transactional;
 import com.nodotextil.trazatex.quality.application.contract.ProductionQualityPort;
 import com.nodotextil.trazatex.quality.application.port.BatchQualityRepository;
 import com.nodotextil.trazatex.quality.domain.BatchQuality;
@@ -21,6 +22,7 @@ public final class MarkPotentialDerivedFailureUseCase {
         this.productionQualityPort = Objects.requireNonNull(productionQualityPort);
     }
 
+    @Transactional
     public BatchQuality execute(UUID batchId) {
         Objects.requireNonNull(batchId, "Batch id is required");
 
@@ -29,9 +31,19 @@ public final class MarkPotentialDerivedFailureUseCase {
                         "Quality information was not found for the batch"
                 ));
 
-        batchQuality.markPotentialDerivedFailure();
-        productionQualityPort.blockBatch(batchId);
-
-        return batchQualityRepository.save(batchQuality);
+        switch (batchQuality.getStatus()) {
+            case POTENTIAL_DERIVED_FAILURE -> {
+                return batchQuality;
+            }
+            case NOT_REVIEWED, CONFORMING -> {
+                batchQuality.markPotentialDerivedFailure();
+                productionQualityPort.blockBatch(batchId);
+                return batchQualityRepository.save(batchQuality);
+            }
+            case FAILED, PENDING_REEVALUATION -> {
+                return batchQuality;
+            }
+        }
+        return batchQuality;
     }
 }
