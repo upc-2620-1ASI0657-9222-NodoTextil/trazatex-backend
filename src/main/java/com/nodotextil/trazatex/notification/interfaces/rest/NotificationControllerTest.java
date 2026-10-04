@@ -1,11 +1,11 @@
 package com.nodotextil.trazatex.notification.interfaces.rest;
 
-import com.nodotextil.trazatex.infrastructure.security.SecurityConfig;
+import com.nodotextil.trazatex.shared.security.SecurityConfig;
 import com.nodotextil.trazatex.notification.application.CountUnreadNotificationsUseCase;
 import com.nodotextil.trazatex.notification.application.ListNotificationsUseCase;
 import com.nodotextil.trazatex.notification.application.MarkNotificationAsReadUseCase;
 import com.nodotextil.trazatex.organization.application.contract.OrganizationAccess;
-import com.nodotextil.trazatex.organization.infrastructure.security.JwtConfiguration;
+import com.nodotextil.trazatex.shared.security.JwtConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
