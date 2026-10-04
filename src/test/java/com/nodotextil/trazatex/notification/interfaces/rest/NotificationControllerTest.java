@@ -9,7 +9,7 @@ import com.nodotextil.trazatex.shared.security.JwtConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -25,10 +25,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({SecurityConfig.class, JwtConfiguration.class})
 class NotificationControllerTest {
 
-    @MockBean private ListNotificationsUseCase listNotifications;
-    @MockBean private MarkNotificationAsReadUseCase markAsRead;
-    @MockBean private CountUnreadNotificationsUseCase countUnread;
-    @MockBean private OrganizationAccess organizationAccess;
+    @MockitoBean private ListNotificationsUseCase listNotifications;
+    @MockitoBean private MarkNotificationAsReadUseCase markAsRead;
+    @MockitoBean private CountUnreadNotificationsUseCase countUnread;
+    @MockitoBean private OrganizationAccess organizationAccess;
     @Autowired private MockMvc mockMvc;
 
     @Test
