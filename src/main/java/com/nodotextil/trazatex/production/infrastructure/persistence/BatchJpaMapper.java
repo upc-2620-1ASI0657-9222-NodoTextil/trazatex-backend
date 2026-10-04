@@ -30,7 +30,8 @@ final class BatchJpaMapper {
                 batch.price(),
                 batch.currency(),
                 batch.commercialDate(),
-                batch.commercialReference());
+                batch.commercialReference(),
+                batch.operationallyBlocked());
     }
 
     static Batch toDomain(BatchJpaEntity entity) {
@@ -55,6 +56,7 @@ final class BatchJpaMapper {
                 entity.getPrice(),
                 entity.getCurrency(),
                 entity.getCommercialDate(),
-                entity.getCommercialReference());
+                entity.getCommercialReference(),
+                entity.isOperationallyBlocked());
     }
 }

@@ -11,11 +11,15 @@ import com.nodotextil.trazatex.production.application.RegisterMachineUseCase;
 import com.nodotextil.trazatex.production.application.SearchBatchesUseCase;
 import com.nodotextil.trazatex.production.application.SplitBatchUseCase;
 import com.nodotextil.trazatex.production.application.StartTransformationUseCase;
+import com.nodotextil.trazatex.production.application.TransferService;
 import com.nodotextil.trazatex.production.application.event.BatchEventPublisher;
+import com.nodotextil.trazatex.production.application.event.TransferEventPublisher;
 import com.nodotextil.trazatex.production.application.event.TransformationEventPublisher;
+import com.nodotextil.trazatex.production.application.port.OrganizationAccessPort;
 import com.nodotextil.trazatex.production.domain.BatchRepository;
 import com.nodotextil.trazatex.production.domain.MachineRepository;
 import com.nodotextil.trazatex.production.domain.TransformationRepository;
+import com.nodotextil.trazatex.production.domain.TransferRepository;
 import com.nodotextil.trazatex.production.domain.strategy.CuttingTransformationStrategy;
 import com.nodotextil.trazatex.production.domain.strategy.DyeingTransformationStrategy;
 import com.nodotextil.trazatex.production.domain.strategy.FinishingTransformationStrategy;
@@ -103,6 +107,20 @@ public class ProductionConfiguration {
     GetTransformationUseCase getTransformationUseCase(
             TransformationRepository transformationRepository) {
         return new GetTransformationUseCase(transformationRepository);
+    }
+
+    @Bean
+    TransferService transferService(
+            TransferRepository transferRepository,
+            BatchRepository batchRepository,
+            OrganizationAccessPort organizationAccess,
+            TransferEventPublisher eventPublisher) {
+        return new TransferService(
+                transferRepository,
+                batchRepository,
+                organizationAccess,
+                eventPublisher,
+                Clock.systemUTC());
     }
 
     @Bean

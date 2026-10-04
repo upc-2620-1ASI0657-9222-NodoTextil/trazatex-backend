@@ -44,7 +44,7 @@ class BatchJpaEntity {
     @Column(name = "qr_code", nullable = false, updatable = false)
     private String qrCode;
 
-    @Column(name = "responsible_company_id", nullable = false, updatable = false)
+    @Column(name = "responsible_company_id", nullable = false)
     private UUID responsibleCompanyId;
 
     @Column(name = "supplier_name")
@@ -95,6 +95,9 @@ class BatchJpaEntity {
     @Column(name = "commercial_reference")
     private String commercialReference;
 
+    @Column(name = "operationally_blocked", nullable = false)
+    private boolean operationallyBlocked;
+
     protected BatchJpaEntity() {
     }
 
@@ -116,7 +119,8 @@ class BatchJpaEntity {
             BigDecimal price,
             String currency,
             LocalDate commercialDate,
-            String commercialReference) {
+            String commercialReference,
+            boolean operationallyBlocked) {
         this.id = id;
         this.traceabilityId = traceabilityId;
         this.qrCode = qrCode;
@@ -135,6 +139,7 @@ class BatchJpaEntity {
         this.currency = currency;
         this.commercialDate = commercialDate;
         this.commercialReference = commercialReference;
+        this.operationallyBlocked = operationallyBlocked;
     }
 
     UUID getId() {
@@ -207,5 +212,9 @@ class BatchJpaEntity {
 
     String getCommercialReference() {
         return commercialReference;
+    }
+
+    boolean isOperationallyBlocked() {
+        return operationallyBlocked;
     }
 }

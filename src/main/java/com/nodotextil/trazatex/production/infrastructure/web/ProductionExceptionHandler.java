@@ -3,9 +3,11 @@ package com.nodotextil.trazatex.production.infrastructure.web;
 import com.nodotextil.trazatex.production.application.BatchNotFoundException;
 import com.nodotextil.trazatex.production.application.MachineNotFoundException;
 import com.nodotextil.trazatex.production.application.TransformationNotFoundException;
+import com.nodotextil.trazatex.production.application.TransferNotFoundException;
 import com.nodotextil.trazatex.production.domain.InvalidBatchException;
 import com.nodotextil.trazatex.production.domain.InvalidMachineException;
 import com.nodotextil.trazatex.production.domain.InvalidTransformationException;
+import com.nodotextil.trazatex.production.domain.InvalidTransferException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
@@ -18,7 +20,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice(assignableTypes = {
-    BatchController.class, MachineController.class, TransformationController.class
+    BatchController.class,
+    MachineController.class,
+    TransformationController.class,
+    TransferController.class
 })
 public class ProductionExceptionHandler {
 
@@ -42,10 +47,17 @@ public class ProductionExceptionHandler {
                         "TRANSFORMATION_NOT_FOUND", exception.getMessage(), Map.of()));
     }
 
+    @ExceptionHandler(TransferNotFoundException.class)
+    ResponseEntity<ApiError> handleTransferNotFound(TransferNotFoundException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ApiError("TRANSFER_NOT_FOUND", exception.getMessage(), Map.of()));
+    }
+
     @ExceptionHandler({
         InvalidBatchException.class,
         InvalidMachineException.class,
-        InvalidTransformationException.class
+        InvalidTransformationException.class,
+        InvalidTransferException.class
     })
     ResponseEntity<ApiError> handleDomainValidation(RuntimeException exception) {
         return ResponseEntity.badRequest()

@@ -6,7 +6,6 @@ import com.nodotextil.trazatex.production.domain.InvalidTransformationException;
 import com.nodotextil.trazatex.production.domain.Machine;
 import com.nodotextil.trazatex.production.domain.MachineRepository;
 import com.nodotextil.trazatex.production.domain.MachineStatus;
-import com.nodotextil.trazatex.production.domain.OperationalPhase;
 import com.nodotextil.trazatex.production.domain.Transformation;
 import com.nodotextil.trazatex.production.domain.TransformationRepository;
 import com.nodotextil.trazatex.production.domain.TransformationType;
@@ -91,12 +90,9 @@ public class StartTransformationUseCase {
     }
 
     static void validateAvailableInput(Batch batch) {
-        if (batch.operationalPhase() != OperationalPhase.AVAILABLE) {
-            throw new InvalidTransformationException("All input batches must be AVAILABLE");
-        }
-        if (batch.finalProduct()) {
+        if (!batch.isOperationallyEligible()) {
             throw new InvalidTransformationException(
-                    "A final product batch cannot be transformed");
+                    "All input batches must be AVAILABLE, non-final, and unblocked");
         }
     }
 

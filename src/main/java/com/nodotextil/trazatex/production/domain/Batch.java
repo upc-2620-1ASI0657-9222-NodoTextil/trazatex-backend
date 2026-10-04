@@ -14,7 +14,7 @@ public final class Batch {
     private final UUID id;
     private final String traceabilityId;
     private final String qrCode;
-    private final UUID responsibleCompanyId;
+    private UUID responsibleCompanyId;
     private final String supplierName;
     private final String geographicOrigin;
     private final MaterialType materialType;
@@ -29,6 +29,7 @@ public final class Batch {
     private final String currency;
     private final LocalDate commercialDate;
     private final String commercialReference;
+    private boolean operationallyBlocked;
 
     private Batch(
             UUID id,
@@ -48,7 +49,8 @@ public final class Batch {
             BigDecimal price,
             String currency,
             LocalDate commercialDate,
-            String commercialReference) {
+            String commercialReference,
+            boolean operationallyBlocked) {
         this.id = Objects.requireNonNull(id, "Batch id is required");
         this.traceabilityId = requireText(traceabilityId, "Traceability id is required");
         this.qrCode = requireText(qrCode, "QR code is required");
@@ -77,6 +79,7 @@ public final class Batch {
         this.currency = currency;
         this.commercialDate = commercialDate;
         this.commercialReference = commercialReference;
+        this.operationallyBlocked = operationallyBlocked;
     }
 
     public static Batch register(
@@ -109,7 +112,8 @@ public final class Batch {
                 null,
                 null,
                 null,
-                null);
+                null,
+                false);
     }
 
     public static Batch register(
@@ -148,7 +152,8 @@ public final class Batch {
                 price,
                 currency,
                 commercialDate,
-                commercialReference);
+                commercialReference,
+                false);
     }
 
     public static Batch reconstitute(
@@ -182,7 +187,8 @@ public final class Batch {
                 null,
                 null,
                 null,
-                null);
+                null,
+                false);
     }
 
     public static Batch reconstitute(
@@ -204,6 +210,48 @@ public final class Batch {
             String currency,
             LocalDate commercialDate,
             String commercialReference) {
+        return reconstitute(
+                id,
+                traceabilityId,
+                qrCode,
+                responsibleCompanyId,
+                supplierName,
+                geographicOrigin,
+                materialType,
+                quantityKg,
+                composition,
+                operationalPhase,
+                registeredAt,
+                receptionCharacteristics,
+                finalProduct,
+                buyerOrDistributor,
+                price,
+                currency,
+                commercialDate,
+                commercialReference,
+                false);
+    }
+
+    public static Batch reconstitute(
+            UUID id,
+            String traceabilityId,
+            String qrCode,
+            UUID responsibleCompanyId,
+            String supplierName,
+            String geographicOrigin,
+            MaterialType materialType,
+            BigDecimal quantityKg,
+            List<CompositionComponent> composition,
+            OperationalPhase operationalPhase,
+            LocalDateTime registeredAt,
+            String receptionCharacteristics,
+            boolean finalProduct,
+            String buyerOrDistributor,
+            BigDecimal price,
+            String currency,
+            LocalDate commercialDate,
+            String commercialReference,
+            boolean operationallyBlocked) {
         return new Batch(
                 id,
                 traceabilityId,
@@ -222,7 +270,8 @@ public final class Batch {
                 price,
                 currency,
                 commercialDate,
-                commercialReference);
+                commercialReference,
+                operationallyBlocked);
     }
 
     private static BigDecimal validateQuantity(BigDecimal quantityKg) {
@@ -279,25 +328,62 @@ public final class Batch {
     }
 
     public void markAsSplit() {
-        if (operationalPhase != OperationalPhase.AVAILABLE) {
-            throw new InvalidBatchException("Only an AVAILABLE batch can be split");
-        }
-        if (finalProduct) {
-            throw new InvalidBatchException("A final product batch cannot be split");
-        }
+        ensureOperationallyEligible();
         operationalPhase = OperationalPhase.SPLIT;
     }
 
     public void startTransformation() {
+        ensureOperationallyEligible();
+        operationalPhase = OperationalPhase.IN_TRANSFORMATION;
+    }
+
+    public void startTransfer() {
+        ensureOperationallyEligible();
+        operationalPhase = OperationalPhase.IN_TRANSFER;
+    }
+
+    public void acceptTransfer(UUID destinationCompanyId) {
+        ensureInTransfer();
+        responsibleCompanyId = Objects.requireNonNull(
+                destinationCompanyId, "Destination company id is required");
+        operationalPhase = OperationalPhase.AVAILABLE;
+    }
+
+    public void rejectTransfer() {
+        ensureInTransfer();
+        operationalPhase = OperationalPhase.AVAILABLE;
+    }
+
+    public boolean isOperationallyEligible() {
+        return operationalPhase == OperationalPhase.AVAILABLE
+                && !finalProduct
+                && !operationallyBlocked;
+    }
+
+    public void block() {
+        operationallyBlocked = true;
+    }
+
+    public void unblock() {
+        operationallyBlocked = false;
+    }
+
+    private void ensureOperationallyEligible() {
         if (operationalPhase != OperationalPhase.AVAILABLE) {
-            throw new InvalidBatchException(
-                    "Only an AVAILABLE batch can enter a transformation");
+            throw new InvalidBatchException("Only an AVAILABLE batch can be operated");
         }
         if (finalProduct) {
-            throw new InvalidBatchException(
-                    "A final product batch cannot enter a transformation");
+            throw new InvalidBatchException("A final product batch cannot be operated");
         }
-        operationalPhase = OperationalPhase.IN_TRANSFORMATION;
+        if (operationallyBlocked) {
+            throw new InvalidBatchException("Batch is operationally blocked");
+        }
+    }
+
+    private void ensureInTransfer() {
+        if (operationalPhase != OperationalPhase.IN_TRANSFER) {
+            throw new InvalidBatchException("Batch is not in transfer");
+        }
     }
 
     public void markAsProcessed() {
@@ -378,5 +464,9 @@ public final class Batch {
 
     public String commercialReference() {
         return commercialReference;
+    }
+
+    public boolean operationallyBlocked() {
+        return operationallyBlocked;
     }
 }

@@ -5,7 +5,6 @@ import com.nodotextil.trazatex.production.application.event.BatchSplitEvent;
 import com.nodotextil.trazatex.production.domain.Batch;
 import com.nodotextil.trazatex.production.domain.BatchRepository;
 import com.nodotextil.trazatex.production.domain.InvalidBatchException;
-import com.nodotextil.trazatex.production.domain.OperationalPhase;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -95,11 +94,9 @@ public class SplitBatchUseCase {
     }
 
     private static void validateParent(Batch parent) {
-        if (parent.operationalPhase() != OperationalPhase.AVAILABLE) {
-            throw new InvalidBatchException("Only an AVAILABLE batch can be split");
-        }
-        if (parent.finalProduct()) {
-            throw new InvalidBatchException("A final product batch cannot be split");
+        if (!parent.isOperationallyEligible()) {
+            throw new InvalidBatchException(
+                    "Only AVAILABLE, non-final, unblocked batches can be split");
         }
     }
 
