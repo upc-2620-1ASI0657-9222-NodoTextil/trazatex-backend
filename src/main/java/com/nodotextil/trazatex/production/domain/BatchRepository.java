@@ -12,6 +12,8 @@ public interface BatchRepository {
 
     Optional<Batch> findById(UUID id);
 
+    List<Batch> search(BatchSearchCriteria criteria);
+
     boolean existsByTraceabilityId(String traceabilityId);
 
     boolean existsByQrCode(String qrCode);

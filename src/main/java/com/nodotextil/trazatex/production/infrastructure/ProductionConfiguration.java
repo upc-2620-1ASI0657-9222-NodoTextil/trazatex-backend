@@ -7,6 +7,7 @@ import com.nodotextil.trazatex.production.application.GetMachineUseCase;
 import com.nodotextil.trazatex.production.application.GetTransformationUseCase;
 import com.nodotextil.trazatex.production.application.RegisterBatchUseCase;
 import com.nodotextil.trazatex.production.application.RegisterMachineUseCase;
+import com.nodotextil.trazatex.production.application.SearchBatchesUseCase;
 import com.nodotextil.trazatex.production.application.SplitBatchUseCase;
 import com.nodotextil.trazatex.production.application.StartTransformationUseCase;
 import com.nodotextil.trazatex.production.application.event.BatchEventPublisher;
@@ -37,6 +38,11 @@ public class ProductionConfiguration {
     @Bean
     GetBatchUseCase getBatchUseCase(BatchRepository batchRepository) {
         return new GetBatchUseCase(batchRepository);
+    }
+
+    @Bean
+    SearchBatchesUseCase searchBatchesUseCase(BatchRepository batchRepository) {
+        return new SearchBatchesUseCase(batchRepository);
     }
 
     @Bean
