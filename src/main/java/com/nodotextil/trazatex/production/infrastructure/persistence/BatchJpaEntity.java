@@ -15,6 +15,7 @@ import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -76,6 +77,24 @@ class BatchJpaEntity {
     @Column(name = "reception_characteristics", nullable = false, length = 2000)
     private String receptionCharacteristics;
 
+    @Column(name = "final_product", nullable = false)
+    private boolean finalProduct;
+
+    @Column(name = "buyer_or_distributor")
+    private String buyerOrDistributor;
+
+    @Column(name = "price", precision = 19, scale = 4)
+    private BigDecimal price;
+
+    @Column(name = "currency", length = 10)
+    private String currency;
+
+    @Column(name = "commercial_date")
+    private LocalDate commercialDate;
+
+    @Column(name = "commercial_reference")
+    private String commercialReference;
+
     protected BatchJpaEntity() {
     }
 
@@ -91,7 +110,13 @@ class BatchJpaEntity {
             List<CompositionComponentJpaEmbeddable> composition,
             OperationalPhase operationalPhase,
             LocalDateTime registeredAt,
-            String receptionCharacteristics) {
+            String receptionCharacteristics,
+            boolean finalProduct,
+            String buyerOrDistributor,
+            BigDecimal price,
+            String currency,
+            LocalDate commercialDate,
+            String commercialReference) {
         this.id = id;
         this.traceabilityId = traceabilityId;
         this.qrCode = qrCode;
@@ -104,6 +129,12 @@ class BatchJpaEntity {
         this.operationalPhase = operationalPhase;
         this.registeredAt = registeredAt;
         this.receptionCharacteristics = receptionCharacteristics;
+        this.finalProduct = finalProduct;
+        this.buyerOrDistributor = buyerOrDistributor;
+        this.price = price;
+        this.currency = currency;
+        this.commercialDate = commercialDate;
+        this.commercialReference = commercialReference;
     }
 
     UUID getId() {
@@ -152,5 +183,29 @@ class BatchJpaEntity {
 
     String getReceptionCharacteristics() {
         return receptionCharacteristics;
+    }
+
+    boolean isFinalProduct() {
+        return finalProduct;
+    }
+
+    String getBuyerOrDistributor() {
+        return buyerOrDistributor;
+    }
+
+    BigDecimal getPrice() {
+        return price;
+    }
+
+    String getCurrency() {
+        return currency;
+    }
+
+    LocalDate getCommercialDate() {
+        return commercialDate;
+    }
+
+    String getCommercialReference() {
+        return commercialReference;
     }
 }

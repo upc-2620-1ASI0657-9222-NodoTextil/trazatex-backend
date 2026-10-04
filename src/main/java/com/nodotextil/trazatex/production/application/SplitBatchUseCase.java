@@ -98,6 +98,9 @@ public class SplitBatchUseCase {
         if (parent.operationalPhase() != OperationalPhase.AVAILABLE) {
             throw new InvalidBatchException("Only an AVAILABLE batch can be split");
         }
+        if (parent.finalProduct()) {
+            throw new InvalidBatchException("A final product batch cannot be split");
+        }
     }
 
     private static void validateExactTotal(

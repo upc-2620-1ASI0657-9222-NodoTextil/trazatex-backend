@@ -1,6 +1,7 @@
 package com.nodotextil.trazatex.production.domain;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -22,6 +23,12 @@ public final class Batch {
     private OperationalPhase operationalPhase;
     private final LocalDateTime registeredAt;
     private final String receptionCharacteristics;
+    private final boolean finalProduct;
+    private final String buyerOrDistributor;
+    private final BigDecimal price;
+    private final String currency;
+    private final LocalDate commercialDate;
+    private final String commercialReference;
 
     private Batch(
             UUID id,
@@ -35,7 +42,13 @@ public final class Batch {
             List<CompositionComponent> composition,
             OperationalPhase operationalPhase,
             LocalDateTime registeredAt,
-            String receptionCharacteristics) {
+            String receptionCharacteristics,
+            boolean finalProduct,
+            String buyerOrDistributor,
+            BigDecimal price,
+            String currency,
+            LocalDate commercialDate,
+            String commercialReference) {
         this.id = Objects.requireNonNull(id, "Batch id is required");
         this.traceabilityId = requireText(traceabilityId, "Traceability id is required");
         this.qrCode = requireText(qrCode, "QR code is required");
@@ -51,6 +64,19 @@ public final class Batch {
         this.registeredAt = Objects.requireNonNull(registeredAt, "Registration date is required");
         this.receptionCharacteristics = requireText(
                 receptionCharacteristics, "Reception characteristics are required");
+        validateCommercialData(
+                finalProduct,
+                buyerOrDistributor,
+                price,
+                currency,
+                commercialDate,
+                commercialReference);
+        this.finalProduct = finalProduct;
+        this.buyerOrDistributor = buyerOrDistributor;
+        this.price = price;
+        this.currency = currency;
+        this.commercialDate = commercialDate;
+        this.commercialReference = commercialReference;
     }
 
     public static Batch register(
@@ -77,7 +103,52 @@ public final class Batch {
                 composition,
                 OperationalPhase.AVAILABLE,
                 registeredAt,
-                receptionCharacteristics);
+                receptionCharacteristics,
+                false,
+                null,
+                null,
+                null,
+                null,
+                null);
+    }
+
+    public static Batch register(
+            UUID id,
+            String traceabilityId,
+            String qrCode,
+            UUID responsibleCompanyId,
+            String supplierName,
+            String geographicOrigin,
+            MaterialType materialType,
+            BigDecimal quantityKg,
+            List<CompositionComponent> composition,
+            LocalDateTime registeredAt,
+            String receptionCharacteristics,
+            boolean finalProduct,
+            String buyerOrDistributor,
+            BigDecimal price,
+            String currency,
+            LocalDate commercialDate,
+            String commercialReference) {
+        return new Batch(
+                id,
+                traceabilityId,
+                qrCode,
+                responsibleCompanyId,
+                supplierName,
+                geographicOrigin,
+                materialType,
+                quantityKg,
+                composition,
+                OperationalPhase.AVAILABLE,
+                registeredAt,
+                receptionCharacteristics,
+                finalProduct,
+                buyerOrDistributor,
+                price,
+                currency,
+                commercialDate,
+                commercialReference);
     }
 
     public static Batch reconstitute(
@@ -93,6 +164,46 @@ public final class Batch {
             OperationalPhase operationalPhase,
             LocalDateTime registeredAt,
             String receptionCharacteristics) {
+        return reconstitute(
+                id,
+                traceabilityId,
+                qrCode,
+                responsibleCompanyId,
+                supplierName,
+                geographicOrigin,
+                materialType,
+                quantityKg,
+                composition,
+                operationalPhase,
+                registeredAt,
+                receptionCharacteristics,
+                false,
+                null,
+                null,
+                null,
+                null,
+                null);
+    }
+
+    public static Batch reconstitute(
+            UUID id,
+            String traceabilityId,
+            String qrCode,
+            UUID responsibleCompanyId,
+            String supplierName,
+            String geographicOrigin,
+            MaterialType materialType,
+            BigDecimal quantityKg,
+            List<CompositionComponent> composition,
+            OperationalPhase operationalPhase,
+            LocalDateTime registeredAt,
+            String receptionCharacteristics,
+            boolean finalProduct,
+            String buyerOrDistributor,
+            BigDecimal price,
+            String currency,
+            LocalDate commercialDate,
+            String commercialReference) {
         return new Batch(
                 id,
                 traceabilityId,
@@ -105,7 +216,13 @@ public final class Batch {
                 composition,
                 operationalPhase,
                 registeredAt,
-                receptionCharacteristics);
+                receptionCharacteristics,
+                finalProduct,
+                buyerOrDistributor,
+                price,
+                currency,
+                commercialDate,
+                commercialReference);
     }
 
     private static BigDecimal validateQuantity(BigDecimal quantityKg) {
@@ -138,9 +255,35 @@ public final class Batch {
         return value;
     }
 
+    private static void validateCommercialData(
+            boolean finalProduct,
+            String buyerOrDistributor,
+            BigDecimal price,
+            String currency,
+            LocalDate commercialDate,
+            String commercialReference) {
+        if (!finalProduct && (buyerOrDistributor != null
+                || price != null
+                || currency != null
+                || commercialDate != null
+                || commercialReference != null)) {
+            throw new InvalidBatchException(
+                    "Commercial data is only allowed for a final product");
+        }
+        if (price != null && price.compareTo(BigDecimal.ZERO) < 0) {
+            throw new InvalidBatchException("Price cannot be negative");
+        }
+        if (price != null && (currency == null || currency.isBlank())) {
+            throw new InvalidBatchException("Currency is required when price is provided");
+        }
+    }
+
     public void markAsSplit() {
         if (operationalPhase != OperationalPhase.AVAILABLE) {
             throw new InvalidBatchException("Only an AVAILABLE batch can be split");
+        }
+        if (finalProduct) {
+            throw new InvalidBatchException("A final product batch cannot be split");
         }
         operationalPhase = OperationalPhase.SPLIT;
     }
@@ -149,6 +292,10 @@ public final class Batch {
         if (operationalPhase != OperationalPhase.AVAILABLE) {
             throw new InvalidBatchException(
                     "Only an AVAILABLE batch can enter a transformation");
+        }
+        if (finalProduct) {
+            throw new InvalidBatchException(
+                    "A final product batch cannot enter a transformation");
         }
         operationalPhase = OperationalPhase.IN_TRANSFORMATION;
     }
@@ -207,5 +354,29 @@ public final class Batch {
 
     public String receptionCharacteristics() {
         return receptionCharacteristics;
+    }
+
+    public boolean finalProduct() {
+        return finalProduct;
+    }
+
+    public String buyerOrDistributor() {
+        return buyerOrDistributor;
+    }
+
+    public BigDecimal price() {
+        return price;
+    }
+
+    public String currency() {
+        return currency;
+    }
+
+    public LocalDate commercialDate() {
+        return commercialDate;
+    }
+
+    public String commercialReference() {
+        return commercialReference;
     }
 }

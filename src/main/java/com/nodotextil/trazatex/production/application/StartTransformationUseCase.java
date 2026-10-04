@@ -94,6 +94,10 @@ public class StartTransformationUseCase {
         if (batch.operationalPhase() != OperationalPhase.AVAILABLE) {
             throw new InvalidTransformationException("All input batches must be AVAILABLE");
         }
+        if (batch.finalProduct()) {
+            throw new InvalidTransformationException(
+                    "A final product batch cannot be transformed");
+        }
     }
 
     public record Command(

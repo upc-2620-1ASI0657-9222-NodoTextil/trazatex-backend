@@ -58,7 +58,13 @@ public class TransformationController {
                                         output.quantityKg(),
                                         output.materialType(),
                                         output.geographicOrigin(),
-                                        output.receptionCharacteristics()))
+                                        output.receptionCharacteristics(),
+                                        output.finalProduct(),
+                                        output.buyerOrDistributor(),
+                                        output.price(),
+                                        output.currency(),
+                                        output.commercialDate(),
+                                        output.commercialReference()))
                                 .toList(),
                         request.wasteKg(),
                         request.wasteReason());

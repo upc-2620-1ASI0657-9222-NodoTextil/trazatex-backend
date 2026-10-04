@@ -4,6 +4,7 @@ import com.nodotextil.trazatex.production.domain.Batch;
 import com.nodotextil.trazatex.production.domain.MaterialType;
 import com.nodotextil.trazatex.production.domain.OperationalPhase;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -20,7 +21,13 @@ public record BatchResponse(
         List<CompositionComponentResponse> composition,
         OperationalPhase operationalPhase,
         LocalDateTime registeredAt,
-        String receptionCharacteristics) {
+        String receptionCharacteristics,
+        boolean finalProduct,
+        String buyerOrDistributor,
+        BigDecimal price,
+        String currency,
+        LocalDate commercialDate,
+        String commercialReference) {
 
     static BatchResponse from(Batch batch) {
         return new BatchResponse(
@@ -38,7 +45,13 @@ public record BatchResponse(
                         .toList(),
                 batch.operationalPhase(),
                 batch.registeredAt(),
-                batch.receptionCharacteristics());
+                batch.receptionCharacteristics(),
+                batch.finalProduct(),
+                batch.buyerOrDistributor(),
+                batch.price(),
+                batch.currency(),
+                batch.commercialDate(),
+                batch.commercialReference());
     }
 
     public record CompositionComponentResponse(String material, BigDecimal percentage) {

@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 public record CompleteTransformationRequest(
@@ -18,6 +19,12 @@ public record CompleteTransformationRequest(
             @NotNull @DecimalMin(value = "0", inclusive = false) BigDecimal quantityKg,
             @NotNull MaterialType materialType,
             @NotBlank String geographicOrigin,
-            @NotBlank String receptionCharacteristics) {
+            @NotBlank String receptionCharacteristics,
+            boolean finalProduct,
+            String buyerOrDistributor,
+            @DecimalMin("0") BigDecimal price,
+            String currency,
+            LocalDate commercialDate,
+            String commercialReference) {
     }
 }

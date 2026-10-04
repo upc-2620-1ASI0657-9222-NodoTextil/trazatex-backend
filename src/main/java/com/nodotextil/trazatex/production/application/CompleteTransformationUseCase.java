@@ -14,6 +14,7 @@ import com.nodotextil.trazatex.production.domain.strategy.TransformationStrategy
 import com.nodotextil.trazatex.production.domain.strategy.TransformationStrategyFactory;
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -85,7 +86,13 @@ public class CompleteTransformationUseCase {
                         output.quantityKg(),
                         outputComposition,
                         completedAt,
-                        output.receptionCharacteristics()))
+                        output.receptionCharacteristics(),
+                        output.finalProduct(),
+                        output.buyerOrDistributor(),
+                        output.price(),
+                        output.currency(),
+                        output.commercialDate(),
+                        output.commercialReference()))
                 .toList();
 
         BigDecimal totalOutputKg = outputs.stream()
@@ -169,7 +176,31 @@ public class CompleteTransformationUseCase {
             BigDecimal quantityKg,
             MaterialType materialType,
             String geographicOrigin,
-            String receptionCharacteristics) {
+            String receptionCharacteristics,
+            boolean finalProduct,
+            String buyerOrDistributor,
+            BigDecimal price,
+            String currency,
+            LocalDate commercialDate,
+            String commercialReference) {
+
+        public OutputCommand(
+                BigDecimal quantityKg,
+                MaterialType materialType,
+                String geographicOrigin,
+                String receptionCharacteristics) {
+            this(
+                    quantityKg,
+                    materialType,
+                    geographicOrigin,
+                    receptionCharacteristics,
+                    false,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null);
+        }
     }
 
     public record Result(Transformation transformation, List<Batch> outputs) {

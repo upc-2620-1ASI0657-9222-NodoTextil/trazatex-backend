@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.nodotextil.trazatex.production.domain.Batch;
 import com.nodotextil.trazatex.production.domain.CompositionComponent;
+import com.nodotextil.trazatex.production.domain.InvalidBatchException;
 import com.nodotextil.trazatex.production.domain.InvalidTransformationException;
 import com.nodotextil.trazatex.production.domain.Machine;
 import com.nodotextil.trazatex.production.domain.MachineRepository;
@@ -25,6 +26,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
@@ -233,6 +235,76 @@ class TransformationUseCasesTest {
         assertThat(transformation.isCompleted()).isFalse();
     }
 
+    @Test
+    void createsValidFinalProduct() {
+        Batch input = createInput();
+        Transformation transformation = start(List.of(input.id()));
+
+        Batch output = completeFinalProduct(
+                transformation, null, null, null, null, null).outputs().getFirst();
+
+        assertThat(output.finalProduct()).isTrue();
+        assertThat(output.buyerOrDistributor()).isNull();
+        assertThat(output.price()).isNull();
+    }
+
+    @Test
+    void createsFinalProductWithPriceAndCurrency() {
+        Batch input = createInput();
+        Transformation transformation = start(List.of(input.id()));
+        LocalDate commercialDate = LocalDate.of(2026, 4, 10);
+
+        Batch output = completeFinalProduct(
+                transformation,
+                "Andean Distributor",
+                new BigDecimal("1450.50"),
+                "PEN",
+                commercialDate,
+                "SALE-2026-001").outputs().getFirst();
+
+        assertThat(output.finalProduct()).isTrue();
+        assertThat(output.buyerOrDistributor()).isEqualTo("Andean Distributor");
+        assertThat(output.price()).isEqualByComparingTo("1450.50");
+        assertThat(output.currency()).isEqualTo("PEN");
+        assertThat(output.commercialDate()).isEqualTo(commercialDate);
+        assertThat(output.commercialReference()).isEqualTo("SALE-2026-001");
+    }
+
+    @Test
+    void rejectsFinalProductPriceWithoutCurrency() {
+        Batch input = createInput();
+        Transformation transformation = start(List.of(input.id()));
+
+        assertThatThrownBy(() -> completeFinalProduct(
+                transformation,
+                "Buyer",
+                new BigDecimal("100"),
+                null,
+                LocalDate.of(2026, 4, 10),
+                "SALE-INVALID"))
+                .isInstanceOf(InvalidBatchException.class)
+                .hasMessageContaining("Currency");
+
+        assertThat(input.operationalPhase()).isEqualTo(OperationalPhase.IN_TRANSFORMATION);
+        assertThat(transformation.isCompleted()).isFalse();
+    }
+
+    @Test
+    void rejectsProductiveOperationsOnFinalProduct() {
+        Batch input = createInput();
+        Transformation transformation = start(List.of(input.id()));
+        Batch finalProduct = completeFinalProduct(
+                transformation, null, null, null, null, null).outputs().getFirst();
+
+        assertThatThrownBy(finalProduct::markAsSplit)
+                .isInstanceOf(InvalidBatchException.class)
+                .hasMessageContaining("final product");
+        assertThatThrownBy(finalProduct::startTransformation)
+                .isInstanceOf(InvalidBatchException.class)
+                .hasMessageContaining("final product");
+        assertThat(finalProduct.operationalPhase()).isEqualTo(OperationalPhase.AVAILABLE);
+    }
+
     private Batch createInput() {
         RegisterBatchUseCase registerUseCase =
                 new RegisterBatchUseCase(batchRepository, FIXED_CLOCK);
@@ -282,6 +354,37 @@ class TransformationUseCasesTest {
                                 "Transformation output")),
                         wasteKg,
                         wasteReason));
+    }
+
+    private CompleteTransformationUseCase.Result completeFinalProduct(
+            Transformation transformation,
+            String buyerOrDistributor,
+            BigDecimal price,
+            String currency,
+            LocalDate commercialDate,
+            String commercialReference) {
+        CompleteTransformationUseCase useCase = new CompleteTransformationUseCase(
+                transformationRepository,
+                batchRepository,
+                eventPublisher,
+                strategyFactory(),
+                FIXED_CLOCK);
+        return useCase.execute(
+                transformation.id(),
+                new CompleteTransformationUseCase.Command(
+                        List.of(new CompleteTransformationUseCase.OutputCommand(
+                                new BigDecimal("90"),
+                                MaterialType.GARMENT,
+                                "Lima, Peru",
+                                "Finished garment",
+                                true,
+                                buyerOrDistributor,
+                                price,
+                                currency,
+                                commercialDate,
+                                commercialReference)),
+                        BigDecimal.ZERO,
+                        null));
     }
 
     private TransformationStrategyFactory strategyFactory() {

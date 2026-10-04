@@ -24,7 +24,13 @@ final class BatchJpaMapper {
                         .toList(),
                 batch.operationalPhase(),
                 batch.registeredAt(),
-                batch.receptionCharacteristics());
+                batch.receptionCharacteristics(),
+                batch.finalProduct(),
+                batch.buyerOrDistributor(),
+                batch.price(),
+                batch.currency(),
+                batch.commercialDate(),
+                batch.commercialReference());
     }
 
     static Batch toDomain(BatchJpaEntity entity) {
@@ -43,6 +49,12 @@ final class BatchJpaMapper {
                         .toList(),
                 entity.getOperationalPhase(),
                 entity.getRegisteredAt(),
-                entity.getReceptionCharacteristics());
+                entity.getReceptionCharacteristics(),
+                entity.isFinalProduct(),
+                entity.getBuyerOrDistributor(),
+                entity.getPrice(),
+                entity.getCurrency(),
+                entity.getCommercialDate(),
+                entity.getCommercialReference());
     }
 }
