@@ -55,7 +55,7 @@ public class NotificationEventListener {
     public void transferRejected(TransferRejectedEvent event) {
         organizationAccess.activeUserIdsByCompanyAndRole(event.sourceCompanyId(), COMPANY_ADMIN_ROLE)
                 .forEach(user -> createNotification.create(user, NotificationType.TRANSFER_REJECTED,
-                        "Transfer rejected", "Transfer " + event.transferId() + " rejected: " + event.reason()));
+                        "Transfer rejected", "Transfer " + event.transferId() + " rejected: " + event.rejectionReason()));
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
