@@ -1,11 +1,38 @@
 package com.nodotextil.trazatex.analytics.application;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Map;
 import java.util.UUID;
 
-/**
- * PLACEHOLDER added by the integration branch: the real class is missing from every feature branch.
- * It carries no metrics yet. The analytics owner must replace it with the real summary.
- */
-public record AnalyticsSummary(UUID companyId, LocalDate from, LocalDate to) {
+public record AnalyticsSummary(
+        UUID companyId,
+        LocalDate from,
+        LocalDate to,
+        QualityIndicators quality,
+        FailureIndicators failures,
+        OperationalTimeIndicators operationalTimes,
+        MaterialLossIndicators materialLosses) {
+
+    public record QualityIndicators(
+            long totalLots,
+            Map<String, Long> countsByStatus,
+            Map<String, BigDecimal> percentagesByStatus) {
+    }
+
+    public record FailureIndicators(
+            long totalFailures,
+            Map<String, Long> causes) {
+    }
+
+    public record OperationalTimeIndicators(
+            BigDecimal averageTransformationMinutes,
+            BigDecimal averageTransferMinutes,
+            BigDecimal averageQualityControlMinutes) {
+    }
+
+    public record MaterialLossIndicators(
+            BigDecimal totalShrinkageKg,
+            BigDecimal totalWasteKg) {
+    }
 }

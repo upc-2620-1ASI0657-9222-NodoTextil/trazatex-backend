@@ -3,6 +3,7 @@ package com.nodotextil.trazatex.analytics.infrastructure;
 import com.nodotextil.trazatex.analytics.domain.PdfGeneratorPort;
 import com.nodotextil.trazatex.analytics.domain.ReportTest;
 import com.nodotextil.trazatex.shared.external.ExternalServiceException;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -28,8 +29,8 @@ public class PdfMonkeyAdapter implements PdfGeneratorPort {
             throw new ExternalServiceException("PDFMonkey configuration is required");
         }
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(Duration.ofSeconds(5));
-        factory.setReadTimeout(Duration.ofSeconds(20));
+        factory.setConnectTimeout(Duration.ofSeconds(4));
+        factory.setReadTimeout(Duration.ofSeconds(4));
         this.client = RestClient.builder()
                 .baseUrl("https://api.pdfmonkey.io/api/v1")
                 .requestFactory(factory)
@@ -39,6 +40,7 @@ public class PdfMonkeyAdapter implements PdfGeneratorPort {
     }
 
     @Override
+    @CircuitBreaker(name = "pdfmonkey")
     @SuppressWarnings("unchecked")
     public GeneratedPdf generateQualityControlReport(UUID controlId, List<ReportTest> tests) {
         try {

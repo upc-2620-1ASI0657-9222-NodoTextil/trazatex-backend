@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-/** DEV-only delivery adapter. Replace with a real provider such as SendGrid later. */
+
 @Component
 @ConditionalOnProperty(name = "app.external-services.enabled", havingValue = "false", matchIfMissing = true)
 public class DevEmailSenderAdapter implements EmailSenderPort {
