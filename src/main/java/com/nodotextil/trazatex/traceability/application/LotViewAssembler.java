@@ -28,6 +28,7 @@ public final class LotViewAssembler {
                 lot.responsibleCompanyId(),
                 lot.materialType(),
                 lot.operationalPhase(),
+                lot.qualityStatus(),
                 lot.finalProduct(),
                 lot.registeredAt(),
                 visibleData);

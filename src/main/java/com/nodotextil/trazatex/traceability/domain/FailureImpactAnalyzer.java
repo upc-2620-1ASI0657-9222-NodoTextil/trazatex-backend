@@ -22,8 +22,8 @@ public final class FailureImpactAnalyzer {
         while (!queue.isEmpty()) {
             UUID current = queue.poll();
             for (LineageEdge edge : edgesByParent.getOrDefault(current, List.of())) {
-                if (visited.add(edge.childBatchId())) {
-                    reached.put(edge.childBatchId(), reasonOf(edge.type()));
+                if (edge.type() == LineageType.DIVISION && visited.add(edge.childBatchId())) {
+                    reached.put(edge.childBatchId(), AffectedLot.Reason.DIVISION_BRANCH);
                     queue.add(edge.childBatchId());
                 }
             }
@@ -55,10 +55,4 @@ public final class FailureImpactAnalyzer {
         return result;
     }
 
-    private static AffectedLot.Reason reasonOf(LineageType type) {
-        return switch (type) {
-            case DIVISION -> AffectedLot.Reason.DIVISION_BRANCH;
-            case TRANSFORMATION -> AffectedLot.Reason.TRANSFORMATION_OUTPUT;
-        };
-    }
 }

@@ -10,7 +10,29 @@ public record LotView(
         UUID responsibleCompanyId,
         String materialType,
         String operationalPhase,
+        String qualityStatus,
         boolean finalProduct,
         LocalDateTime registeredAt,
         Map<String, Object> sharedData) {
+
+    public LotView(
+            UUID batchId,
+            String traceabilityId,
+            UUID responsibleCompanyId,
+            String materialType,
+            String operationalPhase,
+            boolean finalProduct,
+            LocalDateTime registeredAt,
+            Map<String, Object> sharedData) {
+        this(
+                batchId,
+                traceabilityId,
+                responsibleCompanyId,
+                materialType,
+                operationalPhase,
+                "NOT_REVIEWED",
+                finalProduct,
+                registeredAt,
+                sharedData);
+    }
 }

@@ -1,5 +1,6 @@
 package com.nodotextil.trazatex.traceability.infrastructure;
 
+import com.nodotextil.trazatex.organizationaccess.application.contract.OrganizationAccess;
 import com.nodotextil.trazatex.traceability.application.GetLineageUseCase;
 import com.nodotextil.trazatex.traceability.application.RecordLineageUseCase;
 import com.nodotextil.trazatex.traceability.application.GetSharedLineageUseCase;
@@ -32,14 +33,17 @@ public class TraceabilityConfiguration {
     GetSharedLineageUseCase getSharedLineageUseCase(
             GetLineageUseCase getLineageUseCase,
             BatchInfoPort batchInfo,
-            PrivacySettingsPort privacySettings) {
-        return new GetSharedLineageUseCase(getLineageUseCase, batchInfo, privacySettings);
+            PrivacySettingsPort privacySettings,
+            OrganizationAccess organizationAccess) {
+        return new GetSharedLineageUseCase(getLineageUseCase, batchInfo, privacySettings, organizationAccess);
     }
 
     @Bean
     SearchLineageUseCase searchLineageUseCase(
-            BatchInfoPort batchInfo, PrivacySettingsPort privacySettings) {
-        return new SearchLineageUseCase(batchInfo, privacySettings);
+            BatchInfoPort batchInfo,
+            PrivacySettingsPort privacySettings,
+            OrganizationAccess organizationAccess) {
+        return new SearchLineageUseCase(batchInfo, privacySettings, organizationAccess);
     }
 
     @Bean

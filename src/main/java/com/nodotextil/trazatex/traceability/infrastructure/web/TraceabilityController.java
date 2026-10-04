@@ -1,5 +1,6 @@
 package com.nodotextil.trazatex.traceability.infrastructure.web;
 
+import com.nodotextil.trazatex.shared.security.AuthenticatedUser;
 import com.nodotextil.trazatex.traceability.application.GetSharedLineageUseCase;
 import com.nodotextil.trazatex.traceability.application.LineageDirection;
 import com.nodotextil.trazatex.traceability.application.SearchLineageUseCase;
@@ -7,6 +8,7 @@ import com.nodotextil.trazatex.traceability.application.view.LineageView;
 import com.nodotextil.trazatex.traceability.application.view.LotView;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/traceability")
+@PreAuthorize("hasAnyRole('COMPANY_ADMIN','OPERATOR')")
 public class TraceabilityController {
 
     private final GetSharedLineageUseCase getSharedLineageUseCase;
@@ -31,26 +34,24 @@ public class TraceabilityController {
 
     @GetMapping("/lineages")
     public List<LotView> search(@RequestParam String qrCode, @AuthenticationPrincipal Jwt jwt) {
-        return searchLineageUseCase.byQrCode(qrCode, companyOf(jwt));
+        return searchLineageUseCase.byQrCode(qrCode, AuthenticatedUser.from(jwt).requireCompanyId());
     }
 
     @GetMapping("/batches/{batchId}/ancestors")
     public LineageView ancestors(@PathVariable UUID batchId, @AuthenticationPrincipal Jwt jwt) {
-        return getSharedLineageUseCase.execute(batchId, companyOf(jwt), LineageDirection.BACKWARD);
+        return getSharedLineageUseCase.execute(
+                batchId, AuthenticatedUser.from(jwt).requireCompanyId(), LineageDirection.BACKWARD);
     }
 
     @GetMapping("/batches/{batchId}/descendants")
     public LineageView descendants(@PathVariable UUID batchId, @AuthenticationPrincipal Jwt jwt) {
-        return getSharedLineageUseCase.execute(batchId, companyOf(jwt), LineageDirection.FORWARD);
+        return getSharedLineageUseCase.execute(
+                batchId, AuthenticatedUser.from(jwt).requireCompanyId(), LineageDirection.FORWARD);
     }
 
     @GetMapping("/batches/{batchId}/lineage")
     public LineageView lineage(@PathVariable UUID batchId, @AuthenticationPrincipal Jwt jwt) {
-        return getSharedLineageUseCase.execute(batchId, companyOf(jwt), LineageDirection.FULL);
-    }
-
-    private static UUID companyOf(Jwt jwt) {
-        String companyId = jwt.getClaimAsString("companyId");
-        return companyId == null ? null : UUID.fromString(companyId);
+        return getSharedLineageUseCase.execute(
+                batchId, AuthenticatedUser.from(jwt).requireCompanyId(), LineageDirection.FULL);
     }
 }
