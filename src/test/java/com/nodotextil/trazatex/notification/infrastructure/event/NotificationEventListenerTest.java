@@ -9,10 +9,12 @@ import com.nodotextil.trazatex.notification.application.DeliverInvitationEmailUs
 import com.nodotextil.trazatex.notification.domain.NotificationType;
 import com.nodotextil.trazatex.organizationaccess.application.contract.OrganizationAccess;
 import com.nodotextil.trazatex.organizationaccess.application.event.InvitationCreatedEvent;
+import com.nodotextil.trazatex.production.application.contract.BatchSnapshot;
+import com.nodotextil.trazatex.production.application.contract.BatchSnapshotQuery;
 import com.nodotextil.trazatex.production.application.event.TransferAcceptedEvent;
 import com.nodotextil.trazatex.production.application.event.TransferRejectedEvent;
 import com.nodotextil.trazatex.production.application.event.TransferStartedEvent;
-import com.nodotextil.trazatex.traceability.application.event.PotentialDerivedFailureDetectedEvent;
+import com.nodotextil.trazatex.traceability.application.event.PossibleDerivedFailureDetectedEvent;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +27,7 @@ class NotificationEventListenerTest {
     private CreateNotificationUseCase createNotification;
     private DeliverInvitationEmailUseCase deliverInvitationEmail;
     private OrganizationAccess organizations;
+    private BatchSnapshotQuery batchSnapshots;
     private NotificationEventListener listener;
     private UUID source, destination, user;
 
@@ -32,7 +35,8 @@ class NotificationEventListenerTest {
         createNotification = mock(CreateNotificationUseCase.class);
         deliverInvitationEmail = mock(DeliverInvitationEmailUseCase.class);
         organizations = mock(OrganizationAccess.class);
-        listener = new NotificationEventListener(createNotification, deliverInvitationEmail, organizations);
+        batchSnapshots = mock(BatchSnapshotQuery.class);
+        listener = new NotificationEventListener(createNotification, deliverInvitationEmail, organizations, batchSnapshots);
         source = UUID.randomUUID(); destination = UUID.randomUUID(); user = UUID.randomUUID();
     }
 
@@ -75,7 +79,9 @@ class NotificationEventListenerTest {
         UUID batch = UUID.randomUUID();
         when(organizations.activeUserIdsByCompanyAndRole(eq(destination), eq("COMPANY_ADMIN"))).thenReturn(List.of(user));
         UUID failure = UUID.randomUUID();
-        listener.potentialDerivedFailure(new PotentialDerivedFailureDetectedEvent(failure, UUID.randomUUID(), List.of(batch), UUID.randomUUID(), source, LocalDateTime.now(), Map.of(batch, destination)));
+        when(batchSnapshots.findAllByIds(List.of(batch))).thenReturn(List.of(new BatchSnapshot(
+                batch, "TRZ-1", "qr", destination, "COTTON", "SPINNING", false, LocalDateTime.now(), Map.of())));
+        listener.potentialDerivedFailure(new PossibleDerivedFailureDetectedEvent(failure, UUID.randomUUID(), List.of(batch), LocalDateTime.now()));
         verify(createNotification).create(user, NotificationType.POTENTIAL_DERIVED_FAILURE, "Potential derived failure", "Batch " + batch + " may be affected by failure " + failure);
     }
 }
