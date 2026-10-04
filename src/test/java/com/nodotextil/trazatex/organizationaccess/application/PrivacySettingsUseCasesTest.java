@@ -55,7 +55,7 @@ class PrivacySettingsUseCasesTest {
 				.visibility();
 	}
 
-	// ---- reading
+	
 
 	@Test
 	void showsEveryFieldWithItsCategoryAndEffectiveVisibility() {
@@ -83,7 +83,7 @@ class PrivacySettingsUseCasesTest {
 						.isEqualTo(PrivacyVisibility.PRIVATE));
 	}
 
-	// ---- changing
+	
 
 	@Test
 	void anAdministratorSharesConfigurableFieldsAndGetsTheFullConfigurationBack() {
@@ -176,7 +176,7 @@ class PrivacySettingsUseCasesTest {
 		assertThat(settings.findByCompanyId(companyB)).hasSize(1);
 	}
 
-	// ---- who can
+	
 
 	@Test
 	void operatorsLicenseOwnersInactiveAdministratorsAndStrangersCannotReadOrChange() {
@@ -199,7 +199,7 @@ class PrivacySettingsUseCasesTest {
 		assertThat(audit.changes).isEmpty();
 	}
 
-	// ---- audit
+	
 
 	@Test
 	void everyRealChangeIsAudited() {
@@ -229,7 +229,7 @@ class PrivacySettingsUseCasesTest {
 		int audited = audit.changes.size();
 
 		update.execute(adminA.id(), List.of(share(PrivacyField.QUANTITY)));
-		update.execute(adminA.id(), List.of(hide(PrivacyField.WASTE))); // already private
+		update.execute(adminA.id(), List.of(hide(PrivacyField.WASTE))); 
 
 		assertThat(settings.saveAllCalls).isEqualTo(writes);
 		assertThat(audit.changes).hasSize(audited);

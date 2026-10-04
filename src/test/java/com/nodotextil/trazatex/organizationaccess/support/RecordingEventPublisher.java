@@ -5,7 +5,7 @@ import com.nodotextil.trazatex.organizationaccess.application.port.OrganizationE
 import java.util.ArrayList;
 import java.util.List;
 
-/** Keeps the published events so tests can inspect them. */
+
 public class RecordingEventPublisher implements OrganizationEventPublisher {
 
 	public final List<InvitationCreatedEvent> invitationCreated = new ArrayList<>();

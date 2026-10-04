@@ -3,7 +3,7 @@ package com.nodotextil.trazatex.organizationaccess.domain;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
-/** Small input-normalization helpers shared by the domain classes. */
+
 final class DomainText {
 
 	private static final Pattern EMAIL = Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");

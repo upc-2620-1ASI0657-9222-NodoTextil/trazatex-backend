@@ -4,7 +4,7 @@ import com.nodotextil.trazatex.organizationaccess.application.port.LicenseReposi
 import com.nodotextil.trazatex.organizationaccess.domain.License;
 import java.util.Optional;
 
-/** In-memory double of the license port for tests. */
+
 public class InMemoryLicenseRepository implements LicenseRepository {
 
 	private License license;

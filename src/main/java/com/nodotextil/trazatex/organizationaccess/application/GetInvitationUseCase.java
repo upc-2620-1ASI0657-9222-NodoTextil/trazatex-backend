@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Shows an invitation by its token so the account-creation form can be pre-filled. */
+
 @Service
 public class GetInvitationUseCase {
 
@@ -42,7 +42,7 @@ public class GetInvitationUseCase {
 				invitation.effectiveStatusAt(LocalDateTime.now(clock)));
 	}
 
-	/** {@code status} already reflects an expiry that the scheduled job has not applied yet. */
+	
 	public record InvitationView(Invitation invitation, String companyLegalName,
 			InvitationStatus status) {
 	}

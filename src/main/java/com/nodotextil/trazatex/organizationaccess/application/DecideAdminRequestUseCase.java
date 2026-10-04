@@ -13,11 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * The license owner approves or rejects an administrator request (RF-011). Approving needs a free
- * seat in the company; it then creates the administrator invitation with the first name, last name
- * and job title of the request. If there is no seat the request stays pending.
- */
+
 @Service
 public class DecideAdminRequestUseCase {
 
@@ -54,7 +50,7 @@ public class DecideAdminRequestUseCase {
 		return new Decision(adminRequests.save(approved), Optional.of(invitation));
 	}
 
-	/** {@code invitation} is present only when the request was approved. */
+	
 	public record Decision(AdminRequest request, Optional<Invitation> invitation) {
 	}
 }

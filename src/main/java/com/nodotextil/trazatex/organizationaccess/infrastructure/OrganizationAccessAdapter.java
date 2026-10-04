@@ -12,7 +12,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Implements the {@link OrganizationAccess} contract on top of the module's ports. */
+
 @Component
 @Transactional(readOnly = true)
 class OrganizationAccessAdapter implements OrganizationAccess {

@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.UUID;
 
-/** Builders for the domain objects tests need. */
+
 public final class TestData {
 
 	public static final LocalDateTime NOW = LocalDateTime.of(2026, 10, 1, 9, 0);

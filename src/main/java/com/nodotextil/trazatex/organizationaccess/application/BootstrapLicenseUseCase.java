@@ -13,10 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Development bootstrap: creates the license and its {@code LICENSE_OWNER} when they do not
- * exist yet. Safe to run on every start.
- */
+
 @Service
 public class BootstrapLicenseUseCase {
 

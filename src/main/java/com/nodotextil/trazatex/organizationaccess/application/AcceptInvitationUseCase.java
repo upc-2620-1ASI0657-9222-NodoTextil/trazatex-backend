@@ -16,13 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Creates the user's account from an invitation (RF-006, RF-007). The invitation must be pending
- * and not expired. The password and its confirmation must match, have at least 12 characters and
- * not appear in a known breach; the breach check runs last, after the cheap validations. The first
- * and last name come from the request or, if absent, from the invitation; the job title always
- * comes from the invitation.
- */
+
 @Service
 public class AcceptInvitationUseCase {
 

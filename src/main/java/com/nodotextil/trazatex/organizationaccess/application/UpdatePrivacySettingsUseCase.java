@@ -24,12 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * An active company administrator changes how their own company shares its configurable fields
- * (RF-017). Only {@code CONFIGURABLE} fields can change: if any requested field is not, the whole
- * request is rejected and nothing is saved. Each real change is recorded in the audit trail. The
- * company is always the administrator's own, never one sent by the caller.
- */
+
 @Service
 public class UpdatePrivacySettingsUseCase {
 
@@ -80,7 +75,7 @@ public class UpdatePrivacySettingsUseCase {
 		return GetPrivacySettingsUseCase.viewOf(settings.findByCompanyId(companyId));
 	}
 
-	/** Builds every setting first, so a single invalid one rejects the whole request. */
+	
 	private static List<CompanyPrivacySetting> validate(UUID companyId,
 			List<Requested> requested) {
 		if (requested == null || requested.isEmpty()) {

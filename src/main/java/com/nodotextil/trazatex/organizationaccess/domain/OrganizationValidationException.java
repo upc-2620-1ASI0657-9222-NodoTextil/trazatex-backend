@@ -2,7 +2,7 @@ package com.nodotextil.trazatex.organizationaccess.domain;
 
 import java.util.Map;
 
-/** A business or input rule was violated (HTTP 400). */
+
 public class OrganizationValidationException extends OrganizationAccessException {
 
 	private final Map<String, String> fieldErrors;

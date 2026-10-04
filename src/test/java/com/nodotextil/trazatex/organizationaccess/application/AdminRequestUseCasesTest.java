@@ -61,7 +61,7 @@ class AdminRequestUseCasesTest {
 		return create.execute(admin.id(), "Rosa", "Diaz", "rosa@example.com", "Manager");
 	}
 
-	// ---- creating requests (RF-010)
+	
 
 	@Test
 	void anAdministratorRequestsAnotherAdministratorForTheirCompany() {
@@ -140,7 +140,7 @@ class AdminRequestUseCasesTest {
 				"rosa@example.com", "Manager")).isInstanceOf(OrganizationAccessDeniedException.class);
 	}
 
-	// ---- deciding (RF-011)
+	
 
 	@Test
 	void approvingCreatesTheAdministratorInvitationInheritingTheRequestData() {
@@ -167,7 +167,7 @@ class AdminRequestUseCasesTest {
 
 	@Test
 	void approvingWithoutASeatFailsAndLeavesTheRequestPending() {
-		setUp(1); // the existing administrator already takes the only seat
+		setUp(1); 
 		AdminRequest request = request();
 
 		assertThatThrownBy(() -> decide.execute(request.id(), true, ownerId))

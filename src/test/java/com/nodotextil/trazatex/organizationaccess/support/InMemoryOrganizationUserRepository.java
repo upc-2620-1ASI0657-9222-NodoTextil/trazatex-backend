@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-/** In-memory double of the user port for tests. */
+
 public class InMemoryOrganizationUserRepository implements OrganizationUserRepository {
 
 	private final Map<UUID, OrganizationUser> store = new LinkedHashMap<>();

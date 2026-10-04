@@ -14,11 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-/**
- * Maps this module's exceptions to HTTP. It only handles the module's own exceptions; Spring's
- * generic ones (bean validation, malformed body, access denied) are left to the global handler.
- * The body has the same shape as the shared kernel's {@code ApiError}.
- */
+
 @RestControllerAdvice(basePackages = "com.nodotextil.trazatex.organizationaccess.interfaces.rest")
 public class OrganizationAccessExceptionHandler {
 

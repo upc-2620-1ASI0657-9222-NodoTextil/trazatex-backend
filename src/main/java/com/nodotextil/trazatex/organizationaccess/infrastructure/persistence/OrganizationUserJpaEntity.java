@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "organization_access_users",
+@Table(schema = "organization_access", name = "organization_access_users",
 		indexes = @Index(name = "idx_oa_users_company", columnList = "company_id"))
 class OrganizationUserJpaEntity {
 

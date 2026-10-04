@@ -12,7 +12,7 @@ public interface OrganizationUserRepository {
 
 	Optional<OrganizationUser> findById(UUID id);
 
-	/** Case-insensitive: emails are stored normalized to lower case. */
+	
 	Optional<OrganizationUser> findByEmail(String email);
 
 	List<OrganizationUser> findByCompanyId(UUID companyId);

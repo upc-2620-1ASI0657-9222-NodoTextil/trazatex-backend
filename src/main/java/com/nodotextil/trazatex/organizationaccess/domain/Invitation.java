@@ -4,14 +4,10 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-/**
- * An invitation to join a company as {@link Role#COMPANY_ADMIN} or {@link Role#OPERATOR}.
- * The person's names and job title are optional here; the use cases decide when they are
- * mandatory.
- */
+
 public final class Invitation {
 
-	/** A pending invitation expires this long after it was created (RF-005). */
+	
 	public static final Duration VALIDITY = Duration.ofDays(7);
 
 	private final UUID id;
@@ -48,7 +44,7 @@ public final class Invitation {
 		this.status = DomainText.notNull(status, "status");
 	}
 
-	/** A new pending invitation that expires {@link #VALIDITY} after {@code now}. */
+	
 	public static Invitation issue(String email, UUID companyId, Role role, String token,
 			String firstName, String lastName, String jobTitle, UUID createdByUserId,
 			LocalDateTime now) {
@@ -61,12 +57,12 @@ public final class Invitation {
 		return !expiresAt.isAfter(now);
 	}
 
-	/** Pending and not yet expired: the only state in which it can be accepted or cancelled. */
+	
 	public boolean isUsableAt(LocalDateTime now) {
 		return status == InvitationStatus.PENDING && !hasExpiredAt(now);
 	}
 
-	/** The status as seen at {@code now}: a pending invitation past its expiry is expired. */
+	
 	public InvitationStatus effectiveStatusAt(LocalDateTime now) {
 		return status == InvitationStatus.PENDING && hasExpiredAt(now)
 				? InvitationStatus.EXPIRED : status;
@@ -84,7 +80,7 @@ public final class Invitation {
 		return transitionTo(InvitationStatus.EXPIRED);
 	}
 
-	/** Only a pending invitation changes status; the others are final. */
+	
 	private Invitation transitionTo(InvitationStatus next) {
 		if (status != InvitationStatus.PENDING) {
 			throw new OrganizationConflictException(

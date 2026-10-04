@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/** In-memory double of the privacy-setting port for tests; counts the writes it receives. */
+
 public class InMemoryPrivacySettingRepository implements PrivacySettingRepository {
 
 	private final Map<String, CompanyPrivacySetting> store = new LinkedHashMap<>();

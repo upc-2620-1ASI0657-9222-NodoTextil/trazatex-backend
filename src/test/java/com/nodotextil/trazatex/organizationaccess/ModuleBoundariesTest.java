@@ -18,12 +18,7 @@ import com.tngtech.archunit.lang.EvaluationResult;
 
 import org.junit.jupiter.api.Test;
 
-/**
- * Keeps the module modular (the monolith has no gateway and no REST between modules): the rest
- * of the application may only use {@code application.contract} and {@code application.event}, and
- * never the SUNAT and HIBP integrations. Only production classes are analyzed; tests may wire the
- * module's configuration.
- */
+
 @AnalyzeClasses(packages = "com.nodotextil.trazatex",
 		importOptions = ImportOption.DoNotIncludeTests.class)
 class ModuleBoundariesTest {
@@ -57,11 +52,11 @@ class ModuleBoundariesTest {
 	@ArchTest
 	static final ArchRule rule2 = SUNAT_AND_HIBP_STAY_INSIDE;
 
-	/** Guards against rules that pass only because they match nothing. */
+	
 	@Test
 	void theRulesDoDetectAnOutsiderUsingModuleInternals() {
-		// SecurityConfigTest (a test class of shared.security) imports the module's
-		// ActiveMembershipSecurityConfiguration, which is internal: a real violation.
+		
+		
 		JavaClasses withTests = new ClassFileImporter().importPackages(
 				"com.nodotextil.trazatex.shared.security",
 				"com.nodotextil.trazatex.organizationaccess.infrastructure.security");

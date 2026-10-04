@@ -7,10 +7,7 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/**
- * Publishes the membership filter as a qualified bean, so {@code SecurityConfig} can add it to
- * the security chain without importing this module's classes.
- */
+
 @Configuration
 public class ActiveMembershipSecurityConfiguration {
 
@@ -22,7 +19,7 @@ public class ActiveMembershipSecurityConfiguration {
 		return new ActiveMembershipFilter(organizationAccess);
 	}
 
-	/** The filter belongs to the security chain only; keep Boot from registering it twice. */
+	
 	@Bean
 	FilterRegistrationBean<Filter> activeMembershipFilterRegistration(
 			@Qualifier(FILTER_BEAN_NAME) Filter filter) {

@@ -5,7 +5,7 @@ import com.nodotextil.trazatex.organizationaccess.application.port.OrganizationE
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
-/** Publishes through Spring; consumers listen with {@code @TransactionalEventListener}. */
+
 @Component
 class SpringOrganizationEventPublisher implements OrganizationEventPublisher {
 

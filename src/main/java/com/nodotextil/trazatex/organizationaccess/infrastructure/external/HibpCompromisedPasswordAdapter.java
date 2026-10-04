@@ -2,6 +2,7 @@ package com.nodotextil.trazatex.organizationaccess.infrastructure.external;
 
 import com.nodotextil.trazatex.organizationaccess.application.port.CompromisedPasswordPort;
 import com.nodotextil.trazatex.organizationaccess.domain.ExternalServiceUnavailableException;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -16,12 +17,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
-/**
- * Checks passwords against Have I Been Pwned with k-anonymity: only the first 5 characters of
- * the password's SHA-1 are sent, never the password or its full hash. Only this module may use
- * it; it is package-private on purpose. Active only when
- * {@code app.external-services.enabled=true}.
- */
+
 @Component
 @ConditionalOnProperty(name = "app.external-services.enabled", havingValue = "true")
 class HibpCompromisedPasswordAdapter implements CompromisedPasswordPort {
@@ -42,12 +38,13 @@ class HibpCompromisedPasswordAdapter implements CompromisedPasswordPort {
 
 	private static RestClient buildClient(String baseUrl) {
 		SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-		factory.setConnectTimeout(Duration.ofSeconds(5));
-		factory.setReadTimeout(Duration.ofSeconds(10));
+		factory.setConnectTimeout(Duration.ofSeconds(2));
+		factory.setReadTimeout(Duration.ofSeconds(2));
 		return RestClient.builder().baseUrl(baseUrl).requestFactory(factory).build();
 	}
 
 	@Override
+	@CircuitBreaker(name = "hibp", fallbackMethod = "fallback")
 	public boolean isCompromised(String password) {
 		String hash = sha1(password);
 		String prefix = hash.substring(0, PREFIX_LENGTH);
@@ -63,7 +60,11 @@ class HibpCompromisedPasswordAdapter implements CompromisedPasswordPort {
 		}
 	}
 
-	/** A line is {@code SUFFIX:COUNT}; padding lines have a count of 0 and are not breaches. */
+	
+	private boolean fallback(String password, Throwable failure) {
+		return false;
+	}
+
 	private static boolean isBreachedEntry(String line, String suffix) {
 		String[] parts = line.trim().split(":", 2);
 		if (parts.length != 2 || !parts[0].equalsIgnoreCase(suffix)) {

@@ -9,11 +9,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-/**
- * Creates the initial license and {@code LICENSE_OWNER} for development. Disabled unless
- * {@code app.bootstrap.enabled=true}; every value comes from an environment variable and the
- * password is never logged.
- */
+
 @Component
 @ConditionalOnProperty(name = "app.bootstrap.enabled", havingValue = "true")
 class DevelopmentBootstrap implements ApplicationRunner {

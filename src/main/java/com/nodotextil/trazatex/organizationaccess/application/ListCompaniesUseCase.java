@@ -6,7 +6,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Lists the companies of the chain, active and inactive (RF-003). */
+
 @Service
 public class ListCompaniesUseCase {
 

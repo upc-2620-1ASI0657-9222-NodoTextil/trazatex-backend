@@ -14,9 +14,9 @@ public interface InvitationRepository {
 
 	Optional<Invitation> findByToken(String token);
 
-	/** Pending invitations of a company that have not expired at {@code now}; they hold a seat. */
+	
 	long countPendingNotExpired(UUID companyId, LocalDateTime now);
 
-	/** Pending invitations whose expiry is at or before {@code now}. */
+	
 	List<Invitation> findPendingExpiringAtOrBefore(LocalDateTime now);
 }

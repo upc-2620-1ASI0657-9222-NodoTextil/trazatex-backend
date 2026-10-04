@@ -6,10 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-/**
- * Expires pending invitations automatically, without anyone having to try to accept them.
- * The interval is {@code app.invitations.expiration-interval-ms} (default 5 minutes).
- */
+
 @Component
 class InvitationExpirationJob {
 

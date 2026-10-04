@@ -20,7 +20,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
-/** Entity-to-domain round trips; they need no database. */
+
 class PersistenceMappingTest {
 
 	private static final LocalDateTime NOW = LocalDateTime.of(2026, 10, 1, 9, 0);

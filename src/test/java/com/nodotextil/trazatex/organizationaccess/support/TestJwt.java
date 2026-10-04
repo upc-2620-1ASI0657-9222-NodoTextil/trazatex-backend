@@ -5,7 +5,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import java.util.UUID;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor;
 
-/** Authenticated callers for {@code MockMvc} tests, with the claims the module reads. */
+
 public final class TestJwt {
 
 	private TestJwt() {

@@ -5,7 +5,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
-/** A company of the textile chain that belongs to a license. */
+
 public final class Company {
 
 	private static final Pattern RUC = Pattern.compile("\\d{11}");
@@ -38,7 +38,7 @@ public final class Company {
 				CompanyStatus.ACTIVE, now);
 	}
 
-	/** The same company with another status; nothing else (history included) is lost. */
+	
 	public Company withStatus(CompanyStatus newStatus) {
 		return new Company(id, licenseId, ruc, legalName, activities, newStatus, createdAt);
 	}

@@ -9,7 +9,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Activates or inactivates a company without losing its history (RF-003). */
+
 @Service
 public class ChangeCompanyStatusUseCase {
 

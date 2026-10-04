@@ -13,11 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * A company administrator asks the license owner to add another administrator (RF-010). First
- * name, last name, email and job title are mandatory, and a company cannot have two pending
- * requests for the same email.
- */
+
 @Service
 public class CreateAdminRequestUseCase {
 

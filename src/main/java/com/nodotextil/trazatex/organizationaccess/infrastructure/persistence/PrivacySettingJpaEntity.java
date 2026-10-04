@@ -13,7 +13,7 @@ import jakarta.persistence.UniqueConstraint;
 import java.util.UUID;
 
 @Entity
-@Table(name = "organization_access_privacy_settings", uniqueConstraints = @UniqueConstraint(
+@Table(schema = "organization_access", name = "organization_access_privacy_settings", uniqueConstraints = @UniqueConstraint(
 		name = "uk_oa_privacy_company_field", columnNames = { "company_id", "field" }))
 class PrivacySettingJpaEntity {
 

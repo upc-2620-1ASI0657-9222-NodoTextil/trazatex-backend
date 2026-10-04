@@ -18,11 +18,7 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-/**
- * Creates invitations for every use case that needs one: checks that the email is free and that
- * the company has a seat (RF-013), generates the token, saves the invitation and publishes
- * {@link InvitationCreatedEvent}. Run it inside the caller's transaction.
- */
+
 @Component
 class InvitationIssuer {
 
@@ -50,7 +46,7 @@ class InvitationIssuer {
 		this.clock = clock;
 	}
 
-	/** Whether the company can take one more user: active users plus live pending invitations. */
+	
 	boolean hasSeatAvailable(UUID companyId) {
 		License license = licenses.findFirst()
 				.orElseThrow(() -> new OrganizationNotFoundException("License not configured"));
@@ -78,7 +74,7 @@ class InvitationIssuer {
 		return saved;
 	}
 
-	/** 256 random bits, base64 url-safe without padding. */
+	
 	private String newToken() {
 		byte[] bytes = new byte[TOKEN_BYTES];
 		random.nextBytes(bytes);

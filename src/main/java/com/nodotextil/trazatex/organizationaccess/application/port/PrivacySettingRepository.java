@@ -9,6 +9,6 @@ public interface PrivacySettingRepository {
 
 	List<CompanyPrivacySetting> findByCompanyId(UUID companyId);
 
-	/** Inserts or updates the setting of each {@code (companyId, field)}. */
+	
 	void saveAll(Collection<CompanyPrivacySetting> settings);
 }

@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** B2B privacy of the administrator's own company (RF-015 to RF-018). */
+
 @RestController
 @RequestMapping("/api/privacy-settings")
 public class PrivacySettingsController {

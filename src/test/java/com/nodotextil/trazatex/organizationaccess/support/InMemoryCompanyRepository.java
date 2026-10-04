@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-/** In-memory double of the company port for tests. */
+
 public class InMemoryCompanyRepository implements CompanyRepository {
 
 	private final Map<UUID, Company> store = new LinkedHashMap<>();

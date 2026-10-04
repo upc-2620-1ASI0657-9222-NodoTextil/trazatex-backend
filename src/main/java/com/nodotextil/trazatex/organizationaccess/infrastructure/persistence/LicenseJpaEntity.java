@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "organization_access_licenses")
+@Table(schema = "organization_access", name = "organization_access_licenses")
 class LicenseJpaEntity {
 
 	@Id

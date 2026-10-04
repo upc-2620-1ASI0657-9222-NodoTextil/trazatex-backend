@@ -19,11 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Registers a company of the chain (RF-002) and invites its first administrator. The license
- * company limit must not be reached and the RUC must be valid in SUNAT. The invitation only needs
- * the administrator's email.
- */
+
 @Service
 public class CreateCompanyUseCase {
 

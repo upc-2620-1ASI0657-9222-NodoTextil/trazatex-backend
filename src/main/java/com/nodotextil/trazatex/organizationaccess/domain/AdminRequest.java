@@ -3,10 +3,7 @@ package com.nodotextil.trazatex.organizationaccess.domain;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-/**
- * A company administrator's request to add another administrator, pending the license
- * owner's decision.
- */
+
 public final class AdminRequest {
 
 	private final UUID id;
@@ -37,7 +34,7 @@ public final class AdminRequest {
 		this.decidedAt = decidedAt;
 	}
 
-	/** A new pending request from a company administrator. */
+	
 	public static AdminRequest create(UUID companyId, String email, String firstName,
 			String lastName, String jobTitle, UUID requestedByUserId, LocalDateTime now) {
 		return new AdminRequest(UUID.randomUUID(), companyId, email, firstName, lastName,
@@ -56,7 +53,7 @@ public final class AdminRequest {
 		return decide(AdminRequestStatus.REJECTED, decidedByUserId, now);
 	}
 
-	/** Only a pending request can be decided, and only once. */
+	
 	private AdminRequest decide(AdminRequestStatus decision, UUID decidedBy, LocalDateTime now) {
 		if (!isPending()) {
 			throw new OrganizationConflictException(

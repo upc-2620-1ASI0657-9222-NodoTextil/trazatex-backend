@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-/** In-memory double of the admin-request port for tests. */
+
 public class InMemoryAdminRequestRepository implements AdminRequestRepository {
 
 	private final Map<UUID, AdminRequest> store = new LinkedHashMap<>();

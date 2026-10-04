@@ -26,10 +26,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Invitations. {@code GET /{token}} and {@code POST /{token}/accept} are public (see
- * {@code SecurityConfig}); the rest declare their roles with {@code @PreAuthorize}.
- */
+
 @RestController
 @RequestMapping("/api/invitations")
 public class InvitationController {
@@ -90,7 +87,7 @@ public class InvitationController {
 			@NotBlank String passwordConfirmation, String firstName, String lastName) {
 	}
 
-	/** The token is never returned: it only travels in the invitation email. */
+	
 	public record InvitationResponse(UUID id, String email, Role role, String firstName,
 			String lastName, String jobTitle, InvitationStatus status, LocalDateTime expiresAt) {
 

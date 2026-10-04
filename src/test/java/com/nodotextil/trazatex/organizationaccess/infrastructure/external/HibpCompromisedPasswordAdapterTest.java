@@ -16,7 +16,7 @@ import org.springframework.web.client.RestClient;
 
 class HibpCompromisedPasswordAdapterTest {
 
-	// SHA-1("password") = 5BAA61E4C9B93F3F0682250B6CF8331B7EE68FD8
+	
 	private static final String PREFIX = "5BAA6";
 	private static final String SUFFIX = "1E4C9B93F3F0682250B6CF8331B7EE68FD8";
 

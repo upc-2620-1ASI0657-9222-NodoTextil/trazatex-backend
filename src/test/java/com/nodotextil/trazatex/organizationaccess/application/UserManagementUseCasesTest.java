@@ -75,7 +75,7 @@ class UserManagementUseCasesTest {
 
 	@Test
 	void inactivatingNeverChecksTheSeats() {
-		setUp(1); // the administrator alone fills the license
+		setUp(1); 
 		OrganizationUser operator = operator("op@example.com", company.id(), UserStatus.ACTIVE);
 
 		assertThat(changeStatus.execute(admin.id(), operator.id(), UserStatus.INACTIVE).status())
@@ -87,7 +87,7 @@ class UserManagementUseCasesTest {
 		setUp(2);
 		OrganizationUser inactive = operator("old@example.com", company.id(),
 				UserStatus.INACTIVE);
-		operator("new@example.com", company.id(), UserStatus.ACTIVE); // the seats are full
+		operator("new@example.com", company.id(), UserStatus.ACTIVE); 
 
 		assertThatThrownBy(() -> changeStatus.execute(admin.id(), inactive.id(),
 				UserStatus.ACTIVE)).isInstanceOf(OrganizationConflictException.class)

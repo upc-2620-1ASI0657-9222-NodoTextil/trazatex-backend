@@ -14,11 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Logs a user in with email and password (RF-008). Only {@code ACTIVE} users can log in, three
- * consecutive failures lock the account for 15 minutes (RNF-06) and every failure raises the same
- * {@link InvalidCredentialsException}, so the caller cannot tell why the login failed.
- */
+
 @Service
 public class AuthenticateUserUseCase {
 
@@ -26,7 +22,7 @@ public class AuthenticateUserUseCase {
 	private final PasswordEncoder passwordEncoder;
 	private final AccessTokenIssuer tokenIssuer;
 	private final Clock clock;
-	/** Lets an unknown email cost as much as a wrong password. */
+	
 	private final String unknownUserHash;
 
 	@Autowired
@@ -69,7 +65,7 @@ public class AuthenticateUserUseCase {
 				user.companyId(), user.role().name());
 	}
 
-	/** {@code companyId} is {@code null} for a {@code LICENSE_OWNER}. */
+	
 	public record AuthenticationResult(String accessToken, long expiresInSeconds, UUID userId,
 			UUID companyId, String role) {
 	}

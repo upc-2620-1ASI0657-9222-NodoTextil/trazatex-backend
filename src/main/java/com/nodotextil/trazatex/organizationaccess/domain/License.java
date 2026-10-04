@@ -3,7 +3,7 @@ package com.nodotextil.trazatex.organizationaccess.domain;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-/** The perpetual license that bounds the chain: how many companies and users per company. */
+
 public final class License {
 
 	private final UUID id;

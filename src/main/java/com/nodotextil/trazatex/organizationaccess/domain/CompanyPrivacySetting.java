@@ -5,10 +5,7 @@ import com.nodotextil.trazatex.organizationaccess.application.contract.PrivacyVi
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * What a company chose for one {@code CONFIGURABLE} field. Only configurable fields are stored:
- * the others have a fixed visibility, and a configurable field without a setting is private.
- */
+
 public record CompanyPrivacySetting(UUID companyId, PrivacyField field,
 		PrivacyVisibility visibility) {
 

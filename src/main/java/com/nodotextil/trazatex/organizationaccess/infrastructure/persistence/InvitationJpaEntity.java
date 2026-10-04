@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "organization_access_invitations", indexes = {
+@Table(schema = "organization_access", name = "organization_access_invitations", indexes = {
 		@Index(name = "idx_oa_invitations_company", columnList = "company_id, status"),
 		@Index(name = "idx_oa_invitations_status_expires", columnList = "status, expires_at")})
 class InvitationJpaEntity {

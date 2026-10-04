@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "organization_access_admin_requests")
+@Table(schema = "organization_access", name = "organization_access_admin_requests")
 class AdminRequestJpaEntity {
 
 	@Id

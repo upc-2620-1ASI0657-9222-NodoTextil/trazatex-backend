@@ -15,10 +15,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Shows the active company administrator the privacy of every field of their own company, with
- * its category and effective visibility (RF-015).
- */
+
 @Service
 public class GetPrivacySettingsUseCase {
 
@@ -37,7 +34,7 @@ public class GetPrivacySettingsUseCase {
 		return viewOf(settings.findByCompanyId(admin.companyId()));
 	}
 
-	/** Every {@link PrivacyField} with its category and effective visibility. */
+	
 	static List<PrivacySettingView> viewOf(List<CompanyPrivacySetting> stored) {
 		Map<PrivacyField, PrivacyVisibility> chosen = new EnumMap<>(PrivacyField.class);
 		stored.forEach(setting -> chosen.put(setting.field(), setting.visibility()));

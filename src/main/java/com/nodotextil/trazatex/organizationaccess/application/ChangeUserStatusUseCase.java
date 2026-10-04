@@ -11,11 +11,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * A company administrator activates or inactivates a user of their own company (RF-012). The
- * license owner cannot be touched and a user never goes back to {@code PENDING}. Reactivating a
- * user needs a free seat (RF-013); inactivating needs nothing.
- */
+
 @Service
 public class ChangeUserStatusUseCase {
 

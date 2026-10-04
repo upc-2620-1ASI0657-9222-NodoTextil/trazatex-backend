@@ -18,7 +18,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @Entity
-@Table(name = "organization_access_companies")
+@Table(schema = "organization_access", name = "organization_access_companies")
 class CompanyJpaEntity {
 
 	@Id

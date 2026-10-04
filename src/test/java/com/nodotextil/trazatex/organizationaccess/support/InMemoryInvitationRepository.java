@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-/** In-memory double of the invitation port for tests. */
+
 public class InMemoryInvitationRepository implements InvitationRepository {
 
 	private final Map<UUID, Invitation> store = new LinkedHashMap<>();

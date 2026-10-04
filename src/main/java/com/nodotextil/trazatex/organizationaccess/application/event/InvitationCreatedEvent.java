@@ -5,14 +5,7 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * Published when an invitation is created. It carries the invitation token so that the
- * Notification module can build the invitation link; do not log it.
- *
- * <p>It exposes the standard event metadata ({@link #eventId()}, {@link #aggregateId()},
- * {@link #version()}, {@link #occurredAt()}, {@link #type()}) without depending on the
- * shared kernel, so it can later extend {@code BaseDomainEvent} with minimal changes.
- */
+
 public final class InvitationCreatedEvent {
 
 	public static final String TYPE = "organizationaccess.invitation.created";

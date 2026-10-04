@@ -9,7 +9,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Lists the administrator requests of every company for the license owner (RF-011). */
+
 @Service
 public class ListAdminRequestsUseCase {
 
@@ -22,7 +22,7 @@ public class ListAdminRequestsUseCase {
 		this.companies = companies;
 	}
 
-	/** @param status only the requests in this status; {@code null} for all of them */
+	
 	@Transactional(readOnly = true)
 	public List<AdminRequestView> execute(AdminRequestStatus status) {
 		return adminRequests.findAll().stream()

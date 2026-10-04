@@ -4,7 +4,7 @@ import com.nodotextil.trazatex.organizationaccess.application.port.TaxpayerValid
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-/** Development stand-in: accepts any well-formed RUC without calling SUNAT. */
+
 @Component
 @ConditionalOnProperty(name = "app.external-services.enabled", havingValue = "false",
 		matchIfMissing = true)

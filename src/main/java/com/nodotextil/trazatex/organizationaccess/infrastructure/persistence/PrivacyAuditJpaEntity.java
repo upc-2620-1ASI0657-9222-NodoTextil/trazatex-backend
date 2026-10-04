@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "organization_access_privacy_audit",
+@Table(schema = "organization_access", name = "organization_access_privacy_audit",
 		indexes = @Index(name = "idx_oa_privacy_audit_company", columnList = "company_id"))
 class PrivacyAuditJpaEntity {
 

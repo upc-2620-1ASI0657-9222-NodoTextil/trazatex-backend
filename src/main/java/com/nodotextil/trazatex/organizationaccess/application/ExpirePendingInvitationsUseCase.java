@@ -9,11 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Moves every pending invitation that has reached its seven-day expiry to expired (RF-005),
- * which also frees the seat it held (RF-013). Accepted and cancelled invitations are never
- * touched, and running it again finds nothing left to do.
- */
+
 @Service
 public class ExpirePendingInvitationsUseCase {
 
@@ -30,7 +26,7 @@ public class ExpirePendingInvitationsUseCase {
 		this.clock = clock;
 	}
 
-	/** @return how many invitations were expired by this run */
+	
 	@Transactional
 	public int execute() {
 		List<Invitation> due = invitations

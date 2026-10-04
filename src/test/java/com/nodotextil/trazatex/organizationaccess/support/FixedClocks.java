@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 
-/** Clocks for tests. */
+
 public final class FixedClocks {
 
 	private FixedClocks() {
@@ -16,7 +16,7 @@ public final class FixedClocks {
 		return Clock.fixed(utc.toInstant(ZoneOffset.UTC), ZoneOffset.UTC);
 	}
 
-	/** A clock the test can move forward. */
+	
 	public static final class Mutable extends Clock {
 
 		private Instant instant;

@@ -10,7 +10,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** The license conditions and limits, the companies in use and the users of each (RF-001). */
+
 @Service
 public class GetLicenseOverviewUseCase {
 

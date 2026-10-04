@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Cancels an invitation (RF-005): only its issuer, and only while it is still pending. */
+
 @Service
 public class CancelInvitationUseCase {
 

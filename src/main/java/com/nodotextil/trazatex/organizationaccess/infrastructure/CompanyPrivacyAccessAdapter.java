@@ -14,7 +14,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Implements the {@link CompanyPrivacyAccess} contract on top of the stored settings. */
+
 @Component
 @Transactional(readOnly = true)
 class CompanyPrivacyAccessAdapter implements CompanyPrivacyAccess {

@@ -9,10 +9,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * A company administrator invites an operator to their own company (RF-009). First name, last
- * name, email and job title are mandatory. It fails when the company has no seat left (RF-013).
- */
+
 @Service
 public class InviteOperatorUseCase {
 

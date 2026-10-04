@@ -111,7 +111,7 @@ class AuthenticateUserUseCaseTest {
 		assertThat(locked.failedLoginAttempts()).isEqualTo(3);
 		assertThat(locked.lockedUntil()).isEqualTo(START.plusMinutes(15));
 
-		// even the right password is refused while locked, and the lock is not extended
+		
 		clock.advanceMinutes(14);
 		assertThatThrownBy(() -> useCase.execute("ana@example.com", PASSWORD))
 				.isInstanceOf(InvalidCredentialsException.class);

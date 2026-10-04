@@ -5,7 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 
-/** Stores each privacy change in the module's audit table and logs it. */
+
 @Repository
 class PrivacyAuditPersistenceAdapter implements PrivacyAuditPort {
 
