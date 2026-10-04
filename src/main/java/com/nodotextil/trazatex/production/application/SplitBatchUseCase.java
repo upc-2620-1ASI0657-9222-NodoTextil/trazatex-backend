@@ -33,13 +33,22 @@ public class SplitBatchUseCase {
         this.clock = clock;
     }
 
-    @Transactional
     public Result execute(UUID parentBatchId, List<BigDecimal> childQuantitiesKg) {
+        Batch parent = batchRepository.findById(parentBatchId)
+                .orElseThrow(() -> new BatchNotFoundException(parentBatchId));
+        return execute(parentBatchId, parent.responsibleCompanyId(), childQuantitiesKg);
+    }
+
+    @Transactional
+    public Result execute(UUID parentBatchId, UUID companyId, List<BigDecimal> childQuantitiesKg) {
         validateChildQuantities(childQuantitiesKg);
 
         Batch parent = batchRepository.findById(parentBatchId)
                 .orElseThrow(() -> new BatchNotFoundException(parentBatchId));
         validateParent(parent);
+        if (!parent.responsibleCompanyId().equals(companyId)) {
+            throw new InvalidBatchException("Batch belongs to another company");
+        }
         validateExactTotal(parent.quantityKg(), childQuantitiesKg);
 
         LocalDateTime occurredAt = LocalDateTime.now(clock);

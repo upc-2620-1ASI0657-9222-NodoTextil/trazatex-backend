@@ -84,9 +84,27 @@ public class TransferService {
                 .orElseThrow(() -> new TransferNotFoundException(id));
     }
 
+    @Transactional(readOnly = true)
+    public Transfer get(UUID id, UUID companyId) {
+        Transfer transfer = transferRepository.findById(id)
+                .orElseThrow(() -> new TransferNotFoundException(id));
+        if (!transfer.sourceCompanyId().equals(companyId)
+                && !transfer.destinationCompanyId().equals(companyId)) {
+            throw new InvalidTransferException("Transfer belongs to another company");
+        }
+        return transfer;
+    }
+
     @Transactional
     public Transfer accept(UUID id) {
         Transfer transfer = findForUpdate(id);
+        return accept(id, transfer.destinationCompanyId());
+    }
+
+    @Transactional
+    public Transfer accept(UUID id, UUID companyId) {
+        Transfer transfer = findForUpdate(id);
+        requireDestinationCompany(transfer, companyId);
         List<Batch> batches = loadAndValidatePendingBatches(transfer);
         LocalDateTime acceptedAt = LocalDateTime.now(clock);
 
@@ -104,10 +122,17 @@ public class TransferService {
 
     @Transactional
     public Transfer reject(UUID id, String rejectionReason) {
+        Transfer transfer = findForUpdate(id);
+        return reject(id, transfer.destinationCompanyId(), rejectionReason);
+    }
+
+    @Transactional
+    public Transfer reject(UUID id, UUID companyId, String rejectionReason) {
         if (rejectionReason == null || rejectionReason.isBlank()) {
             throw new InvalidTransferException("Rejection reason is required");
         }
         Transfer transfer = findForUpdate(id);
+        requireDestinationCompany(transfer, companyId);
         List<Batch> batches = loadAndValidatePendingBatches(transfer);
         LocalDateTime rejectedAt = LocalDateTime.now(clock);
 
@@ -162,6 +187,12 @@ public class TransferService {
                 .orElseThrow(() -> new TransferNotFoundException(id));
     }
 
+
+    private static void requireDestinationCompany(Transfer transfer, UUID companyId) {
+        if (!transfer.destinationCompanyId().equals(companyId)) {
+            throw new InvalidTransferException("Only the destination company can resolve the transfer");
+        }
+    }
     private List<Batch> loadAndValidatePendingBatches(Transfer transfer) {
         if (transfer.status() != TransferStatus.PENDING) {
             throw new InvalidTransferException("Transfer is already resolved");

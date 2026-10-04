@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "production_transformations")
+@Table(schema = "production", name = "production_transformations")
 class TransformationJpaEntity {
 
     @Id
@@ -40,6 +40,7 @@ class TransformationJpaEntity {
 
     @ElementCollection
     @CollectionTable(
+            schema = "production",
             name = "production_transformation_inputs",
             joinColumns = @JoinColumn(name = "transformation_id", nullable = false))
     @Column(name = "batch_id", nullable = false)
@@ -48,6 +49,7 @@ class TransformationJpaEntity {
 
     @ElementCollection
     @CollectionTable(
+            schema = "production",
             name = "production_transformation_outputs",
             joinColumns = @JoinColumn(name = "transformation_id", nullable = false))
     @Column(name = "batch_id", nullable = false)

@@ -8,10 +8,8 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.UUID;
 
 public record RegisterBatchRequest(
-        @NotNull UUID responsibleCompanyId,
         String supplierName,
         @NotBlank String geographicOrigin,
         @NotNull MaterialType materialType,

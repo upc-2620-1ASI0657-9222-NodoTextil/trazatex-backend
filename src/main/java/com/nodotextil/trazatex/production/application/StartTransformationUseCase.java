@@ -42,6 +42,9 @@ public class StartTransformationUseCase {
 
         Machine machine = machineRepository.findById(command.machineId())
                 .orElseThrow(() -> new MachineNotFoundException(command.machineId()));
+        if (!machine.companyId().equals(command.companyId())) {
+            throw new InvalidTransformationException("Machine belongs to another company");
+        }
         if (machine.status() != MachineStatus.ACTIVE) {
             throw new InvalidTransformationException(
                     "Only an ACTIVE machine can be used in a transformation");
@@ -50,7 +53,12 @@ public class StartTransformationUseCase {
         List<Batch> inputs = command.inputBatchIds().stream()
                 .map(this::findInput)
                 .toList();
-        inputs.forEach(StartTransformationUseCase::validateAvailableInput);
+        inputs.forEach(batch -> {
+            validateAvailableInput(batch);
+            if (!batch.responsibleCompanyId().equals(command.companyId())) {
+                throw new InvalidTransformationException("Input batch belongs to another company");
+            }
+        });
         BigDecimal totalInputKg = inputs.stream()
                 .map(Batch::quantityKg)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);

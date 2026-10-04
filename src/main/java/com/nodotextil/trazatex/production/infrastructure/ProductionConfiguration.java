@@ -5,6 +5,7 @@ import com.nodotextil.trazatex.production.application.CompleteTransformationUseC
 import com.nodotextil.trazatex.production.application.GetBatchUseCase;
 import com.nodotextil.trazatex.production.application.GetBatchByQrCodeUseCase;
 import com.nodotextil.trazatex.production.application.GetMachineUseCase;
+import com.nodotextil.trazatex.production.application.MarkFinalProductUseCase;
 import com.nodotextil.trazatex.production.application.GetTransformationUseCase;
 import com.nodotextil.trazatex.production.application.RegisterBatchUseCase;
 import com.nodotextil.trazatex.production.application.RegisterMachineUseCase;
@@ -41,8 +42,10 @@ import org.springframework.context.annotation.Configuration;
 public class ProductionConfiguration {
 
     @Bean
-    RegisterBatchUseCase registerBatchUseCase(BatchRepository batchRepository) {
-        return new RegisterBatchUseCase(batchRepository, Clock.systemUTC());
+    RegisterBatchUseCase registerBatchUseCase(
+            BatchRepository batchRepository,
+            BatchEventPublisher eventPublisher) {
+        return new RegisterBatchUseCase(batchRepository, eventPublisher, Clock.systemUTC());
     }
 
     @Bean
@@ -53,6 +56,11 @@ public class ProductionConfiguration {
     @Bean
     GetBatchByQrCodeUseCase getBatchByQrCodeUseCase(BatchRepository batchRepository) {
         return new GetBatchByQrCodeUseCase(batchRepository);
+    }
+
+    @Bean
+    MarkFinalProductUseCase markFinalProductUseCase(BatchRepository batchRepository) {
+        return new MarkFinalProductUseCase(batchRepository);
     }
 
     @Bean

@@ -10,7 +10,7 @@ import jakarta.persistence.Table;
 import java.util.UUID;
 
 @Entity
-@Table(name = "production_machines")
+@Table(schema = "production", name = "production_machines")
 class MachineJpaEntity {
 
     @Id

@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.UUID;
 
 public record StartTransformationRequest(
-        @NotNull UUID companyId,
-        @NotNull UUID operatorId,
         @NotNull UUID machineId,
         @NotNull TransformationType type,
         @NotEmpty List<@NotNull UUID> inputBatchIds) {

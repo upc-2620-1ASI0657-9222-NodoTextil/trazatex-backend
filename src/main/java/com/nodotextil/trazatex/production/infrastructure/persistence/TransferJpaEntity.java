@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "production_transfers")
+@Table(schema = "production", name = "production_transfers")
 class TransferJpaEntity {
 
     @Id
@@ -32,6 +32,7 @@ class TransferJpaEntity {
 
     @ElementCollection
     @CollectionTable(
+            schema = "production",
             name = "production_transfer_batches",
             joinColumns = @JoinColumn(name = "transfer_id", nullable = false))
     @Column(name = "batch_id", nullable = false)

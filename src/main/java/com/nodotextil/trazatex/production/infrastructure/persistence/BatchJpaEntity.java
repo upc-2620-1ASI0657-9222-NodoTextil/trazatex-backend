@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(
+@Table(schema = "production", 
         name = "production_batches",
         uniqueConstraints = {
             @UniqueConstraint(
@@ -62,6 +62,7 @@ class BatchJpaEntity {
 
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(
+            schema = "production",
             name = "production_batch_composition",
             joinColumns = @JoinColumn(name = "batch_id", nullable = false))
     @OrderColumn(name = "component_order")

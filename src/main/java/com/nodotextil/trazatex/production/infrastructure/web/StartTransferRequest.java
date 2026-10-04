@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.UUID;
 
 public record StartTransferRequest(
-        @NotNull UUID sourceCompanyId,
         @NotNull UUID destinationCompanyId,
         @NotEmpty List<@NotNull UUID> batchIds) {
 }

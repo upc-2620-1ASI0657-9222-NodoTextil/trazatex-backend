@@ -49,7 +49,26 @@ public class ProductionEvidenceService {
             byte[] content,
             String filename,
             String contentType) {
-        validateOwner(ownerType, ownerId);
+        return upload(
+                ownerType,
+                ownerId,
+                ownerCompanyId(ownerType, ownerId),
+                uploadedByUserId,
+                content,
+                filename,
+                contentType);
+    }
+
+    @Transactional
+    public ProductionEvidence upload(
+            ProductionEvidenceOwnerType ownerType,
+            UUID ownerId,
+            UUID companyId,
+            UUID uploadedByUserId,
+            byte[] content,
+            String filename,
+            String contentType) {
+        validateOwner(ownerType, ownerId, companyId);
         Objects.requireNonNull(uploadedByUserId, "Uploader user id is required");
         String supportedContentType = validateImage(content, contentType);
 
@@ -73,18 +92,52 @@ public class ProductionEvidenceService {
     public List<ProductionEvidence> list(
             ProductionEvidenceOwnerType ownerType,
             UUID ownerId) {
-        validateOwner(ownerType, ownerId);
+        return list(ownerType, ownerId, ownerCompanyId(ownerType, ownerId));
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductionEvidence> list(
+            ProductionEvidenceOwnerType ownerType,
+            UUID ownerId,
+            UUID companyId) {
+        validateOwner(ownerType, ownerId, companyId);
         return evidenceRepository.findByOwner(ownerType, ownerId);
     }
 
-    private void validateOwner(ProductionEvidenceOwnerType ownerType, UUID ownerId) {
+    private UUID ownerCompanyId(ProductionEvidenceOwnerType ownerType, UUID ownerId) {
         Objects.requireNonNull(ownerType, "Evidence owner type is required");
         Objects.requireNonNull(ownerId, "Evidence owner id is required");
-        switch (ownerType) {
+        return switch (ownerType) {
             case BATCH -> batchRepository.findById(ownerId)
-                    .orElseThrow(() -> new BatchNotFoundException(ownerId));
+                    .orElseThrow(() -> new BatchNotFoundException(ownerId))
+                    .responsibleCompanyId();
             case TRANSFORMATION -> transformationRepository.findById(ownerId)
-                    .orElseThrow(() -> new TransformationNotFoundException(ownerId));
+                    .orElseThrow(() -> new TransformationNotFoundException(ownerId))
+                    .companyId();
+        };
+    }
+
+    private void validateOwner(
+            ProductionEvidenceOwnerType ownerType, UUID ownerId, UUID companyId) {
+        Objects.requireNonNull(ownerType, "Evidence owner type is required");
+        Objects.requireNonNull(ownerId, "Evidence owner id is required");
+        Objects.requireNonNull(companyId, "Company id is required");
+        switch (ownerType) {
+            case BATCH -> {
+                var batch = batchRepository.findById(ownerId)
+                        .orElseThrow(() -> new BatchNotFoundException(ownerId));
+                if (!batch.responsibleCompanyId().equals(companyId)) {
+                    throw new InvalidProductionEvidenceException("Batch belongs to another company");
+                }
+            }
+            case TRANSFORMATION -> {
+                var transformation = transformationRepository.findById(ownerId)
+                        .orElseThrow(() -> new TransformationNotFoundException(ownerId));
+                if (!transformation.companyId().equals(companyId)) {
+                    throw new InvalidProductionEvidenceException(
+                            "Transformation belongs to another company");
+                }
+            }
         }
     }
 

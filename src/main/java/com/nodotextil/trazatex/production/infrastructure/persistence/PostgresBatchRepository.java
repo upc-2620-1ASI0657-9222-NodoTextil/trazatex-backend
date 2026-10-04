@@ -56,6 +56,10 @@ class PostgresBatchRepository implements BatchRepository {
     public List<Batch> search(BatchSearchCriteria criteria) {
         Specification<BatchJpaEntity> specification = (root, query, builder) -> {
             List<Predicate> predicates = new ArrayList<>();
+            if (criteria.responsibleCompanyId() != null) {
+                predicates.add(builder.equal(
+                        root.get("responsibleCompanyId"), criteria.responsibleCompanyId()));
+            }
             if (criteria.traceabilityId() != null) {
                 predicates.add(builder.equal(
                         root.get("traceabilityId"), criteria.traceabilityId()));

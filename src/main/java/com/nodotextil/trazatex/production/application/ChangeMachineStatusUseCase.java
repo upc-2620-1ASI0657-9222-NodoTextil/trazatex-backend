@@ -16,6 +16,16 @@ public class ChangeMachineStatusUseCase {
     public Machine execute(UUID id, MachineStatus status) {
         Machine machine = machineRepository.findById(id)
                 .orElseThrow(() -> new MachineNotFoundException(id));
+        return execute(id, machine.companyId(), status);
+    }
+
+    public Machine execute(UUID id, UUID companyId, MachineStatus status) {
+        Machine machine = machineRepository.findById(id)
+                .orElseThrow(() -> new MachineNotFoundException(id));
+        if (!machine.companyId().equals(companyId)) {
+            throw new com.nodotextil.trazatex.production.domain.InvalidMachineException(
+                    "Machine belongs to another company");
+        }
         machine.changeStatus(status);
         return machineRepository.save(machine);
     }

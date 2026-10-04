@@ -2,6 +2,7 @@ package com.nodotextil.trazatex.production.infrastructure.storage;
 
 import com.nodotextil.trazatex.production.application.port.ProductionImageStoragePort;
 import com.nodotextil.trazatex.production.domain.ProductionEvidenceOwnerType;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Duration;
@@ -10,6 +11,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 @Component
+@ConditionalOnProperty(name = "app.external-services.enabled", havingValue = "true")
 class CloudinaryProductionImageStorageAdapter implements ProductionImageStoragePort {
 
     private final RestClient restClient;
@@ -42,6 +45,7 @@ class CloudinaryProductionImageStorageAdapter implements ProductionImageStorageP
     }
 
     @Override
+    @CircuitBreaker(name = "cloudinary")
     public StoredImage store(
             ProductionEvidenceOwnerType ownerType,
             UUID ownerId,

@@ -1,8 +1,8 @@
 package com.nodotextil.trazatex.production.infrastructure.web;
 
-import com.nodotextil.trazatex.production.domain.Batch;
 import com.nodotextil.trazatex.production.domain.MaterialType;
 import com.nodotextil.trazatex.production.domain.OperationalPhase;
+import com.nodotextil.trazatex.quality.domain.QualityStatus;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -20,6 +20,7 @@ public record BatchResponse(
         BigDecimal quantityKg,
         List<CompositionComponentResponse> composition,
         OperationalPhase operationalPhase,
+        QualityStatus qualityStatus,
         LocalDateTime registeredAt,
         String receptionCharacteristics,
         boolean finalProduct,
@@ -29,7 +30,8 @@ public record BatchResponse(
         LocalDate commercialDate,
         String commercialReference) {
 
-    static BatchResponse from(Batch batch) {
+
+    static BatchResponse from(com.nodotextil.trazatex.production.domain.Batch batch) {
         return new BatchResponse(
                 batch.id(),
                 batch.traceabilityId(),
@@ -40,10 +42,10 @@ public record BatchResponse(
                 batch.materialType(),
                 batch.quantityKg(),
                 batch.composition().stream()
-                        .map(component -> new CompositionComponentResponse(
-                                component.material(), component.percentage()))
+                        .map(component -> new CompositionComponentResponse(component.material(), component.percentage()))
                         .toList(),
                 batch.operationalPhase(),
+                QualityStatus.NOT_REVIEWED,
                 batch.registeredAt(),
                 batch.receptionCharacteristics(),
                 batch.finalProduct(),

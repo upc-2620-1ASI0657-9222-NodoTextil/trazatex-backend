@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(
+@Table(schema = "production", 
         name = "production_evidence",
         indexes = @Index(
                 name = "idx_production_evidence_owner",

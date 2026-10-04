@@ -23,12 +23,12 @@ public final class Batch {
     private OperationalPhase operationalPhase;
     private final LocalDateTime registeredAt;
     private final String receptionCharacteristics;
-    private final boolean finalProduct;
-    private final String buyerOrDistributor;
-    private final BigDecimal price;
-    private final String currency;
-    private final LocalDate commercialDate;
-    private final String commercialReference;
+    private boolean finalProduct;
+    private String buyerOrDistributor;
+    private BigDecimal price;
+    private String currency;
+    private LocalDate commercialDate;
+    private String commercialReference;
     private boolean operationallyBlocked;
 
     private Batch(
@@ -327,6 +327,22 @@ public final class Batch {
         }
     }
 
+    public void markAsFinalProduct(
+            String buyerOrDistributor,
+            BigDecimal price,
+            String currency,
+            LocalDate commercialDate,
+            String commercialReference) {
+        ensureOperationallyEligible();
+        validateCommercialData(true, buyerOrDistributor, price, currency, commercialDate, commercialReference);
+        this.finalProduct = true;
+        this.buyerOrDistributor = buyerOrDistributor;
+        this.price = price;
+        this.currency = currency;
+        this.commercialDate = commercialDate;
+        this.commercialReference = commercialReference;
+    }
+
     public void markAsSplit() {
         ensureOperationallyEligible();
         operationalPhase = OperationalPhase.SPLIT;
@@ -358,6 +374,29 @@ public final class Batch {
         return operationalPhase == OperationalPhase.AVAILABLE
                 && !finalProduct
                 && !operationallyBlocked;
+    }
+
+
+    public void startQualityControl() {
+        if (operationalPhase != OperationalPhase.AVAILABLE) {
+            throw new InvalidBatchException("Only an AVAILABLE batch can enter quality control");
+        }
+        operationalPhase = OperationalPhase.IN_QUALITY_CONTROL;
+    }
+
+    public void finishQualityControl() {
+        if (operationalPhase != OperationalPhase.IN_QUALITY_CONTROL) {
+            throw new InvalidBatchException("Batch is not in quality control");
+        }
+        operationalPhase = OperationalPhase.AVAILABLE;
+    }
+
+    public void discard() {
+        if (operationalPhase != OperationalPhase.AVAILABLE) {
+            throw new InvalidBatchException("Only an AVAILABLE batch can be discarded");
+        }
+        operationalPhase = OperationalPhase.DISCARDED;
+        operationallyBlocked = true;
     }
 
     public void block() {

@@ -4,6 +4,9 @@ import com.nodotextil.trazatex.production.domain.Batch;
 import com.nodotextil.trazatex.production.domain.BatchRepository;
 import com.nodotextil.trazatex.production.domain.CompositionComponent;
 import com.nodotextil.trazatex.production.domain.MaterialType;
+import com.nodotextil.trazatex.production.application.event.BatchEventPublisher;
+import com.nodotextil.trazatex.production.application.event.BatchRegisteredEvent;
+import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -16,13 +19,31 @@ public class RegisterBatchUseCase {
     private static final int MAX_IDENTIFIER_GENERATION_ATTEMPTS = 100;
 
     private final BatchRepository batchRepository;
+    private final BatchEventPublisher eventPublisher;
     private final Clock clock;
 
-    public RegisterBatchUseCase(BatchRepository batchRepository, Clock clock) {
+    public RegisterBatchUseCase(
+            BatchRepository batchRepository,
+            BatchEventPublisher eventPublisher,
+            Clock clock) {
         this.batchRepository = batchRepository;
+        this.eventPublisher = eventPublisher;
         this.clock = clock;
     }
 
+    public RegisterBatchUseCase(BatchRepository batchRepository, Clock clock) {
+        this(batchRepository, new BatchEventPublisher() {
+            @Override
+            public void publish(BatchRegisteredEvent event) {
+            }
+
+            @Override
+            public void publish(com.nodotextil.trazatex.production.application.event.BatchSplitEvent event) {
+            }
+        }, clock);
+    }
+
+    @Transactional
     public Batch execute(Command command) {
         Batch batch = Batch.register(
                 UUID.randomUUID(),
@@ -36,7 +57,9 @@ public class RegisterBatchUseCase {
                 command.composition(),
                 LocalDateTime.now(clock),
                 command.receptionCharacteristics());
-        return batchRepository.save(batch);
+        Batch saved = batchRepository.save(batch);
+        eventPublisher.publish(new BatchRegisteredEvent(saved.id(), saved.registeredAt()));
+        return saved;
     }
 
     private String generateUniqueIdentifier(String prefix, Predicate<String> alreadyExists) {

@@ -47,10 +47,19 @@ public class CompleteTransformationUseCase {
         this.clock = clock;
     }
 
-    @Transactional
     public Result execute(UUID transformationId, Command command) {
         Transformation transformation = transformationRepository.findById(transformationId)
                 .orElseThrow(() -> new TransformationNotFoundException(transformationId));
+        return execute(transformationId, transformation.companyId(), command);
+    }
+
+    @Transactional
+    public Result execute(UUID transformationId, UUID companyId, Command command) {
+        Transformation transformation = transformationRepository.findById(transformationId)
+                .orElseThrow(() -> new TransformationNotFoundException(transformationId));
+        if (!transformation.companyId().equals(companyId)) {
+            throw new InvalidTransformationException("Transformation belongs to another company");
+        }
         if (transformation.isCompleted()) {
             throw new InvalidTransformationException("Transformation is already completed");
         }
