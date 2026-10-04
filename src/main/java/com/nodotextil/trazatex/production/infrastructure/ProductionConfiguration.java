@@ -8,6 +8,7 @@ import com.nodotextil.trazatex.production.application.GetMachineUseCase;
 import com.nodotextil.trazatex.production.application.GetTransformationUseCase;
 import com.nodotextil.trazatex.production.application.RegisterBatchUseCase;
 import com.nodotextil.trazatex.production.application.RegisterMachineUseCase;
+import com.nodotextil.trazatex.production.application.ProductionEvidenceService;
 import com.nodotextil.trazatex.production.application.SearchBatchesUseCase;
 import com.nodotextil.trazatex.production.application.SplitBatchUseCase;
 import com.nodotextil.trazatex.production.application.StartTransformationUseCase;
@@ -16,8 +17,10 @@ import com.nodotextil.trazatex.production.application.event.BatchEventPublisher;
 import com.nodotextil.trazatex.production.application.event.TransferEventPublisher;
 import com.nodotextil.trazatex.production.application.event.TransformationEventPublisher;
 import com.nodotextil.trazatex.production.application.port.OrganizationAccessPort;
+import com.nodotextil.trazatex.production.application.port.ProductionImageStoragePort;
 import com.nodotextil.trazatex.production.domain.BatchRepository;
 import com.nodotextil.trazatex.production.domain.MachineRepository;
+import com.nodotextil.trazatex.production.domain.ProductionEvidenceRepository;
 import com.nodotextil.trazatex.production.domain.TransformationRepository;
 import com.nodotextil.trazatex.production.domain.TransferRepository;
 import com.nodotextil.trazatex.production.domain.strategy.CuttingTransformationStrategy;
@@ -107,6 +110,20 @@ public class ProductionConfiguration {
     GetTransformationUseCase getTransformationUseCase(
             TransformationRepository transformationRepository) {
         return new GetTransformationUseCase(transformationRepository);
+    }
+
+    @Bean
+    ProductionEvidenceService productionEvidenceService(
+            ProductionEvidenceRepository evidenceRepository,
+            ProductionImageStoragePort imageStorage,
+            BatchRepository batchRepository,
+            TransformationRepository transformationRepository) {
+        return new ProductionEvidenceService(
+                evidenceRepository,
+                imageStorage,
+                batchRepository,
+                transformationRepository,
+                Clock.systemUTC());
     }
 
     @Bean

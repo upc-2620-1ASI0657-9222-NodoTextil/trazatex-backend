@@ -6,6 +6,7 @@ import com.nodotextil.trazatex.production.application.TransformationNotFoundExce
 import com.nodotextil.trazatex.production.application.TransferNotFoundException;
 import com.nodotextil.trazatex.production.domain.InvalidBatchException;
 import com.nodotextil.trazatex.production.domain.InvalidMachineException;
+import com.nodotextil.trazatex.production.domain.InvalidProductionEvidenceException;
 import com.nodotextil.trazatex.production.domain.InvalidTransformationException;
 import com.nodotextil.trazatex.production.domain.InvalidTransferException;
 import java.util.LinkedHashMap;
@@ -56,6 +57,7 @@ public class ProductionExceptionHandler {
     @ExceptionHandler({
         InvalidBatchException.class,
         InvalidMachineException.class,
+        InvalidProductionEvidenceException.class,
         InvalidTransformationException.class,
         InvalidTransferException.class
     })
