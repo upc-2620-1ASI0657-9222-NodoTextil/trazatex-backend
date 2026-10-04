@@ -10,7 +10,9 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public record CompleteTransformationRequest(
-        @NotEmpty List<@Valid OutputRequest> outputs) {
+        @NotEmpty List<@Valid OutputRequest> outputs,
+        @NotNull @DecimalMin("0") BigDecimal wasteKg,
+        String wasteReason) {
 
     public record OutputRequest(
             @NotNull @DecimalMin(value = "0", inclusive = false) BigDecimal quantityKg,

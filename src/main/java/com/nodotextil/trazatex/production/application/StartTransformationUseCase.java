@@ -10,6 +10,7 @@ import com.nodotextil.trazatex.production.domain.OperationalPhase;
 import com.nodotextil.trazatex.production.domain.Transformation;
 import com.nodotextil.trazatex.production.domain.TransformationRepository;
 import com.nodotextil.trazatex.production.domain.TransformationType;
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -51,6 +52,9 @@ public class StartTransformationUseCase {
                 .map(this::findInput)
                 .toList();
         inputs.forEach(StartTransformationUseCase::validateAvailableInput);
+        BigDecimal totalInputKg = inputs.stream()
+                .map(Batch::quantityKg)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         LocalDateTime startedAt = LocalDateTime.now(clock);
         Transformation transformation = Transformation.start(
@@ -60,7 +64,8 @@ public class StartTransformationUseCase {
                 command.machineId(),
                 command.type(),
                 command.inputBatchIds(),
-                startedAt);
+                startedAt,
+                totalInputKg);
 
         inputs.forEach(Batch::startTransformation);
         batchRepository.saveAll(inputs);

@@ -59,7 +59,9 @@ public class TransformationController {
                                         output.materialType(),
                                         output.geographicOrigin(),
                                         output.receptionCharacteristics()))
-                                .toList());
+                                .toList(),
+                        request.wasteKg(),
+                        request.wasteReason());
         return CompleteTransformationResponse.from(completeUseCase.execute(id, command));
     }
 

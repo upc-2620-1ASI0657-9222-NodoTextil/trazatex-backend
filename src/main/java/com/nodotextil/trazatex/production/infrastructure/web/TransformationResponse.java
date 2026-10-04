@@ -2,6 +2,7 @@ package com.nodotextil.trazatex.production.infrastructure.web;
 
 import com.nodotextil.trazatex.production.domain.Transformation;
 import com.nodotextil.trazatex.production.domain.TransformationType;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -15,7 +16,12 @@ public record TransformationResponse(
         List<UUID> inputBatchIds,
         List<UUID> outputBatchIds,
         LocalDateTime startedAt,
-        LocalDateTime completedAt) {
+        LocalDateTime completedAt,
+        BigDecimal totalInputKg,
+        BigDecimal totalOutputKg,
+        BigDecimal wasteKg,
+        String wasteReason,
+        BigDecimal shrinkageKg) {
 
     static TransformationResponse from(Transformation transformation) {
         return new TransformationResponse(
@@ -27,6 +33,11 @@ public record TransformationResponse(
                 transformation.inputBatchIds(),
                 transformation.outputBatchIds(),
                 transformation.startedAt(),
-                transformation.completedAt());
+                transformation.completedAt(),
+                transformation.totalInputKg(),
+                transformation.totalOutputKg(),
+                transformation.wasteKg(),
+                transformation.wasteReason(),
+                transformation.shrinkageKg());
     }
 }

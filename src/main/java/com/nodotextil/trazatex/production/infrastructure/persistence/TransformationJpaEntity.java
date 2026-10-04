@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -59,6 +60,21 @@ class TransformationJpaEntity {
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
+    @Column(name = "total_input_kg", nullable = false, precision = 19, scale = 4)
+    private BigDecimal totalInputKg;
+
+    @Column(name = "total_output_kg", precision = 19, scale = 4)
+    private BigDecimal totalOutputKg;
+
+    @Column(name = "waste_kg", precision = 19, scale = 4)
+    private BigDecimal wasteKg;
+
+    @Column(name = "waste_reason", length = 1000)
+    private String wasteReason;
+
+    @Column(name = "shrinkage_kg", precision = 19, scale = 4)
+    private BigDecimal shrinkageKg;
+
     protected TransformationJpaEntity() {
     }
 
@@ -71,7 +87,12 @@ class TransformationJpaEntity {
             List<UUID> inputBatchIds,
             List<UUID> outputBatchIds,
             LocalDateTime startedAt,
-            LocalDateTime completedAt) {
+            LocalDateTime completedAt,
+            BigDecimal totalInputKg,
+            BigDecimal totalOutputKg,
+            BigDecimal wasteKg,
+            String wasteReason,
+            BigDecimal shrinkageKg) {
         this.id = id;
         this.companyId = companyId;
         this.operatorId = operatorId;
@@ -81,6 +102,11 @@ class TransformationJpaEntity {
         this.outputBatchIds = new ArrayList<>(outputBatchIds);
         this.startedAt = startedAt;
         this.completedAt = completedAt;
+        this.totalInputKg = totalInputKg;
+        this.totalOutputKg = totalOutputKg;
+        this.wasteKg = wasteKg;
+        this.wasteReason = wasteReason;
+        this.shrinkageKg = shrinkageKg;
     }
 
     UUID getId() {
@@ -117,5 +143,25 @@ class TransformationJpaEntity {
 
     LocalDateTime getCompletedAt() {
         return completedAt;
+    }
+
+    BigDecimal getTotalInputKg() {
+        return totalInputKg;
+    }
+
+    BigDecimal getTotalOutputKg() {
+        return totalOutputKg;
+    }
+
+    BigDecimal getWasteKg() {
+        return wasteKg;
+    }
+
+    String getWasteReason() {
+        return wasteReason;
+    }
+
+    BigDecimal getShrinkageKg() {
+        return shrinkageKg;
     }
 }

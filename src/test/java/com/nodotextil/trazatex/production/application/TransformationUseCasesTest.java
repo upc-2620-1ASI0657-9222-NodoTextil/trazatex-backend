@@ -14,6 +14,13 @@ import com.nodotextil.trazatex.production.domain.OperationalPhase;
 import com.nodotextil.trazatex.production.domain.Transformation;
 import com.nodotextil.trazatex.production.domain.TransformationRepository;
 import com.nodotextil.trazatex.production.domain.TransformationType;
+import com.nodotextil.trazatex.production.domain.strategy.CuttingTransformationStrategy;
+import com.nodotextil.trazatex.production.domain.strategy.DyeingTransformationStrategy;
+import com.nodotextil.trazatex.production.domain.strategy.FinishingTransformationStrategy;
+import com.nodotextil.trazatex.production.domain.strategy.GarmentingTransformationStrategy;
+import com.nodotextil.trazatex.production.domain.strategy.SpinningTransformationStrategy;
+import com.nodotextil.trazatex.production.domain.strategy.TransformationStrategyFactory;
+import com.nodotextil.trazatex.production.domain.strategy.WeavingTransformationStrategy;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
@@ -140,7 +147,8 @@ class TransformationUseCasesTest {
                 machine.id(),
                 TransformationType.SPINNING,
                 List.of(input.id()),
-                LocalDateTime.now(FIXED_CLOCK));
+                LocalDateTime.now(FIXED_CLOCK),
+                input.quantityKg());
         transformationRepository.save(transformation);
 
         assertThatThrownBy(() -> complete(transformation))
@@ -177,6 +185,54 @@ class TransformationUseCasesTest {
         assertThat(output.composition()).isEqualTo(input.composition());
     }
 
+    @Test
+    void recordsValidTransformationBalance() {
+        Batch input = createInput();
+        Transformation transformation = start(List.of(input.id()));
+
+        CompleteTransformationUseCase.Result result = complete(
+                transformation, new BigDecimal("90"), new BigDecimal("5"), "Cutting waste");
+
+        Transformation completed = result.transformation();
+        assertThat(completed.totalInputKg()).isEqualByComparingTo("100");
+        assertThat(completed.totalOutputKg()).isEqualByComparingTo("90");
+        assertThat(completed.wasteKg()).isEqualByComparingTo("5");
+        assertThat(completed.wasteReason()).isEqualTo("Cutting waste");
+        assertThat(completed.shrinkageKg()).isEqualByComparingTo("5");
+        assertThat(completed.totalOutputKg()
+                .add(completed.shrinkageKg())
+                .add(completed.wasteKg()))
+                .isEqualByComparingTo(completed.totalInputKg());
+    }
+
+    @Test
+    void rejectsNegativeTransformationBalance() {
+        Batch input = createInput();
+        Transformation transformation = start(List.of(input.id()));
+
+        assertThatThrownBy(() -> complete(
+                transformation, new BigDecimal("96"), new BigDecimal("5"), "Cutting waste"))
+                .isInstanceOf(InvalidTransformationException.class)
+                .hasMessageContaining("cannot exceed");
+
+        assertThat(input.operationalPhase()).isEqualTo(OperationalPhase.IN_TRANSFORMATION);
+        assertThat(transformation.isCompleted()).isFalse();
+    }
+
+    @Test
+    void rejectsWasteWithoutReason() {
+        Batch input = createInput();
+        Transformation transformation = start(List.of(input.id()));
+
+        assertThatThrownBy(() -> complete(
+                transformation, new BigDecimal("90"), new BigDecimal("5"), null))
+                .isInstanceOf(InvalidTransformationException.class)
+                .hasMessageContaining("reason");
+
+        assertThat(input.operationalPhase()).isEqualTo(OperationalPhase.IN_TRANSFORMATION);
+        assertThat(transformation.isCompleted()).isFalse();
+    }
+
     private Batch createInput() {
         RegisterBatchUseCase registerUseCase =
                 new RegisterBatchUseCase(batchRepository, FIXED_CLOCK);
@@ -202,16 +258,40 @@ class TransformationUseCasesTest {
     }
 
     private CompleteTransformationUseCase.Result complete(Transformation transformation) {
+        return complete(transformation, new BigDecimal("90"), BigDecimal.ZERO, null);
+    }
+
+    private CompleteTransformationUseCase.Result complete(
+            Transformation transformation,
+            BigDecimal outputQuantityKg,
+            BigDecimal wasteKg,
+            String wasteReason) {
         CompleteTransformationUseCase useCase = new CompleteTransformationUseCase(
-                transformationRepository, batchRepository, eventPublisher, FIXED_CLOCK);
+                transformationRepository,
+                batchRepository,
+                eventPublisher,
+                strategyFactory(),
+                FIXED_CLOCK);
         return useCase.execute(
                 transformation.id(),
                 new CompleteTransformationUseCase.Command(List.of(
                         new CompleteTransformationUseCase.OutputCommand(
-                                new BigDecimal("90"),
+                                outputQuantityKg,
                                 MaterialType.YARN,
                                 "Lima, Peru",
-                                "Transformation output"))));
+                                "Transformation output")),
+                        wasteKg,
+                        wasteReason));
+    }
+
+    private TransformationStrategyFactory strategyFactory() {
+        return new TransformationStrategyFactory(List.of(
+                new SpinningTransformationStrategy(),
+                new WeavingTransformationStrategy(),
+                new DyeingTransformationStrategy(),
+                new FinishingTransformationStrategy(),
+                new CuttingTransformationStrategy(),
+                new GarmentingTransformationStrategy()));
     }
 
     private static final class InMemoryMachineRepository implements MachineRepository {

@@ -4,13 +4,14 @@ import com.nodotextil.trazatex.production.application.event.TransformationComple
 import com.nodotextil.trazatex.production.application.event.TransformationEventPublisher;
 import com.nodotextil.trazatex.production.domain.Batch;
 import com.nodotextil.trazatex.production.domain.BatchRepository;
-import com.nodotextil.trazatex.production.domain.CompositionCalculator;
 import com.nodotextil.trazatex.production.domain.CompositionComponent;
 import com.nodotextil.trazatex.production.domain.InvalidTransformationException;
 import com.nodotextil.trazatex.production.domain.MaterialType;
 import com.nodotextil.trazatex.production.domain.OperationalPhase;
 import com.nodotextil.trazatex.production.domain.Transformation;
 import com.nodotextil.trazatex.production.domain.TransformationRepository;
+import com.nodotextil.trazatex.production.domain.strategy.TransformationStrategy;
+import com.nodotextil.trazatex.production.domain.strategy.TransformationStrategyFactory;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -29,16 +30,19 @@ public class CompleteTransformationUseCase {
     private final TransformationRepository transformationRepository;
     private final BatchRepository batchRepository;
     private final TransformationEventPublisher eventPublisher;
+    private final TransformationStrategyFactory strategyFactory;
     private final Clock clock;
 
     public CompleteTransformationUseCase(
             TransformationRepository transformationRepository,
             BatchRepository batchRepository,
             TransformationEventPublisher eventPublisher,
+            TransformationStrategyFactory strategyFactory,
             Clock clock) {
         this.transformationRepository = transformationRepository;
         this.batchRepository = batchRepository;
         this.eventPublisher = eventPublisher;
+        this.strategyFactory = strategyFactory;
         this.clock = clock;
     }
 
@@ -57,8 +61,9 @@ public class CompleteTransformationUseCase {
         inputs.forEach(CompleteTransformationUseCase::validateInputInTransformation);
 
         LocalDateTime completedAt = LocalDateTime.now(clock);
+        TransformationStrategy strategy = strategyFactory.getStrategy(transformation.type());
         List<CompositionComponent> outputComposition =
-                CompositionCalculator.weightedByQuantity(inputs);
+                strategy.calculateOutputComposition(inputs);
         String supplierName = inputs.size() == 1 ? inputs.getFirst().supplierName() : null;
         Set<UUID> allocatedIds = new HashSet<>();
         Set<String> allocatedTraceabilityIds = new HashSet<>();
@@ -83,8 +88,16 @@ public class CompleteTransformationUseCase {
                         output.receptionCharacteristics()))
                 .toList();
 
+        BigDecimal totalOutputKg = outputs.stream()
+                .map(Batch::quantityKg)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        transformation.complete(
+                outputs.stream().map(Batch::id).toList(),
+                completedAt,
+                totalOutputKg,
+                command.wasteKg(),
+                command.wasteReason());
         inputs.forEach(Batch::markAsProcessed);
-        transformation.complete(outputs.stream().map(Batch::id).toList(), completedAt);
 
         List<Batch> batchesToSave = new ArrayList<>(inputs.size() + outputs.size());
         batchesToSave.addAll(inputs);
@@ -149,7 +162,7 @@ public class CompleteTransformationUseCase {
         throw new IllegalStateException("Could not generate a unique batch identifier");
     }
 
-    public record Command(List<OutputCommand> outputs) {
+    public record Command(List<OutputCommand> outputs, BigDecimal wasteKg, String wasteReason) {
     }
 
     public record OutputCommand(

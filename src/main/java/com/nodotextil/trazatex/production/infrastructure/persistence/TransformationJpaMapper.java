@@ -17,7 +17,12 @@ final class TransformationJpaMapper {
                 transformation.inputBatchIds(),
                 transformation.outputBatchIds(),
                 transformation.startedAt(),
-                transformation.completedAt());
+                transformation.completedAt(),
+                transformation.totalInputKg(),
+                transformation.totalOutputKg(),
+                transformation.wasteKg(),
+                transformation.wasteReason(),
+                transformation.shrinkageKg());
     }
 
     static Transformation toDomain(TransformationJpaEntity entity) {
@@ -30,6 +35,11 @@ final class TransformationJpaMapper {
                 entity.getInputBatchIds(),
                 entity.getOutputBatchIds(),
                 entity.getStartedAt(),
-                entity.getCompletedAt());
+                entity.getCompletedAt(),
+                entity.getTotalInputKg(),
+                entity.getTotalOutputKg(),
+                entity.getWasteKg(),
+                entity.getWasteReason(),
+                entity.getShrinkageKg());
     }
 }

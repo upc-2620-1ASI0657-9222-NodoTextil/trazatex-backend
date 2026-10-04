@@ -14,7 +14,15 @@ import com.nodotextil.trazatex.production.application.event.TransformationEventP
 import com.nodotextil.trazatex.production.domain.BatchRepository;
 import com.nodotextil.trazatex.production.domain.MachineRepository;
 import com.nodotextil.trazatex.production.domain.TransformationRepository;
+import com.nodotextil.trazatex.production.domain.strategy.CuttingTransformationStrategy;
+import com.nodotextil.trazatex.production.domain.strategy.DyeingTransformationStrategy;
+import com.nodotextil.trazatex.production.domain.strategy.FinishingTransformationStrategy;
+import com.nodotextil.trazatex.production.domain.strategy.GarmentingTransformationStrategy;
+import com.nodotextil.trazatex.production.domain.strategy.SpinningTransformationStrategy;
+import com.nodotextil.trazatex.production.domain.strategy.TransformationStrategyFactory;
+import com.nodotextil.trazatex.production.domain.strategy.WeavingTransformationStrategy;
 import java.time.Clock;
+import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -69,11 +77,13 @@ public class ProductionConfiguration {
     CompleteTransformationUseCase completeTransformationUseCase(
             TransformationRepository transformationRepository,
             BatchRepository batchRepository,
-            TransformationEventPublisher eventPublisher) {
+            TransformationEventPublisher eventPublisher,
+            TransformationStrategyFactory strategyFactory) {
         return new CompleteTransformationUseCase(
                 transformationRepository,
                 batchRepository,
                 eventPublisher,
+                strategyFactory,
                 Clock.systemUTC());
     }
 
@@ -81,5 +91,16 @@ public class ProductionConfiguration {
     GetTransformationUseCase getTransformationUseCase(
             TransformationRepository transformationRepository) {
         return new GetTransformationUseCase(transformationRepository);
+    }
+
+    @Bean
+    TransformationStrategyFactory transformationStrategyFactory() {
+        return new TransformationStrategyFactory(List.of(
+                new SpinningTransformationStrategy(),
+                new WeavingTransformationStrategy(),
+                new DyeingTransformationStrategy(),
+                new FinishingTransformationStrategy(),
+                new CuttingTransformationStrategy(),
+                new GarmentingTransformationStrategy()));
     }
 }
