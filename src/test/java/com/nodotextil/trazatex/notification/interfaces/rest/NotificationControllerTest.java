@@ -4,7 +4,7 @@ import com.nodotextil.trazatex.shared.security.SecurityConfig;
 import com.nodotextil.trazatex.notification.application.CountUnreadNotificationsUseCase;
 import com.nodotextil.trazatex.notification.application.ListNotificationsUseCase;
 import com.nodotextil.trazatex.notification.application.MarkNotificationAsReadUseCase;
-import com.nodotextil.trazatex.organization.application.contract.OrganizationAccess;
+import com.nodotextil.trazatex.organizationaccess.application.contract.OrganizationAccess;
 import com.nodotextil.trazatex.shared.security.JwtConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
