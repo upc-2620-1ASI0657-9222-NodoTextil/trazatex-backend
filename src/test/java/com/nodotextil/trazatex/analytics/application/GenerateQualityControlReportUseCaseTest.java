@@ -27,7 +27,7 @@ class GenerateQualityControlReportUseCaseTest {
         var snapshot = new QualityReportQueries.CompletedControlSnapshot(
                 controlId, batchId,
                 List.of(new QualityReportQueries.TestSnapshot(
-                        "color", "azul", "azul", "visual", "PASSED")));
+                        "color", "azul", "azul", "visual", "PASSED", null)));
 
         when(reportQueries.findCompletedControl(controlId)).thenReturn(Optional.of(snapshot));
         when(pdfGenerator.generateQualityControlReport(eq(controlId), anyList()))
