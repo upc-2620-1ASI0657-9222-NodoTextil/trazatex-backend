@@ -2,6 +2,9 @@ package com.nodotextil.trazatex.traceability.infrastructure;
 
 import com.nodotextil.trazatex.traceability.application.GetLineageUseCase;
 import com.nodotextil.trazatex.traceability.application.RecordLineageUseCase;
+import com.nodotextil.trazatex.traceability.application.GetSharedLineageUseCase;
+import com.nodotextil.trazatex.traceability.application.SearchLineageUseCase;
+import com.nodotextil.trazatex.traceability.application.port.PrivacySettingsPort;
 import com.nodotextil.trazatex.traceability.application.port.BatchInfoPort;
 import com.nodotextil.trazatex.traceability.domain.LineageRepository;
 import org.springframework.context.annotation.Bean;
@@ -19,5 +22,19 @@ public class TraceabilityConfiguration {
     GetLineageUseCase getLineageUseCase(
             LineageRepository lineageRepository, BatchInfoPort batchInfo) {
         return new GetLineageUseCase(lineageRepository, batchInfo);
+    }
+
+    @Bean
+    GetSharedLineageUseCase getSharedLineageUseCase(
+            GetLineageUseCase getLineageUseCase,
+            BatchInfoPort batchInfo,
+            PrivacySettingsPort privacySettings) {
+        return new GetSharedLineageUseCase(getLineageUseCase, batchInfo, privacySettings);
+    }
+
+    @Bean
+    SearchLineageUseCase searchLineageUseCase(
+            BatchInfoPort batchInfo, PrivacySettingsPort privacySettings) {
+        return new SearchLineageUseCase(batchInfo, privacySettings);
     }
 }
