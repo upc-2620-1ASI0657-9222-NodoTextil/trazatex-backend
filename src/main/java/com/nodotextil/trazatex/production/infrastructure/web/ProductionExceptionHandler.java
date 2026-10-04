@@ -2,8 +2,10 @@ package com.nodotextil.trazatex.production.infrastructure.web;
 
 import com.nodotextil.trazatex.production.application.BatchNotFoundException;
 import com.nodotextil.trazatex.production.application.MachineNotFoundException;
+import com.nodotextil.trazatex.production.application.TransformationNotFoundException;
 import com.nodotextil.trazatex.production.domain.InvalidBatchException;
 import com.nodotextil.trazatex.production.domain.InvalidMachineException;
+import com.nodotextil.trazatex.production.domain.InvalidTransformationException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
@@ -15,7 +17,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-@RestControllerAdvice(assignableTypes = {BatchController.class, MachineController.class})
+@RestControllerAdvice(assignableTypes = {
+    BatchController.class, MachineController.class, TransformationController.class
+})
 public class ProductionExceptionHandler {
 
     @ExceptionHandler(BatchNotFoundException.class)
@@ -30,7 +34,19 @@ public class ProductionExceptionHandler {
                 .body(new ApiError("MACHINE_NOT_FOUND", exception.getMessage(), Map.of()));
     }
 
-    @ExceptionHandler({InvalidBatchException.class, InvalidMachineException.class})
+    @ExceptionHandler(TransformationNotFoundException.class)
+    ResponseEntity<ApiError> handleTransformationNotFound(
+            TransformationNotFoundException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ApiError(
+                        "TRANSFORMATION_NOT_FOUND", exception.getMessage(), Map.of()));
+    }
+
+    @ExceptionHandler({
+        InvalidBatchException.class,
+        InvalidMachineException.class,
+        InvalidTransformationException.class
+    })
     ResponseEntity<ApiError> handleDomainValidation(RuntimeException exception) {
         return ResponseEntity.badRequest()
                 .body(new ApiError("VALIDATION_ERROR", exception.getMessage(), Map.of()));

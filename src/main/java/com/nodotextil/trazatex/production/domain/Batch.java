@@ -145,6 +145,22 @@ public final class Batch {
         operationalPhase = OperationalPhase.SPLIT;
     }
 
+    public void startTransformation() {
+        if (operationalPhase != OperationalPhase.AVAILABLE) {
+            throw new InvalidBatchException(
+                    "Only an AVAILABLE batch can enter a transformation");
+        }
+        operationalPhase = OperationalPhase.IN_TRANSFORMATION;
+    }
+
+    public void markAsProcessed() {
+        if (operationalPhase != OperationalPhase.IN_TRANSFORMATION) {
+            throw new InvalidBatchException(
+                    "Only an IN_TRANSFORMATION batch can be processed");
+        }
+        operationalPhase = OperationalPhase.PROCESSED;
+    }
+
     public UUID id() {
         return id;
     }
