@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
-public final class ManageFailureUseCase {
+public class ManageFailureUseCase {
 
     private final FailureRepository failureRepository;
     private final BatchQualityRepository batchQualityRepository;

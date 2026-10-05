@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
-public final class FinishQualityControlUseCase {
+public class FinishQualityControlUseCase {
 
     private final QualityControlRepository qualityControlRepository;
     private final BatchQualityRepository batchQualityRepository;

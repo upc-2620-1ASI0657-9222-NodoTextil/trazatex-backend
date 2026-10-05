@@ -5,7 +5,7 @@ import com.nodotextil.trazatex.quality.application.port.BatchQualityRepository;
 import com.nodotextil.trazatex.quality.domain.BatchQuality;
 import java.util.UUID;
 
-public final class InitializeBatchQualityUseCase {
+public class InitializeBatchQualityUseCase {
 
     private final BatchQualityRepository repository;
 

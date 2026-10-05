@@ -15,7 +15,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 
-public final class UploadQualityEvidenceUseCase {
+public class UploadQualityEvidenceUseCase {
 
     private final QualityControlRepository qualityControlRepository;
     private final FailureRepository failureRepository;

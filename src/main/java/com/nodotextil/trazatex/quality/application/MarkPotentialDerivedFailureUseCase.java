@@ -9,7 +9,7 @@ import com.nodotextil.trazatex.quality.domain.InvalidQualityControlException;
 import java.util.Objects;
 import java.util.UUID;
 
-public final class MarkPotentialDerivedFailureUseCase {
+public class MarkPotentialDerivedFailureUseCase {
 
     private final BatchQualityRepository batchQualityRepository;
     private final ProductionQualityPort productionQualityPort;

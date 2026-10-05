@@ -10,7 +10,7 @@ import com.nodotextil.trazatex.quality.domain.TestResult;
 import java.util.Objects;
 import java.util.UUID;
 
-public final class RegisterQualityTestUseCase {
+public class RegisterQualityTestUseCase {
 
     private final QualityControlRepository qualityControlRepository;
 
