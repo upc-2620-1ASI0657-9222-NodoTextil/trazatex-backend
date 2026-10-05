@@ -36,13 +36,16 @@ import org.springframework.web.bind.annotation.RestController;
 @WebMvcTest(SecurityConfigTest.ProbeController.class)
 @Import({ SecurityConfig.class, JwtConfiguration.class, ActiveMembershipSecurityConfiguration.class,
 		SecurityConfigTest.ProbeController.class })
-@TestPropertySource(properties = "app.security.jwt-secret=" + SecurityConfigTest.SECRET)
+@TestPropertySource(properties = "app.security.jwt-issuer=trazatex")
 class SecurityConfigTest {
 
 	static final String SECRET = "a-test-secret-with-at-least-32-bytes!";
 
 	@Autowired
 	private MockMvc mockMvc;
+
+	@Autowired
+	private org.springframework.security.oauth2.jwt.JwtEncoder jwtEncoder;
 
 	@MockitoBean
 	private OrganizationAccess organizationAccess;
@@ -88,19 +91,15 @@ class SecurityConfigTest {
 		String adminOnly() {
 			return "admin";
 		}
-	}
-
-	private String token(String role, UUID company, String issuer, Instant expiresAt) {
+	}	private String token(String role, UUID company, String issuer, Instant expiresAt) {
 		JwtClaimsSet.Builder claims = JwtClaimsSet.builder().issuer(issuer)
 				.subject(userId.toString()).issuedAt(Instant.now().minusSeconds(900))
 				.expiresAt(expiresAt).claim("userId", userId.toString()).claim("role", role);
 		if (company != null) {
 			claims.claim("companyId", company.toString());
 		}
-		NimbusJwtEncoder encoder = new NimbusJwtEncoder(new ImmutableSecret<>(
-				new SecretKeySpec(SECRET.getBytes(StandardCharsets.UTF_8), "HmacSHA256")));
-		return encoder.encode(JwtEncoderParameters
-				.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims.build())).getTokenValue();
+		return jwtEncoder.encode(JwtEncoderParameters.from(
+				JwsHeader.with(org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS256).build(), claims.build())).getTokenValue();
 	}
 
 	private String validToken(String role) {
@@ -174,3 +173,4 @@ class SecurityConfigTest {
 				.andExpect(status().isUnauthorized());
 	}
 }
+

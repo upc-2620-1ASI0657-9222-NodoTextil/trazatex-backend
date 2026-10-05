@@ -76,13 +76,13 @@ class TraceabilityControllerTest {
     }
 
     @Test
-    void aLicenseOwnerWithoutCompanyQueriesAsAnOutsider() throws Exception {
+    void licenseOwnerCannotQueryOperationalTraceability() throws Exception {
         when(getSharedLineage.execute(batchId, null, LineageDirection.FORWARD))
                 .thenReturn(viewOf(companyId, Map.of()));
 
         mockMvc.perform(get("/api/traceability/batches/{id}/descendants", batchId)
                         .with(TestJwt.licenseOwner(userId)))
-                .andExpect(status().isOk());
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -124,3 +124,5 @@ class TraceabilityControllerTest {
         return new LotView(batchId, "TRZ-001", owner, "YARN", "AVAILABLE", false, NOW, sharedData);
     }
 }
+
+

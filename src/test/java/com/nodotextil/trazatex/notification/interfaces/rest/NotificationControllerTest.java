@@ -41,7 +41,7 @@ class NotificationControllerTest {
         UUID userId = UUID.randomUUID();
         when(countUnread.count(userId)).thenReturn(3L);
         mockMvc.perform(get("/api/notifications/unread-count")
-                        .with(jwt().jwt(j -> j.claim("userId", userId.toString()))))
+                        .with(jwt().jwt(j -> j.claim("userId", userId.toString()).claim("role", "OPERATOR")).authorities(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_OPERATOR"))))
                 .andExpect(status().isOk())
                 .andExpect(content().string("3"));
     }

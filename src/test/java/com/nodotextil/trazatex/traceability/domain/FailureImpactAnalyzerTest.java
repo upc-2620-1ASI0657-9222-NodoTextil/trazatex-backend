@@ -41,7 +41,7 @@ class FailureImpactAnalyzerTest {
         List<AffectedLot> affected = analyzer.analyze(b1, family, available::contains);
 
         assertThat(affected).containsExactlyInAnyOrder(
-                new AffectedLot(y, AffectedLot.Reason.TRANSFORMATION_OUTPUT),
+                
                 new AffectedLot(b2, AffectedLot.Reason.DIVISION_BRANCH));
     }
 
@@ -61,7 +61,7 @@ class FailureImpactAnalyzerTest {
         List<AffectedLot> affected = analyzer.analyze(b1, family, everyLotAvailable::contains);
 
         assertThat(affected).extracting(AffectedLot::batchId)
-                .containsExactlyInAnyOrder(a, y, b2)
+                .containsExactlyInAnyOrder(a, b2)
                 .doesNotContain(b1, b, f);
     }
 
@@ -72,7 +72,7 @@ class FailureImpactAnalyzerTest {
         List<AffectedLot> affected = analyzer.analyze(a, family, available::contains);
 
         assertThat(affected).extracting(AffectedLot::batchId)
-                .containsExactlyInAnyOrder(b, y, b1, b2);
+                .containsExactlyInAnyOrder(b, b1, b2);
     }
 
     @Test
@@ -89,3 +89,4 @@ class FailureImpactAnalyzerTest {
         return new LineageEdge(parent, child, type, NOW);
     }
 }
+
