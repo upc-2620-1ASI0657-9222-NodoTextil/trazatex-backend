@@ -1,0 +1,204 @@
+.page--lotes { --section-ink: #264b36; }
+.page--lote-detalle { --section-ink: #264b36; }
+.page--procesos { --section-ink: #91603c; }
+.page--proceso-detalle { --section-ink: #91603c; }
+.page--transferencias { --section-ink: #47765c; }
+.page--maquinaria { --section-ink: #123e2b; }
+.page--usuarios { --section-ink: #1c5139; }
+.page--empresas { --section-ink: #8a633e; }
+.page--licencia { --section-ink: #786142; }
+.page--privacidad { --section-ink: #587455; }
+.page--analitica { --section-ink: #7b634b; }
+.page--notificaciones { --section-ink: #41684a; }
+.page--perfil { --section-ink: #466f56; }
+.page--calidad { --section-ink: #98704b; }
+.page--fallas { --section-ink: #824936; }
+
+
+.page:not(.login-page) > .page-head,
+.work-page > .page-head {
+  position: relative;
+  background: #fff;
+  color: var(--green-900);
+  border-top: 2px solid var(--section-ink, var(--green-800));
+  border-bottom: 0;
+  box-shadow: none;
+  padding: 1.2rem 1.1rem;
+}
+.page:not(.login-page) > .page-head .page-title,
+.work-page > .page-head .page-title { color: var(--green-900); }
+.page:not(.login-page) > .page-head .eyebrow:not(a),
+.page:not(.login-page) > .page-head .page-lead { display: none; }
+.page-title .section-icon {
+  color: var(--section-ink, var(--green-800));
+  width: .91em;
+  height: .91em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+.page-title .section-icon svg { width: 100%; height: 100%; }
+.page--lotes .row-card,
+.page--procesos .row-card,
+.page--transferencias .row-card,
+.page--empresas .row-card,
+.page--licencia .row-card,
+.page--privacidad .row-card,
+.page--analitica .row-card,
+.page--notificaciones .row-card,
+.page--perfil .row-card,
+.page--calidad .row-card,
+.page--fallas .row-card,
+.page--lotes .card,
+.page--procesos .card,
+.page--transferencias .card,
+.page--empresas .card,
+.page--licencia .card,
+.page--privacidad .card,
+.page--analitica .card,
+.page--notificaciones .card,
+.page--perfil .card {
+  background: #fff;
+  background-image: none;
+}
+.page--maquinaria .row-card {
+  background: linear-gradient(rgb(250 248 241 / .71),rgb(250 248 241 / .71)), url('/tex/dots.webp') center / 300px, #fbf8f1;
+}
+.page--usuarios .row-card {
+  background: linear-gradient(rgb(251 249 245 / .6),rgb(251 249 245 / .6)), url('/tex/usuarios.webp') center / 310px, #fbf8f1;
+}
+.page--maquinaria .row-card > .rc-figure { color: #173e2d; }
+.page--usuarios .row-card > .rc-figure { color: #194e38; }
+:is(.page--lotes,.page--procesos,.page--transferencias,.page--empresas,.page--usuarios,.page--maquinaria) .row-card:has(> .rc-figure) {
+  position: relative;
+  min-height: 8.2rem;
+}
+:is(.page--lotes,.page--procesos,.page--transferencias,.page--empresas,.page--usuarios,.page--maquinaria) .row-card > .rc-figure {
+  position: absolute;
+  left: 1rem;
+  top: 3rem;
+  color: var(--section-ink, #1b4c34);
+  opacity: .95;
+}
+:is(.page--lotes,.page--procesos,.page--transferencias,.page--empresas,.page--usuarios,.page--maquinaria) .row-card > :is(.rc-title,.rc-meta) {
+  padding-left: 4.2rem;
+}
+@media (max-width: 650px) {
+  :is(.page--lotes,.page--procesos,.page--transferencias,.page--empresas,.page--usuarios,.page--maquinaria) .row-card > .rc-figure { left: .75rem; }
+  :is(.page--lotes,.page--procesos,.page--transferencias,.page--empresas,.page--usuarios,.page--maquinaria) .row-card > :is(.rc-title,.rc-meta) { padding-left: 3.6rem; }
+}
+.page--lote-detalle .qr-sheet { min-height: 19rem; justify-content: center; padding: 1.5rem 1rem; }
+.page--lote-detalle .qr-sheet > p { display: none; }
+.page--lote-detalle .qr-sheet app-qr-tag { max-width: 19rem; }
+
+.detail-page .detail-identity .page-title { gap: .42em; }
+.detail-page .detail-identity .page-title .section-icon { flex: none; }
+.header-upload { position: relative; display: inline-flex; align-items: center; cursor: pointer; }
+.header-upload input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.header-upload:focus-within { outline: 2px solid var(--green-800); outline-offset: 2px; }
+.page--licencia .kpis .kpi:first-child .capacity-percent { color: #fff9ed; }
+.page--licencia .sheet-head .capacity-percent { color: var(--cream-50); }
+
+
+.page--licencia .tag {
+  background: #fff;
+  background-image: none;
+  color: var(--green-900);
+  border: 1px solid rgb(15 46 32 / .18);
+}
+.page--licencia .tag .label,
+.page--licencia .tag .dl > dt { color: var(--cream-50) !important; }
+.page--licencia .tag .kind,
+.page--licencia .tag .dl > dd { color: var(--cream-50) !important; }
+.page--licencia .tag .dl > dt,
+.page--licencia .tag .dl > dd { border-bottom-color: rgb(15 46 32 / .14); }
+.page--licencia .tag .hole { background: var(--green-900); box-shadow: none; }
+.page--licencia .kpis .kpi:first-child .capacity-percent { color: #fffaf0; }
+.page--licencia .sheet-head .capacity-percent { color: var(--cream-50); }
+.trace-page .trace-header {
+  margin: 0 0 .9rem;
+  padding: 1.1rem 1.25rem;
+  background: #fff;
+  border-top: 2px solid #486c55;
+  border-bottom: 0;
+  box-shadow: none;
+}
+.trace-page .trace-header h1 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .38em;
+  color: var(--green-900);
+}
+.trace-page .trace-header .trace-title-icon {
+  flex: none;
+  width: .84em;
+  height: .84em;
+  color: #547459;
+}
+.trace-page .trace-header .trace-title-icon svg { width: 100%; height: 100%; stroke-width: 1.35; }
+
+h1, h2, h3, h4, .page-title, .sheet-title { text-align: left !important; justify-content: flex-start; }
+
+app-login .login-card h2 { font-weight: 700 !important; white-space: nowrap; }
+.topbar .proto { border-left: 0; }
+.topbar .proto .label { font-weight: 700; white-space: nowrap; }
+
+.rail .ctx-text b, .rail .txt { color: inherit; }
+.rail .nav-item.active app-icon { color: var(--green-900); }
+.rail .ctx-text .label { color: var(--cream); }
+.rail app-icon svg { max-width: 100%; max-height: 100%; }
+.topbar .proto { margin-left: auto; padding-left: .25rem; width: auto; justify-content: flex-end; }
+.topbar .header-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; }
+.topbar .header-actions .btn--ghost { border-color: var(--green-800); color: var(--green-900); background: #f6f1e4; }
+
+/* Superficies de la aplicacion empresarial. El acceso conserva su identidad. */
+app-shell *, app-shell *::before, app-shell *::after { background-image: none !important; }
+app-shell :is(.btn, .row-card, .sheet, .fold, .panel-list, .review, .mini, .d-section, .dialog, .drawer, .filters, .topbar, .rail, .trace-detail, .trace-filters, .trace-controls, .trace-search, .inbox, .inbox li, .metric-row, .rel li, .history li, .tests li, .sum-line, .balance, .dl dt, .dl dd) { border: 0; }
+app-shell .input:not([aria-invalid="true"]):not(.ng-invalid.ng-touched), app-shell .select:not([aria-invalid="true"]), app-shell .textarea:not([aria-invalid="true"]) { border: 0; background-color: #fff; box-shadow: none; }
+app-shell :is(input, select, textarea, button, a):focus-visible { outline: 2px solid var(--green-600); outline-offset: 3px; }
+app-shell :is(.btn--primary, app-action .btn--primary) { background: var(--green-800); color: #fff; border: 0; }
+app-shell .btn--primary:hover { background: var(--green-950); }
+app-shell .btn--ghost { background: var(--canvas-2); color: var(--brown-ink); }
+app-shell .btn--ghost:hover { background: var(--kraft); color: var(--green-950); }
+app-shell .rows { gap: .75rem; }
+app-shell :is(.aside-stack, .split > .folds + .folds) .fold-head { background-color: var(--brown-ink); color: #fff; }
+app-shell :is(.aside-stack, .split > .folds + .folds) .fold-head :is(.fold-t, .fold-s, .fold-i) { color: inherit; }
+app-shell .rc-id { color: var(--muted); }
+app-shell .row-card--ok .rc-id, app-shell .row-card--fail .rc-id, app-shell .row-card--hist .rc-id { color: inherit; opacity: .8; }
+app-shell .row-card .rc-title { overflow-wrap: anywhere; }
+app-shell .row-card .rc-title small { margin-top: .25rem; font: 400 .84rem var(--f-body); }
+app-shell .evidence-draft { display: grid; gap: .6rem; padding: .85rem; margin: .75rem 0; background: var(--canvas-2); }
+app-shell .evid figure { min-width: 0; }
+app-shell .trace-block-nav .block-arrow { background: var(--brown-ink); color: #fff; }
+app-shell .trace-block-nav .block-arrow:disabled { opacity: .45; }
+app-shell .trace-detail .detail-link, app-shell .trace-directions button { background: var(--green-800); color: #fff; }
+app-shell .trace-detail .clear-detail { background: var(--canvas-2); color: var(--brown-ink); }
+app-shell .rel .label { color: var(--green-800); }
+app-shell .rel a { color: var(--brown-ink); }
+
+app-shell :is(.badge, .fold-head) { border: 0; }
+app-shell .dl > dd { min-width: 0; overflow-wrap: anywhere; }
+app-shell .dl .id { white-space: normal; overflow-wrap: anywhere; }
+
+app-shell :is(.btn, .row-card, .sheet, .fold, .fold-head, .panel-list, .review, .mini, .d-section, .dialog, .drawer, .filters, .topbar, .rail, .trace-detail, .trace-filters, .trace-controls, .trace-search, .trace-more, .search-field, .tree-zoom button, .trace-directions button, .clear-detail, .company, .node, .inbox, .inbox li, .metric-row, .rel li, .history li, .tests li, .sum-line, .balance, .dl dt, .dl dd, .subnav, .subnav button) { border: 0 !important; }
+app-shell :is(.input, .select, .textarea):not([aria-invalid="true"]):not(.ng-invalid.ng-touched) { border: 0 !important; }
+app-shell .trace-directions button, app-shell .trace-detail .detail-link:not(:disabled) { background: var(--green-800) !important; color: #fff !important; }
+app-shell .trace-detail .clear-detail { background: var(--canvas-2) !important; color: var(--brown-ink) !important; }
+
+app-shell .page-head { border: 0 !important; }
+
+app-shell { --kraft: #dac5ac; --kraft-2: #806044; --work-mustard: #806044; }
+app-shell .subnav { background: var(--green-900); color: var(--cream-50); }
+app-shell .subnav button { color: var(--cream-50); }
+app-shell .subnav button[aria-selected="true"] { background: var(--canvas-2); color: var(--green-900); }
+app-shell .subnav .n { color: inherit; background: transparent; }
+app-shell .kpi { background: var(--cream-50); color: var(--green-900); }
+app-shell .kpi :is(.label, .v, small, .capacity-percent) { color: var(--green-900); }
+/* La primera tarjeta es oscura (polish.css): su valor va en crema; sin esto quedaba verde oscuro sobre verde oscuro (1,08:1). */
+app-shell .kpi:nth-child(1) :is(.v, small, .capacity-percent) { color: var(--cream); }
+app-shell .sheet-head :is(.sheet-title, .capacity-percent, .label, .muted) { color: var(--cream-50); }
+app-shell .page--licencia .tag > .label { color: var(--cream-50); }
+app-shell .page--calidad .rc-id { font-size: .72rem; line-height: 1.4; }
+app-shell .page--calidad .rc-title small { font-size: .95rem; font-weight: 600; }

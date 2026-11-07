@@ -1,0 +1,257 @@
+<p role="status" class="label">{{ store.lineageStatus() }}</p>
+<div class="page trace-page">
+
+
+  <div class="trace-layout">
+    <aside class="trace-sidebar" aria-label="Filtros y detalle del elemento">
+      <section class="trace-filters" aria-label="Filtrar etapas">
+        <h2>Filtrar</h2>
+        @for (e of etapas; track e) {
+          <label class="stage-filter">
+            <input type="checkbox" [checked]="etapasVisibles().includes(e)" (change)="filtrarEtapa(e)" />
+            <span>{{ e }}</span>
+          </label>
+        }
+        <details class="trace-more">
+          <summary>Más filtros <app-icon name="chevronDown" [size]="14" /></summary>
+          <div class="trace-more-body">
+            <label class="trace-filter-field"><span>Calidad</span>
+              <select [ngModel]="calidadFiltro()" (ngModelChange)="calidadFiltro.set($event)" aria-label="Filtrar por calidad">
+                <option value="">Todos los estados</option>
+                @for (c of calidades; track c) { <option [value]="c">{{ c }}</option> }
+              </select>
+            </label>
+            <label class="trace-filter-field"><span>Estado del lote</span>
+              <select [ngModel]="faseFiltro()" (ngModelChange)="faseFiltro.set($event)" aria-label="Filtrar por estado de lote">
+                <option value="">Todos los estados</option>
+                @for (e of fases; track e) { <option [value]="e">{{ e }}</option> }
+              </select>
+            </label>
+            <label class="trace-filter-field"><span>Empresa</span>
+              <select [ngModel]="empresaFiltro()" (ngModelChange)="empresaFiltro.set($event)" aria-label="Filtrar por empresa">
+                <option value="">Todas las empresas</option>
+                @for (id of empresasBloque(); track id) { <option [value]="id">{{ store.nombreEmpresa(id) }}</option> }
+              </select>
+            </label>
+            <button type="button" class="filter-reset" (click)="limpiarFiltros()">Restablecer filtros</button>
+          </div>
+        </details>
+      </section>
+
+      <section class="trace-detail" aria-live="polite">
+        @if (selNode(); as n) {
+          <header class="trace-detail-head">
+            <span class="detail-id">{{ n.kind === 'lote' ? store.nombreLote(n.id) : n.kind === 'proceso' ? store.nombreProceso(procesoDe(n)) : n.kind === 'control' ? 'Control de calidad' : 'División de lote' }}</span>
+          </header>
+        }
+        <div class="trace-detail-scroll">
+          @if (selNode(); as n) {
+            @if (n.kind !== 'division') {
+              <button class="detail-link" type="button" [disabled]="!store.puedeVerPrivado(n.empresaId)" (click)="verDetalle()">{{ n.kind === 'control' ? 'Abrir control de calidad' : n.kind === 'proceso' ? 'Abrir proceso' : 'Abrir lote' }} <app-icon name="arrowRight" [size]="13" /></button>
+            }
+            <div class="trace-directions" role="group" aria-label="Recorrer relaciones">
+              <button type="button" [attr.aria-pressed]="dir() === 'atras'" (click)="trace('atras')">Ver origen</button>
+              <button type="button" [attr.aria-pressed]="dir() === 'adelante'" (click)="trace('adelante')">Ver descendencia</button>
+            </div>
+            <button type="button" class="clear-detail" (click)="selected.set(null); trace('ambos')">Limpiar selección</button>
+            @if (selLote(); as l) {
+              <dl class="detail-data">
+                <dt>Material</dt><dd>{{ l.material }}</dd>
+                <dt>Empresa</dt><dd>{{ store.nombreEmpresa(l.empresaId) }}</dd>
+                <dt>Estado</dt><dd>{{ l.fase }}</dd>
+                <dt>Calidad</dt><dd>{{ l.calidad }}</dd>
+                <dt>Cantidad</dt><dd>@if (store.puedeVer('cantidad', l.empresaId)) { {{ l.cantidadKg | kg }} } @else { <app-priv /> }</dd>
+                <dt>Composición</dt><dd>@if (store.puedeVer('composicion', l.empresaId)) {
+                  @for (c of l.composicion; track c.nombre) { <span>{{ c.porcentaje }} % {{ c.nombre }}</span> }
+                } @else { <app-priv /> }</dd>
+                <dt>Origen</dt><dd>@if (store.puedeVer('origen', l.empresaId)) { {{ l.origen }} } @else { <app-priv /> }</dd>
+              </dl>
+            } @else if (selProceso(); as proc) {
+              <dl class="detail-data">
+                <dt>Proceso</dt><dd>{{ proc.tipo }}</dd>
+                <dt>Empresa</dt><dd>{{ store.nombreEmpresa(proc.empresaId) }}</dd>
+                <dt>Entradas</dt><dd>{{ proc.entradas.length }}</dd>
+                <dt>Salidas</dt><dd>{{ proc.salidasIds.length }}</dd>
+                <dt>Estado</dt><dd>{{ proc.fin ? 'Finalizado' : 'En curso' }}</dd>
+              </dl>
+            } @else if (selDivision(); as d) {
+              <dl class="detail-data">
+                <dt>Lote origen</dt><dd>{{ store.nombreLote(d.loteOrigenId) }}</dd>
+                <dt>Derivados</dt><dd>@for (id of d.lotesHijosIds; track id) { <span>{{ store.nombreLote(id) }} </span> }</dd>
+                <dt>Empresa</dt><dd>{{ store.nombreEmpresa(d.empresaId) }}</dd>
+              </dl>
+            } @else if (selControl(); as c) {
+              <dl class="detail-data">
+                <dt>Lote</dt><dd>{{ c.loteId }}</dd>
+                <dt>Tipo</dt><dd>{{ c.tipo }}</dd>
+                <dt>Resultado</dt><dd>{{ resultado(c.id) }}</dd>
+              </dl>
+            }
+
+          } @else {
+            <p class="detail-empty">Selecciona un elemento del árbol para consultar sus datos.</p>
+            <div class="trace-directions">
+              <button type="button" disabled>Ver origen</button>
+              <button type="button" disabled>Ver descendencia</button>
+            </div>
+          }
+        </div>
+      </section>
+    </aside>
+
+    <section class="trace-content" aria-label="Árbol genealógico">
+  <form class="trace-search" (submit)="$event.preventDefault(); buscar()" role="search">
+    <div class="search-field">
+      <app-icon name="search" [size]="16" />
+      <input class="input" name="lote" list="lot-ids" [ngModel]="query()" (ngModelChange)="query.set($event)"
+        placeholder="Buscar por nombre o Traceability ID" aria-label="Buscar lote" />
+      <datalist id="lot-ids">
+        @for (id of sugerencias(); track id) { <option [value]="id">{{ store.nombreLote(id) }}</option> }
+      </datalist>
+    @if (query()) { <button type="button" class="btn btn--ghost" aria-label="Limpiar búsqueda" (click)="query.set('')"><app-icon name="x" [size]="16" /></button> }
+    </div>
+    <button class="btn btn--primary" type="submit">Trazar</button>
+
+  </form>
+      @if (visibles().length) {
+        <div class="trace-controls">
+        <nav class="trace-block-nav" aria-label="Seleccionar bloque genealógico">
+          <button type="button" class="block-arrow" [disabled]="idxBloque() === 0" (click)="moverBloque(-1)" aria-label="Bloque anterior">
+            <app-icon name="chevronLeft" [size]="16" />
+          </button>
+          <label class="block-main">
+            <span class="block-count">{{ (idxBloque() + 1).toString().padStart(2, '0') }}<small>/{{ visibles().length.toString().padStart(2, '0') }}</small></span>
+            <select class="block-select" [ngModel]="bloque()!.id" (ngModelChange)="setBloque($event)" aria-label="Bloque genealógico">
+              @for (b of visibles(); track b.id; let i = $index) {
+                <option [value]="b.id">Bloque BG-{{ (i + 1).toString().padStart(2, '0') }}</option>
+              }
+            </select>
+          </label>
+          <button type="button" class="block-arrow" [disabled]="idxBloque() === visibles().length - 1" (click)="moverBloque(1)" aria-label="Bloque siguiente">
+            <app-icon name="chevronRight" [size]="16" />
+          </button>
+        </nav>
+        <div class="tree-zoom" role="group" aria-label="Zoom del árbol">
+          <button type="button" [attr.aria-pressed]="zoom() === 0.7" (click)="zoom.set(0.7)">70 %</button>
+          <button type="button" [attr.aria-pressed]="zoom() === 1" (click)="zoom.set(1)">100 %</button>
+        </div>
+        </div>
+      }
+
+      <div class="trace-tree" aria-label="Genealogía interactiva">
+        @if (L(); as L) {
+          <div class="canvas" #canvas>
+            <div class="stage-outer" [style.width.px]="L.width * zoom()" [style.height.px]="L.height * zoom()">
+              <div class="stage" [style.width.px]="L.width" [style.height.px]="L.height" [style.transform]="'scale(' + zoom() + ')'">
+                @for (c of L.companies; track c.empresaId; let i = $index) {
+                  <div class="company" [style.left.px]="c.x" [style.width.px]="c.w">
+                    <header><b>{{ store.nombreEmpresa(c.empresaId) }}</b></header>
+                  </div>
+                }
+            <svg class="edges" [attr.width]="L.width" [attr.height]="L.height" aria-hidden="true">
+              @for (e of L.edges; track e.id) {
+                <path [attr.d]="e.d" class="edge edge--{{ e.kind }} {{ edgeState(e.from, e.to) }}" />
+              }
+            </svg>
+            @for (n of L.nodes; track n.id) {
+              @switch (n.kind) {
+                @case ('lote') {
+                  @let l = loteDe(n);
+                  <button
+                    type="button"
+                    class="node lot"
+                    [attr.data-node]="n.id"
+                    [style.left.px]="n.x"
+                    [style.top.px]="n.y"
+                    [style.width.px]="n.w"
+                    [style.height.px]="n.h"
+                    [class.is-sel]="selected() === n.id"
+                    [class.is-fail]="l.calidad === 'Con falla'"
+                    [class.is-derived]="l.calidad === 'Posible falla derivada'"
+                    [class.is-hist]="store.esHistorico(l) && !l.productoFinal"
+                    [class.is-final]="l.productoFinal"
+                    [class.is-dim]="dim(n)"
+                    [attr.title]="store.nombreLote(l.id) + ' / ' + l.id + ' / ' + l.fase + ' / ' + l.calidad"
+                    (click)="select(n.id)"
+                  >
+                    <span class="row1"><b>{{ store.nombreLote(l.id) }}</b><span class="stg">{{ l.productoFinal ? 'Final' : etapaDe(l) }}</span></span>
+                    <span class="mat id">{{ l.id }}</span>
+                    <span class="meta">
+                      <i class="qdot q-{{ tonoQ(l.calidad) }}"></i>
+                      <span class="qtxt">{{ l.calidad }}</span>
+                      @if (store.disponibilidad(l).bloqueado && store.disponibilidad(l).tono !== 'hist') {
+                        <app-icon class="lockmark" name="lock" [size]="11" [stroke]="2" />
+                      }
+                    </span>
+                  </button>
+                }
+                @case ('proceso') {
+                  @let p = procesoDe(n);
+                  <button
+                    type="button"
+                    class="node proc"
+                    [attr.data-node]="n.id"
+                    [style.left.px]="n.x"
+                    [style.top.px]="n.y"
+                    [style.width.px]="n.w"
+                    [style.height.px]="n.h"
+                    [class.is-sel]="selected() === n.id"
+                    [class.is-dim]="dim(n)"
+                    [class.is-open]="!p.fin"
+                    (click)="select(n.id)"
+                  >
+                    <span class="label">{{ store.esMezcla(p) ? 'Mezcla' : p.fin ? 'Proceso' : 'En curso' }}</span>
+                    <b>{{ p.tipo }}</b>
+                  </button>
+                }
+                @case ('division') {
+                  <button
+                    type="button"
+                    class="node div"
+                    [attr.data-node]="n.id"
+                    [style.left.px]="n.x"
+                    [style.top.px]="n.y"
+                    [style.width.px]="n.w"
+                    [style.height.px]="n.h"
+                    [class.is-sel]="selected() === n.id"
+                    [class.is-dim]="dim(n)"
+                    (click)="select(n.id)"
+                  >
+                    <app-icon name="split" [size]="14" />
+                    <span class="label">División</span>
+                  </button>
+                }
+                @case ('control') {
+                  @let r = resultado(n.id);
+                  <button
+                    type="button"
+                    class="node ctl"
+                    [attr.data-node]="n.id"
+                    [style.left.px]="n.x"
+                    [style.top.px]="n.y"
+                    [style.width.px]="n.w"
+                    [style.height.px]="n.h"
+                    [class.is-sel]="selected() === n.id"
+                    [class.is-dim]="dim(n)"
+                    [class.ctl-fail]="r === 'Con falla'"
+                    [class.ctl-open]="r === 'En curso'"
+                    [attr.title]="n.id + ' / ' + r"
+                    (click)="select(n.id)"
+                  >
+                    <span class="stamp"><app-icon [name]="r === 'Con falla' ? 'x' : r === 'En curso' ? 'clock' : 'check'" [size]="13" [stroke]="2.2" /></span>
+                    <span class="label">{{ controlDe(n).tipo }}</span>
+                  </button>
+                }
+              }
+            }
+              </div>
+            </div>
+          </div>
+        } @else {
+          <div class="tree-empty">No hay genealogías disponibles para esta empresa.</div>
+        }
+      </div>
+    </section>
+  </div>
+</div>
+
