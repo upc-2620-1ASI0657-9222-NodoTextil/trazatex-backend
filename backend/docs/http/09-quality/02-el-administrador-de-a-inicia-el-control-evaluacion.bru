@@ -1,0 +1,38 @@
+meta {
+  name: El administrador de A inicia el control (Evaluación)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/quality/batches/{{q1Id}}/controls
+  body: none
+  auth: bearer
+}
+
+headers {
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 201
+  res.body.status: eq IN_PROGRESS
+  res.body.controlType: eq EVALUATION
+}
+
+script:pre-request {
+  // Quality conoce el lote por el evento BatchRegistered de production.batch (relay ~1 s + consumo): sin esta espera el lote aún no estaría en su proyección
+  await bru.sleep(4000);
+}
+
+script:post-response {
+  bru.setVar("q1ControlId", res.body.id);
+}
+
+docs {
+  Production confirma `START_EVALUATION` (el lote pasa a IN_QUALITY_CONTROL) y el control queda IN_PROGRESS. El administrador de A es el único rol que opera Quality.
+}

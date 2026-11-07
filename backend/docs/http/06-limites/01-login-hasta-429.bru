@@ -1,0 +1,29 @@
+meta {
+  name: Login con credenciales malas, repetir hasta el 429
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Forwarded-For: 10.{{$randomInt}}.{{$randomInt}}.1
+}
+
+body:json {
+  {
+    "email": "nadie.fase03@example.com",
+    "password": "x"
+  }
+}
+
+docs {
+  NO forma parte del recorrido: ejecútala sola, repetida (Runner → iteraciones, o a mano). El límite de login es 60/min por IP;
+  pasado ese número el Gateway responde 429 con `Retry-After` y cuerpo ApiError. La cabecera X-Forwarded-For falsa no sirve para
+  esquivarlo (la IP es la de la conexión). Al terminar espera 1 minuto: el cubo de tu IP queda vacío.
+}

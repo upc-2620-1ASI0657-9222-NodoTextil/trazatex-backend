@@ -1,0 +1,38 @@
+meta {
+  name: Iniciar el control del segundo lote
+  type: http
+  seq: 29
+}
+
+post {
+  url: {{baseUrl}}/api/quality/batches/{{q2Id}}/controls
+  body: none
+  auth: bearer
+}
+
+headers {
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 201
+  res.body.status: eq IN_PROGRESS
+  res.body.controlType: eq EVALUATION
+}
+
+script:pre-request {
+  // Quality conoce el lote por el evento BatchRegistered de production.batch (relay ~1 s + consumo): sin esta espera el lote aún no estaría en su proyección
+  await bru.sleep(4000);
+}
+
+script:post-response {
+  bru.setVar("q2ControlId", res.body.id);
+}
+
+docs {
+  Otro control de A.
+}

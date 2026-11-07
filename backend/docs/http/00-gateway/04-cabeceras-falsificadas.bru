@@ -1,0 +1,26 @@
+meta {
+  name: X-User-* falsificadas sin token → 401
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/license
+  body: none
+  auth: none
+}
+
+headers {
+  X-User-Id: {{$guid}}
+  X-User-Role: LICENSE_OWNER
+  X-Company-Id: {{$guid}}
+}
+
+assert {
+  res.status: eq 401
+  res.body.code: eq MISSING_TOKEN
+}
+
+docs {
+  El Gateway borra toda cabecera X-User-* / X-Company-* entrante: una identidad solo puede salir de un JWT válido.
+}

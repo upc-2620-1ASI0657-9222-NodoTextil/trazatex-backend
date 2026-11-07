@@ -1,0 +1,31 @@
+meta {
+  name: El administrador lo reactiva
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{baseUrl}}/api/users/{{operatorId}}/status
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "status": "ACTIVE"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq ACTIVE
+}

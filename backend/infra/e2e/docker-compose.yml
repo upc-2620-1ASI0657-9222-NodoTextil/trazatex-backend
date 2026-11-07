@@ -1,0 +1,67 @@
+# Stack AISLADO para las pruebas de cierre (e2e): Kafka, PostgreSQL y Neo4j propios, con otro nombre de proyecto, otros puertos y sin volúmenes con
+# nombre. NO toca el docker-compose.yml de la raíz ni sus datos. Se levanta y se destruye SIEMPRE con infra/e2e/run.sh (que fija el proyecto
+# `trazatex-e2e` y se niega a borrar volúmenes de cualquier otro). Sin secretos en este archivo: las contraseñas se generan en cada corrida.
+name: trazatex-e2e-final-api
+
+services:
+  kafka:
+    image: apache/kafka:4.2.2
+    stop_grace_period: 20s
+    hostname: kafka
+    ports:
+      - "39092:39092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENERS: INTERNAL://:29092,EXTERNAL://:39092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:39092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      # Igual que el compose real: cada servicio declara sus tópicos (docs/conventions.md)
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_HEAP_OPTS: "-Xms384m -Xmx384m"
+    healthcheck:
+      test: ["CMD-SHELL", "KAFKA_HEAP_OPTS='-Xmx128m' /opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:29092 > /dev/null 2>&1"]
+      interval: 5s
+      timeout: 15s
+      retries: 24
+      start_period: 15s
+
+  postgres:
+    image: postgres:16.15
+    ports:
+      - "35432:5432"
+    environment:
+      POSTGRES_USER: e2e
+      POSTGRES_PASSWORD: ${E2E_PG_PASSWORD:?la genera run.sh en cada corrida; no uses este archivo suelto}
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/10-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U e2e -d postgres"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+
+  neo4j:
+    image: neo4j:5.26.32-community
+    stop_grace_period: 20s
+    ports:
+      - "37687:7687"
+    environment:
+      NEO4J_AUTH: neo4j/${E2E_NEO4J_PASSWORD:?la genera run.sh en cada corrida; no uses este archivo suelto}
+      NEO4J_server_memory_heap_initial__size: 384m
+      NEO4J_server_memory_heap_max__size: 384m
+      NEO4J_server_memory_pagecache_size: 128m
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p \"$${NEO4J_AUTH#neo4j/}\" 'RETURN 1' > /dev/null 2>&1"]
+      interval: 5s
+      timeout: 10s
+      retries: 24
+      start_period: 20s

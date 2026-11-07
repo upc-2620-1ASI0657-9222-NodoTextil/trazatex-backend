@@ -1,0 +1,32 @@
+meta {
+  name: Login
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{ownerEmail}}",
+    "password": "{{ownerPassword}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.tokenType: eq Bearer
+}
+
+script:post-response {
+  bru.setVar("ownerToken", res.body.token);
+  bru.setVar("ownerId", res.body.user.id);
+}

@@ -1,0 +1,34 @@
+meta {
+  name: A lista sus lotes por prefijo: solo los suyos (el hijo de 60 kg y la salida ya son de B)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/traceability/lineages?traceabilityId=TT-&size=100
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{operatorToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("A es dueña del lote madre y del hijo de 40 kg, y de nada más", function () {
+      const ids = res.body.items.map((i) => i.batchId).sort();
+      expect(ids).to.deep.equal([bru.getVar("lotId"), bru.getVar("child40Id")].sort());
+      expect(res.body.totalElements).to.equal(2);
+  });
+  test("todos son de la empresa de A", function () {
+      res.body.items.forEach((i) => expect(i.companyId).to.equal(bru.getVar("companyId")));
+  });
+}
+
+docs {
+  La búsqueda por prefijo solo recorre los lotes de la propia empresa; el hijo de 60 kg y la salida pasaron a B con la transferencia.
+}

@@ -1,0 +1,29 @@
+meta {
+  name: Aceptar la invitación (pública)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/invitations/{{adminInvitationToken}}/accept
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "firstName": "Ana",
+    "lastName": "Torres",
+    "password": "{{adminPassword}}",
+    "passwordConfirmation": "{{adminPassword}}"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.role: eq COMPANY_ADMIN
+}

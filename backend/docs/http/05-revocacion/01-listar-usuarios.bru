@@ -1,0 +1,25 @@
+meta {
+  name: El administrador lista los usuarios de su empresa
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/users
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("el operario está en la lista", function () {
+    expect(res.body.some(function (u) { return u.id === bru.getVar("operatorId"); })).to.equal(true);
+  });
+}

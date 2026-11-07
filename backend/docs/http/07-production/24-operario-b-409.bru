@@ -1,0 +1,37 @@
+meta {
+  name: Con B inactiva, su operario no puede registrar (409)
+  type: http
+  seq: 24
+}
+
+post {
+  url: {{baseUrl}}/api/batches
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{operatorBToken}}
+}
+
+body:json {
+  {
+    "name": "Después de inactivar B",
+    "materialType": "Fibra",
+    "composition": [{ "name": "Algodón", "percentage": 100 }],
+    "quantityKg": 5,
+    "origin": "Piura",
+    "receptionCharacteristics": "Prueba"
+  }
+}
+
+assert {
+  res.status: eq 409
+  res.body.code: eq COMPANY_INACTIVE
+}
+

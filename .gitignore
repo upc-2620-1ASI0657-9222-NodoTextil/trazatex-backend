@@ -1,33 +1,35 @@
-HELP.md
-target/
-.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+!frontend/.env.development
+!frontend/.env.production
+!landing/.env.development
+!landing/.env.production
+**/node_modules/
+**/target/
+**/dist/
+**/.angular/
+**/.auth/
+**/test-results/
+**/playwright-report/
+backend/infra/platform/private/
+demo/.local/
+**/*.log
+docs/.informe-extraido.txt
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
+# Material de exposición y entrega a socios: nunca se versiona
+datos-exposicion/
+ARCHIVOS_SHA256.json
+INICIO_SOCIO.md
 
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
-
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-### VS Code ###
+# Archivos de sistema y de editores
+.DS_Store
+.idea/
 .vscode/
+*.iml
+
+# Capturas de interfaz generadas localmente
+frontend/capturas-ui*/

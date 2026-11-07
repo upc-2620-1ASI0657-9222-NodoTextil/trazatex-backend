@@ -1,0 +1,33 @@
+meta {
+  name: El comando interno directo a Production (red interna) responde 200
+  type: http
+  seq: 22
+}
+
+post {
+  url: {{productionUrl}}/internal/batches/{{child60Id}}/phase-transitions
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "operation": "START_EVALUATION",
+    "requestId": "{{$guid}}",
+    "requestedBy": "{{operatorBId}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.phase: eq IN_QUALITY_CONTROL
+}
+
+docs {
+  Directo a 8082, sin identidad ni Idempotency-Key. Lo hace Quality desde la red interna. Usa el hijo de 60 kg, que ya es de B (el lote de A ya no estaría
+  disponible si se transfirió). Repetirlo con el mismo `requestId` devuelve lo mismo. Para dejarlo disponible: RELEASE con `qualityHold: false`.
+}

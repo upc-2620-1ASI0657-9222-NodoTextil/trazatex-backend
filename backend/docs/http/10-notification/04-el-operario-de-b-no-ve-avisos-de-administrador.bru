@@ -1,0 +1,26 @@
+meta {
+  name: El operario de B no ve avisos de administrador
+  type: http
+  seq: 4
+}
+
+GET {
+  url: {{baseUrl}}/api/notifications?size=100
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{operatorBToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("las notificaciones se dirigen por rol: el operario no ve las del administrador", function () {
+    const found = (res.body.items || []).find(n => n.data && n.data.transferId === bru.getVar("transferId"));
+    expect(found).to.equal(undefined);
+  });
+}

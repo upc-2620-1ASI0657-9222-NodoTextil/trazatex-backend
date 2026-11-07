@@ -1,0 +1,30 @@
+meta {
+  name: B busca por prefijo del Traceability ID de A: no se pueden listar lotes de otra empresa; el ID exacto sí
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{baseUrl}}/api/traceability/lineages?traceabilityId={{lotPrefix}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{operatorBToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("el prefijo solo lista lotes de B: el lote de A no sale", function () {
+      res.body.items.forEach((i) => expect(i.companyId).to.equal(bru.getVar("companyBId")));
+      expect(res.body.items.map((i) => i.batchId)).to.not.include(bru.getVar("lotId"));
+  });
+}
+
+docs {
+  Con el Traceability ID exacto de otra empresa sí se encuentra (paso siguiente); con un prefijo, no.
+}

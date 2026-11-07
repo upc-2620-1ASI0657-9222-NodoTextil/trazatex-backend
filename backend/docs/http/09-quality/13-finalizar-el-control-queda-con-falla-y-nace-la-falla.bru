@@ -1,0 +1,34 @@
+meta {
+  name: Finalizar el control: queda Con falla y nace la Falla
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/api/quality/controls/{{q1ControlId}}/finish
+  body: none
+  auth: bearer
+}
+
+headers {
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.control.status: eq FINISHED
+  res.body.control.overallResult: eq FAILED
+  res.body.failure.status: eq OPEN
+}
+
+script:post-response {
+  bru.setVar("q1FailureId", res.body.failure.id);
+}
+
+docs {
+  Production confirma `RELEASE` con la retención puesta. Publica `QualityControlCompleted` y `QualityStatusChanged`; `FailureConfirmed` solo sale al descartar el lote.
+}

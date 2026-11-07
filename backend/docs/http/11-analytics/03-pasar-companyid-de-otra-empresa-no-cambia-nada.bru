@@ -1,0 +1,25 @@
+meta {
+  name: Pasar companyId de otra empresa no cambia nada
+  type: http
+  seq: 3
+}
+
+GET {
+  url: {{baseUrl}}/api/analytics/summary?from={{analyticsFrom}}&to={{analyticsTo}}&companyId=00000000-0000-0000-0000-0000000000a1&company=00000000-0000-0000-0000-0000000000a1
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminBToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("la empresa nunca sale de un parámetro: la respuesta es idéntica a la de B", function () {
+    expect(JSON.stringify(res.body)).to.equal(bru.getVar("analyticsB"));
+  });
+}

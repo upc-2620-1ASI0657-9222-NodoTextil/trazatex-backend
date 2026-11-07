@@ -1,0 +1,29 @@
+meta {
+  name: Finalizar la reevaluación: el lote vuelve a Conforme
+  type: http
+  seq: 26
+}
+
+post {
+  url: {{baseUrl}}/api/quality/controls/{{q1Control2Id}}/finish
+  body: none
+  auth: bearer
+}
+
+headers {
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.control.overallResult: eq CONFORMING
+  res.body.failure.status: eq RESOLVED
+}
+
+docs {
+  La Falla se resuelve y el lote queda desbloqueado (Production confirma `RELEASE` con `qualityHold: false`).
+}

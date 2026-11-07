@@ -1,0 +1,20 @@
+meta {
+  name: Sin token: 401 del Gateway, y tampoco cacheable
+  type: http
+  seq: 17
+}
+
+get {
+  url: {{baseUrl}}/api/traceability/batches/{{outputId}}/lineage
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 401
+  res.body.code: eq MISSING_TOKEN
+}
+
+tests {
+  test("el error del propio Gateway también lleva no-store", function () { expect(res.getHeader("cache-control")).to.equal("no-store"); });
+}

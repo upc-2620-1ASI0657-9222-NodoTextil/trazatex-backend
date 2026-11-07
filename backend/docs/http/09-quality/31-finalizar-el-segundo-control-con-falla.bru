@@ -1,0 +1,28 @@
+meta {
+  name: Finalizar el segundo control: Con falla
+  type: http
+  seq: 31
+}
+
+post {
+  url: {{baseUrl}}/api/quality/controls/{{q2ControlId}}/finish
+  body: none
+  auth: bearer
+}
+
+headers {
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.control.overallResult: eq FAILED
+}
+
+script:post-response {
+  bru.setVar("q2FailureId", res.body.failure.id);
+}

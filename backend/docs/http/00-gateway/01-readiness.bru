@@ -1,0 +1,20 @@
+meta {
+  name: Listo (readiness)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/actuator/health/readiness
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq UP
+}
+
+docs {
+  El Gateway no está listo hasta haber leído `orgaccess.user` completo (RF-012). Mientras tanto responde 503.
+}

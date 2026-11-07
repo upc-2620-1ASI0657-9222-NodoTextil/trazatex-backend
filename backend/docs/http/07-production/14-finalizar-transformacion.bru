@@ -1,0 +1,42 @@
+meta {
+  name: Finalizar la transformación: salida de 35 kg, desperdicio de 2 kg
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/api/transformations/{{transformationId}}/complete
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{operatorToken}}
+}
+
+body:json {
+  {
+    "outputs": [{ "name": "Tela teñida azul", "materialType": "Tela", "quantityKg": 35 }],
+    "wasteKg": 2,
+    "wasteReason": "Orillo y recortes"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.transformation.status: eq COMPLETED
+  res.body.outputs.length: eq 1
+}
+
+script:post-response {
+  bru.setVar("outputId", res.body.outputs[0].id);
+}
+
+docs {
+  Merma = entrada − salida − desperdicio = 3 kg. Evento `TransformationCompleted` en `production.transformation`.
+}

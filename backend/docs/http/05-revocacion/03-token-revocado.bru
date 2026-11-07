@@ -1,0 +1,29 @@
+meta {
+  name: El token del operario recibe 401 USER_INACTIVE
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/users
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{operatorToken}}
+}
+
+assert {
+  res.status: eq 401
+  res.body.code: eq USER_INACTIVE
+}
+
+script:pre-request {
+  // el relay del outbox publica ~1 s después y el Gateway lo aplica en milisegundos
+  await bru.sleep(2500);
+}
+
+docs {
+  Pocos segundos después de inactivarlo, aunque su JWT sigue vigente (8 h), el Gateway ya no lo deja pasar.
+}

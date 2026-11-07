@@ -1,0 +1,28 @@
+meta {
+  name: El administrador de B acepta la transferencia
+  type: http
+  seq: 17
+}
+
+post {
+  url: {{baseUrl}}/api/transfers/{{transferId}}/accept
+  body: none
+  auth: bearer
+}
+
+headers {
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{adminBToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq ACCEPTED
+}
+
+docs {
+  La responsabilidad pasa a B (mismo Traceability ID y QR) y los lotes vuelven a AVAILABLE. Evento `TransferAccepted`.
+}

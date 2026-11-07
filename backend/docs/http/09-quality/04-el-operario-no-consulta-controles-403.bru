@@ -1,0 +1,23 @@
+meta {
+  name: El operario no consulta controles: 403
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/quality/controls/{{q1ControlId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{operatorToken}}
+}
+
+assert {
+  res.status: eq 403
+}
+
+docs {
+  Quality es del `COMPANY_ADMIN`: el operario recibe 403 (prueba, además, que el Gateway inyectó su identidad).
+}

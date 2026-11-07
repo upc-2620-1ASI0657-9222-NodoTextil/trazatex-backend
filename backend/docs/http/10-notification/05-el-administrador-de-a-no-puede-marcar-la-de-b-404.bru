@@ -1,0 +1,28 @@
+meta {
+  name: El administrador de A no puede marcar la de B: 404
+  type: http
+  seq: 5
+}
+
+PATCH {
+  url: {{baseUrl}}/api/notifications/{{notifReceivedId}}/read
+  body: none
+  auth: bearer
+}
+
+headers {
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 404
+  res.body.code: eq NOTIFICATION_NOT_FOUND
+}
+
+docs {
+  Una notificación ajena responde igual que una que no existe: no se revela que existe.
+}

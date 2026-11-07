@@ -1,0 +1,34 @@
+meta {
+  name: Una X-Company-Id falsificada se pisa: A sigue viendo lo suyo como suyo
+  type: http
+  seq: 19
+}
+
+get {
+  url: {{baseUrl}}/api/traceability/batches/{{lotId}}/ancestors
+  body: none
+  auth: bearer
+}
+
+headers {
+  X-Company-Id: {{companyBId}}
+  X-User-Role: LICENSE_OWNER
+}
+
+auth:bearer {
+  token: {{operatorToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("el lote de A sigue siendo OWN aunque el cliente mande la empresa de B", function () {
+      expect(res.body.nodes.find((n) => n.id === bru.getVar("lotId")).access).to.equal("OWN");
+  });
+}
+
+docs {
+  El Gateway borra toda cabecera X-User-* / X-Company-* entrante: la identidad solo sale del JWT.
+}

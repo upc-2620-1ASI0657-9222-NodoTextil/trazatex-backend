@@ -1,0 +1,24 @@
+meta {
+  name: El administrador de B ve el control de A como inexistente: 404
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/quality/controls/{{q1ControlId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminBToken}}
+}
+
+assert {
+  res.status: eq 404
+  res.body.code: eq CONTROL_NOT_FOUND
+}
+
+docs {
+  Otra empresa es un recurso inexistente, con el mismo cuerpo que un id que no existe.
+}

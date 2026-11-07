@@ -1,0 +1,38 @@
+meta {
+  name: B ve ahora el proveedor, el origen y la máquina de A (en lotes que ya existían), y nada más
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/traceability/batches/{{outputId}}/lineage
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{operatorBToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  const node = (id) => res.body.nodes.find((n) => n.id === id);
+  const hidden = (n, fields) => fields.filter((f) => Object.prototype.hasOwnProperty.call(n, f));
+  const BATCH_PRIVATE = ["supplierName", "origin", "quantityKg", "composition", "receptionCharacteristics", "qualityHold"];
+  const TRANSFORMATION_PRIVATE = ["machineName", "machineType", "shrinkageKg", "wasteKg", "wasteReason"];
+
+  test("el lote madre de A, creado antes del cambio, muestra proveedor y origen", function () {
+      const lot = node(bru.getVar("lotId"));
+      expect(lot.supplierName).to.equal("Textiles del Norte");
+      expect(lot.origin).to.equal("Piura");
+      expect(hidden(lot, ["quantityKg", "composition", "receptionCharacteristics", "qualityHold"])).to.deep.equal([]);
+  });
+  test("la transformación de A muestra su máquina y no la merma ni el desperdicio", function () {
+      const t = node(bru.getVar("transformationId"));
+      expect(t.machineName).to.be.a("string");
+      expect(hidden(t, ["shrinkageKg", "wasteKg", "wasteReason"])).to.deep.equal([]);
+  });
+}

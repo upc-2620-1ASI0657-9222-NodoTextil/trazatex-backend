@@ -1,0 +1,35 @@
+meta {
+  name: El administrador inactiva al operario
+  type: http
+  seq: 2
+}
+
+patch {
+  url: {{baseUrl}}/api/users/{{operatorId}}/status
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "status": "INACTIVE"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq INACTIVE
+}
+
+docs {
+  Publica `UserAccountUpdated` (INACTIVE) en `orgaccess.user`, tópico compactado que el Gateway lee.
+}

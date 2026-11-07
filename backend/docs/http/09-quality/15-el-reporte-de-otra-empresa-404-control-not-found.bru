@@ -1,0 +1,24 @@
+meta {
+  name: El reporte de otra empresa: 404 CONTROL_NOT_FOUND
+  type: http
+  seq: 15
+}
+
+get {
+  url: {{baseUrl}}/api/quality/controls/{{q1ControlId}}/report
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminBToken}}
+}
+
+assert {
+  res.status: eq 404
+  res.body.code: eq CONTROL_NOT_FOUND
+}
+
+tests {
+  test("no-store también en el error", function () { expect(res.getHeader("cache-control")).to.equal("no-store"); });
+}

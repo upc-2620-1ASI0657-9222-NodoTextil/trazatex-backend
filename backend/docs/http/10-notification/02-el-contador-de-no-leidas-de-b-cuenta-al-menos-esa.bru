@@ -1,0 +1,20 @@
+meta {
+  name: El contador de no leídas de B cuenta al menos esa
+  type: http
+  seq: 2
+}
+
+GET {
+  url: {{baseUrl}}/api/notifications/unread-count
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminBToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.count: gte 1
+}
