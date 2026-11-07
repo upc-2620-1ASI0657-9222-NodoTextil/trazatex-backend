@@ -1,0 +1,20 @@
+meta {
+  name: Un tipo desconocido: 400 INVALID_PARAMETER
+  type: http
+  seq: 16
+}
+
+GET {
+  url: {{baseUrl}}/api/notifications?type=NO_EXISTE
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminBToken}}
+}
+
+assert {
+  res.status: eq 400
+  res.body.code: eq INVALID_PARAMETER
+}

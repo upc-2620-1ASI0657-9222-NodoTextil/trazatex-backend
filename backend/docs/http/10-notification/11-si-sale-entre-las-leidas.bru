@@ -1,0 +1,27 @@
+meta {
+  name: Sí sale entre las leídas
+  type: http
+  seq: 11
+}
+
+GET {
+  url: {{baseUrl}}/api/notifications?unread=false&type=TRANSFER_RECEIVED&size=100
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminBToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("la leída sale con unread=false", function () {
+    const found = (res.body.items || []).find(n => n.data && n.data.transferId === bru.getVar("transferId"));
+    expect(found).to.be.an("object");
+    expect(found.read).to.equal(true);
+  });
+}

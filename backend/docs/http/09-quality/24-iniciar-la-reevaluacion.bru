@@ -1,0 +1,62 @@
+meta {
+  name: Iniciar la Reevaluación
+  type: http
+  seq: 24
+}
+
+post {
+  url: {{baseUrl}}/api/quality/batches/{{q1Id}}/controls
+  body: none
+  auth: bearer
+}
+
+headers {
+  Idempotency-Key: {{q1Control2Key}}
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 201
+  res.body.status: eq IN_PROGRESS
+  res.body.controlType: eq REEVALUATION
+}
+
+script:pre-request {
+  // Quality conoce la fase de un lote por Kafka: justo después de finalizar un control, iniciar otro puede responder 409 durante 1-2 s.
+  // Se reintenta cada 1 s, hasta 10 s, SOLO ante esos dos códigos; cualquier otra respuesta falla el paso en el acto. La clave de idempotencia
+  // es la misma en todos los intentos y en la petición del paso: si un intento da 201, la petición del paso lo reproduce (no crea otro control).
+  const retryable = ["CONTROL_ALREADY_ACTIVE", "BATCH_NOT_AVAILABLE_FOR_CONTROL"];
+  const key = bru.interpolate("{{$guid}}");
+  bru.setVar("q1Control2Key", key);
+  const deadline = Date.now() + 10000;
+  for (let attempt = 1; ; attempt++) {
+    let status;
+    let code;
+    try {
+      // validateStatus: null → también entrega las respuestas no 2xx con su cuerpo (el error de sendRequest no lo trae). Content-Type JSON y cuerpo vacío:
+      // sin ellos sendRequest manda un tipo por defecto y Quality responde 415. El hash de idempotencia no incluye cabeceras: la petición del paso reproduce el 201.
+      const r = await bru.sendRequest({ method: "POST", url: bru.interpolate("{{baseUrl}}/api/quality/batches/{{q1Id}}/controls"), headers: { "Authorization": "Bearer " + bru.getVar("adminToken"), "Idempotency-Key": key, "Content-Type": "application/json" }, data: "", validateStatus: null });
+      status = r.status;
+      code = r.data && r.data.code;
+    } catch (e) {
+      throw new Error("paso 24: sin respuesta al iniciar el control");
+    }
+    if (status === 409) { console.log("DIAG paso 24 intento " + attempt + ": status=409 code=" + code); }
+    if (status === 201) { break; }
+    if (status !== 409 || !retryable.includes(code)) { throw new Error("paso 24: respuesta inesperada al iniciar el control (status=" + status + " code=" + code + ")"); }
+    if (Date.now() >= deadline) { throw new Error("paso 24: el lote sigue sin poder iniciar un control tras 10 s (status=409 code=" + code + ")"); }
+    await bru.sleep(1000);
+  }
+}
+
+script:post-response {
+  if (res.status === 409) { console.log("DIAG paso 24: status=409 code=" + (res.body && res.body.code)); }
+  bru.setVar("q1Control2Id", res.body.id);
+}
+
+docs {
+  Espera con reintento (cada 1 s, máximo 10 s) mientras el inicio responda 409 CONTROL_ALREADY_ACTIVE o BATCH_NOT_AVAILABLE_FOR_CONTROL: la proyección de Quality se actualiza por Kafka y, justo después de finalizar el control anterior, puede ir 1–2 s por detrás de Production. Cualquier otro status o código falla el paso sin reintento. La clave de idempotencia es la misma en todos los intentos y en la petición del paso, que reproduce el 201 ya logrado. Segundo control del lote: una Reevaluación. Production confirma otra vez `START_EVALUATION`.
+}

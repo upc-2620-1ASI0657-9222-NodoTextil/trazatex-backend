@@ -1,0 +1,40 @@
+meta {
+  name: RUC con dígito verificador inválido → 400
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/companies
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{ownerToken}}
+}
+
+body:json {
+  {
+    "ruc": "20131312950",
+    "businessName": "No se crea SAC",
+    "activities": [
+      "WEAVING"
+    ],
+    "adminEmail": "nadie@example.com"
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.code: eq RUC_INVALID
+}
+
+docs {
+  Se rechaza con el módulo 11 local, sin llamar a Chequea.pe.
+}

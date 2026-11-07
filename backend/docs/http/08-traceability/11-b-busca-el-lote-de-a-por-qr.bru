@@ -1,0 +1,28 @@
+meta {
+  name: B busca el lote de A por su QR: lo encuentra (solo lo compartido)
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/api/traceability/lineages?qrCode={{lotQr}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{operatorBToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("un QR se resuelve para cualquiera, con la empresa responsable", function () {
+      expect(res.body.totalElements).to.equal(1);
+      expect(res.body.items[0].batchId).to.equal(bru.getVar("lotId"));
+      expect(res.body.items[0].access).to.equal("SHARED");
+      expect(res.body.items[0].businessName).to.equal(bru.getVar("nameOfA"));
+  });
+}

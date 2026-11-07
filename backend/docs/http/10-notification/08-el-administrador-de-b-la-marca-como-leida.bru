@@ -1,0 +1,25 @@
+meta {
+  name: El administrador de B la marca como leída
+  type: http
+  seq: 8
+}
+
+PATCH {
+  url: {{baseUrl}}/api/notifications/{{notifReceivedId}}/read
+  body: none
+  auth: bearer
+}
+
+headers {
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{adminBToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.read: eq true
+  res.body.type: eq TRANSFER_RECEIVED
+}

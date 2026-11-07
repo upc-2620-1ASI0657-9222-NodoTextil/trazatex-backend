@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+
+# Secretos locales
+.env
+*.pem
+*.key
+
+# Maven / Java
+target/
+!.mvn/wrapper/maven-wrapper.jar
+*.log
+HELP.md
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Frontend
+node_modules/
+dist/

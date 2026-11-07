@@ -1,0 +1,66 @@
+spring:
+  application:
+    name: traceability
+  neo4j:
+    uri: ${NEO4J_URI}
+    authentication:
+      username: ${NEO4J_USER}
+      password: ${NEO4J_PASSWORD}
+
+  # Un campo que la política de privacidad no deja ver es nulo y NO sale en el JSON (ausente, no "null"); las listas vacías y los false sí salen
+  jackson:
+    default-property-inclusion: non_null
+
+server:
+  port: 8084
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+trazatex:
+  messaging:
+    # false: sin broker (ni listeners ni vigilante); las pruebas sin Kafka
+    enabled: true
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    # Solo los .DLT propios y traceability.impact: 1 partición y 1 réplica en local; no cambiar las particiones de un tópico en uso
+    partitions: 1
+    replicas: 1
+    # En local, corrige la retención (-1) de traceability.impact si ya existía con otra
+    modify-topic-configs: true
+    consumer:
+      # Un grupo por tópico consumido (un tópico ausente no afecta a los demás); un grupo nuevo lee desde el inicio
+      batch:
+        group: traceability.production-batch
+      transformation:
+        group: traceability.production-transformation
+      transfer:
+        group: traceability.production-transfer
+      company:
+        group: traceability.orgaccess-company
+      quality:
+        group: traceability.quality-control
+      failure:
+        group: traceability.quality-failure
+      # Cada cuánto se revisa qué tópicos de otros servicios ya existen; mientras no exista uno, su contenedor no arranca
+      topic-check-interval: PT15S
+      retry:
+        max-retries: 5
+        initial-interval: PT1S
+        multiplier: 2.0
+        max-interval: PT30S
+      # FailureConfirmed con la familia incompleta (faltan eventos de Production): más reintentos y más espera, ≈ 5 min en total; agotados, quality.failure.DLT con un
+      # ERROR (procedimiento de reenvío en docs/progress.md). La espera más larga debe ser ≤ la mitad de max-poll-interval (se valida al arrancar)
+      impact-retry:
+        max-retries: 10
+        initial-interval: PT1S
+        multiplier: 2.0
+        max-interval: PT60S
+      # max.poll.interval.ms del consumidor (el de Kafka por omisión, explícito): entre dos poll() no puede pasar más, o lo expulsan del grupo
+      max-poll-interval: PT5M
+      # Un interbloqueo de Neo4j entre consumidores se repite dentro, antes de dejárselo al reintento de Kafka
+      neo4j-retry:
+        attempts: 5
+        backoff: PT0.05S

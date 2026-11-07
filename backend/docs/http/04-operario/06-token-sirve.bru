@@ -1,0 +1,24 @@
+meta {
+  name: El token del operario llega al servicio (403)
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/users
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{operatorToken}}
+}
+
+assert {
+  res.status: eq 403
+  res.body.code: eq FORBIDDEN
+}
+
+docs {
+  Un 403 de organization-access (no es administrador) prueba que el Gateway aceptó el token e inyectó su identidad (X-User-Id/Role/Company).
+}

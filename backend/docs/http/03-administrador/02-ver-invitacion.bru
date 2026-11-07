@@ -1,0 +1,17 @@
+meta {
+  name: Ver la invitación (pública)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/invitations/{{adminInvitationToken}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.role: eq COMPANY_ADMIN
+  res.body.status: eq PENDING
+}

@@ -1,0 +1,47 @@
+meta {
+  name: Operario A registra un lote de 100 kg
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/api/batches
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{operatorToken}}
+}
+
+body:json {
+  {
+    "name": "Algodón Pima",
+    "materialType": "Fibra",
+    "composition": [{ "name": "Algodón", "percentage": 70 }, { "name": "Poliéster", "percentage": 30 }],
+    "quantityKg": 100,
+    "origin": "Piura",
+    "supplierName": "Textiles del Norte",
+    "receptionCharacteristics": "Fibra limpia, humedad 8 %"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.phase: eq AVAILABLE
+  res.body.qualityStatus: eq NOT_REVIEWED
+}
+
+script:post-response {
+  bru.setVar("lotId", res.body.id);
+  bru.setVar("lotTraceabilityId", res.body.traceabilityId);
+}
+
+docs {
+  Nace AVAILABLE. Publica `BatchRegistered` en `production.batch` (clave = id del lote).
+}

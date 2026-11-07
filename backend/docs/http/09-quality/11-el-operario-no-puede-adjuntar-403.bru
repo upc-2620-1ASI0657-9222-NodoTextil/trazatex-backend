@@ -1,0 +1,32 @@
+meta {
+  name: El operario no puede adjuntar: 403
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/api/quality/evidence
+  body: multipartForm
+  auth: bearer
+}
+
+headers {
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{operatorToken}}
+}
+
+body:multipart-form {
+  controlId: {{q1ControlId}}
+  files: @file(07-production/files/foto.jpg)
+}
+
+assert {
+  res.status: eq 403
+}
+
+docs {
+  US43 escenario 3 dice «el operario», pero la historia es del administrador de empresa: probable errata del informe (ver `docs/domain/quality.md`). Adjuntar es del `COMPANY_ADMIN`.
+}

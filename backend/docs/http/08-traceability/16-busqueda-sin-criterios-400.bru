@@ -1,0 +1,20 @@
+meta {
+  name: Una búsqueda sin QR ni Traceability ID: 400
+  type: http
+  seq: 16
+}
+
+get {
+  url: {{baseUrl}}/api/traceability/lineages
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{operatorToken}}
+}
+
+assert {
+  res.status: eq 400
+  res.body.code: eq MISSING_SEARCH_CRITERIA
+}

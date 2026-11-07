@@ -1,0 +1,6 @@
+# Perfil `local` (docker compose): si DB_* no está definida se toman las variables con prefijo del .env compartido
+spring:
+  datasource:
+    url: ${DB_URL:${QUALITY_DB_URL:jdbc:postgresql://localhost:5432/quality_db}}
+    username: ${DB_USER:${QUALITY_DB_USER}}
+    password: ${DB_PASSWORD:${QUALITY_DB_PASSWORD}}

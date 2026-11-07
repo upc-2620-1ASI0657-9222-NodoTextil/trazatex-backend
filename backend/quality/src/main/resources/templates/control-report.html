@@ -1,0 +1,48 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Reporte de control de calidad</title>
+  <style>
+    @page { size: A4; margin: 18mm 16mm; }
+    body { font-family: Arvo, serif; font-size: 10pt; color: #1b1b1b; }
+    h1 { font-size: 17pt; margin: 0 0 2mm 0; }
+    .sub { color: #555555; margin-bottom: 6mm; }
+    table.facts { border-collapse: collapse; margin-bottom: 7mm; }
+    table.facts td { padding: 1mm 6mm 1mm 0; vertical-align: top; }
+    table.facts td.k { color: #555555; }
+    table.tests { border-collapse: collapse; width: 100%; }
+    table.tests th { text-align: left; background-color: #164b35; color: #ffffff; border: 0; padding: 1.6mm; }
+    table.tests td { border: 0; background-color: #f5f3ed; padding: 1.6mm; vertical-align: top; }
+    .conforming { color: #1d6b32; font-weight: bold; }
+    .failed { color: #a11d1d; font-weight: bold; }
+    .foot { margin-top: 8mm; color: #666666; font-size: 8.5pt; }
+  </style>
+</head>
+<body>
+  <img th:src="${logo}" alt="TrazaTex" style="width: 45mm; height: auto; margin-bottom: 7mm;" />
+  <h1>Reporte de control de calidad</h1>
+  <div class="sub">Control <span th:text="${controlId}">id</span></div>
+  <table class="facts">
+    <tr><td class="k">Lote</td><td th:text="${batch}">TT-XXXXXXXXXX</td></tr>
+    <tr><td class="k">Tipo de control</td><td th:text="${type}">Evaluación</td></tr>
+    <tr><td class="k">Inicio</td><td th:text="${startedAt}">fecha</td></tr>
+    <tr><td class="k">Finalización</td><td th:text="${finishedAt}">fecha</td></tr>
+    <tr><td class="k">Resultado</td><td><span th:class="${resultClass}" th:text="${result}">Conforme</span></td></tr>
+  </table>
+  <table class="tests">
+    <thead>
+      <tr><th>Criterio</th><th>Esperado</th><th>Obtenido</th><th>Unidad</th><th>Resultado</th><th>Observaciones</th></tr>
+    </thead>
+    <tbody>
+      <tr th:each="test : ${tests}">
+        <td th:text="${test.criterion}">criterio</td>
+        <td th:text="${test.expected}">esperado</td>
+        <td th:text="${test.obtained}">obtenido</td>
+        <td th:text="${test.unit}">unidad</td>
+        <td><span th:class="${test.resultClass}" th:text="${test.result}">Conforme</span></td>
+        <td th:text="${test.remarks}">observaciones</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="foot">Generado el <span th:text="${generatedAt}">fecha</span> (hora de Lima). Este documento se genera al momento de pedirlo y no se almacena en el sistema.</div>
+</body>
+</html>

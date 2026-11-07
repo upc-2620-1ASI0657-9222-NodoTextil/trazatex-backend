@@ -1,0 +1,29 @@
+meta {
+  name: Descartar el lote: la Falla queda Confirmada
+  type: http
+  seq: 34
+}
+
+post {
+  url: {{baseUrl}}/api/quality/failures/{{q2FailureId}}/discard
+  body: none
+  auth: bearer
+}
+
+headers {
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.completed: eq true
+  res.body.failure.status: eq CONFIRMED
+}
+
+docs {
+  Production confirma `DISCARD` (fase DISCARDED) y Quality publica `FailureConfirmed` en `quality.failure`; Traceability y los demás consumidores lo reciben de ahí.
+}

@@ -1,0 +1,20 @@
+meta {
+  name: Un tamaño de página enorme se recorta a 100
+  type: http
+  seq: 14
+}
+
+GET {
+  url: {{baseUrl}}/api/notifications?size=5000
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminBToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.size: eq 100
+}

@@ -1,0 +1,35 @@
+meta {
+  name: B deja de ver el proveedor y la máquina; el origen sigue visible
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/api/traceability/batches/{{outputId}}/lineage
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{operatorBToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  const node = (id) => res.body.nodes.find((n) => n.id === id);
+  const hidden = (n, fields) => fields.filter((f) => Object.prototype.hasOwnProperty.call(n, f));
+  const BATCH_PRIVATE = ["supplierName", "origin", "quantityKg", "composition", "receptionCharacteristics", "qualityHold"];
+  const TRANSFORMATION_PRIVATE = ["machineName", "machineType", "shrinkageKg", "wasteKg", "wasteReason"];
+
+  test("el proveedor y la máquina volvieron a ocultarse (también en lo que ya se había visto)", function () {
+      expect(hidden(node(bru.getVar("lotId")), ["supplierName"])).to.deep.equal([]);
+      expect(hidden(node(bru.getVar("transformationId")), ["machineName", "machineType"])).to.deep.equal([]);
+      expect(JSON.stringify(res.body)).to.not.contain("Textiles del Norte");
+  });
+  test("el origen sigue compartido", function () {
+      expect(node(bru.getVar("lotId")).origin).to.equal("Piura");
+  });
+}

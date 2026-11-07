@@ -1,0 +1,23 @@
+meta {
+  name: El reporte de la reevaluación
+  type: http
+  seq: 27
+}
+
+get {
+  url: {{baseUrl}}/api/quality/controls/{{q1Control2Id}}/report
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("es un PDF que no se cachea", function () { expect(res.getHeader("content-type")).to.contain("application/pdf"); expect(res.getHeader("cache-control")).to.equal("no-store"); });
+}

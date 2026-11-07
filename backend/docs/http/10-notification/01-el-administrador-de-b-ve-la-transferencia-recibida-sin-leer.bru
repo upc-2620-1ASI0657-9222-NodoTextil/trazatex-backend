@@ -1,0 +1,42 @@
+meta {
+  name: El administrador de B ve la transferencia recibida sin leer
+  type: http
+  seq: 1
+}
+
+GET {
+  url: {{baseUrl}}/api/notifications?unread=true&type=TRANSFER_RECEIVED&size=100
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminBToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+script:pre-request {
+  await bru.sleep(2500);   // la notificación nace cuando Notification lee `production.transfer` (consistencia eventual)
+}
+
+script:post-response {
+  const found = (res.body.items || []).find(n => n.data && n.data.transferId === bru.getVar("transferId"));
+  if (found) bru.setVar("notifReceivedId", found.id);
+}
+
+tests {
+  test("llegó una notificación TRANSFER_RECEIVED de esta transferencia, sin leer, para la empresa de B", function () {
+    const found = (res.body.items || []).find(n => n.data && n.data.transferId === bru.getVar("transferId"));
+    expect(found).to.be.an("object");
+    expect(found.type).to.equal("TRANSFER_RECEIVED");
+    expect(found.read).to.equal(false);
+    expect(found.data.batchIds).to.be.an("array").that.is.not.empty;
+  });
+}
+
+docs {
+  Depende de `07-production` (transferencia de A a B, paso 16). `type` es un código estable; `data` lleva los ids, nunca nombres.
+}

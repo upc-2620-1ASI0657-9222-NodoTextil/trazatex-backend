@@ -1,0 +1,36 @@
+meta {
+  name: El administrador de A vuelve a hacer privados el proveedor y la maquinaria (el origen queda compartido)
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{baseUrl}}/api/privacy-settings
+  body: json
+  auth: bearer
+}
+
+headers {
+  Idempotency-Key: {{$guid}}
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  { "fields": { "SUPPLIER": "PRIVATE", "MACHINERY": "PRIVATE" } }
+}
+
+assert {
+  res.status: eq 200
+}
+
+script:post-response {
+  await bru.sleep(4000);
+}
+
+docs {
+  Un cambio parcial: lo que no se menciona no cambia (ORIGIN sigue SHARED). Este es también el estado con el que se prueba la reconstrucción del grafo.
+}

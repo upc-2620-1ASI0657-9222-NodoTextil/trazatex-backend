@@ -1,0 +1,30 @@
+meta {
+  name: Aceptar la invitación (pública)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/invitations/{{ownerInvitationToken}}/accept
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "firstName": "Dueño",
+    "lastName": "Prueba",
+    "password": "{{ownerPassword}}",
+    "passwordConfirmation": "{{ownerPassword}}"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.role: eq LICENSE_OWNER
+  res.body.status: eq ACTIVE
+}

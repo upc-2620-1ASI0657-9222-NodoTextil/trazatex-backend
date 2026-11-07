@@ -1,0 +1,30 @@
+meta {
+  name: /internal/** responde 404
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/internal/batches/{{$guid}}/phase-transitions
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "operation": "RELEASE"
+  }
+}
+
+assert {
+  res.status: eq 404
+  res.body.code: eq ROUTE_NOT_FOUND
+}
+
+docs {
+  El comando interno Quality → Production nunca se expone: 404, igual que una ruta inexistente, con o sin token.
+}

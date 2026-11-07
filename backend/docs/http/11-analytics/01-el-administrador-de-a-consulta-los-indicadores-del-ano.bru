@@ -1,0 +1,50 @@
+meta {
+  name: El administrador de A consulta los indicadores del año
+  type: http
+  seq: 1
+}
+
+GET {
+  url: {{baseUrl}}/api/analytics/summary?from={{analyticsFrom}}&to={{analyticsTo}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+script:pre-request {
+  await bru.sleep(2500);   // Analytics proyecta lo que Production y Quality publicaron (consistencia eventual)
+  const lima = new Date().toLocaleDateString("en-CA", { timeZone: "America/Lima" });   // AAAA-MM-DD
+  bru.setVar("analyticsFrom", lima.slice(0, 4) + "-01-01");   // lo que va del año: nunca más de 366 días
+  bru.setVar("analyticsTo", lima);
+}
+
+script:post-response {
+  bru.setVar("analyticsA", JSON.stringify(res.body));
+}
+
+tests {
+  test("los cuatro bloques de EP05 están presentes", function () {
+    expect(res.body.quality).to.be.an("array");
+    expect(res.body.failureCauses).to.be.an("array");
+    expect(res.body.durations).to.be.an("array");
+    expect(res.body.materials).to.have.all.keys("shrinkageKg", "wasteKg", "completedTransformations");
+  });
+  test("la transformación de 07-production cuenta para la empresa A", function () {
+    expect(res.body.materials.completedTransformations).to.be.at.least(1);
+  });
+  test("los porcentajes de calidad suman 100 (o la lista está vacía)", function () {
+    const total = res.body.quality.reduce((sum, q) => sum + q.percentage, 0);
+    if (res.body.quality.length > 0) expect(total).to.be.closeTo(100, 0.1);
+  });
+}
+
+docs {
+  Fechas inclusivas en America/Lima, máximo 366 días. La empresa sale siempre del token (`X-Company-Id` lo pone el Gateway).
+}

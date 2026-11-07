@@ -1,0 +1,43 @@
+meta {
+  name: El Dueño crea la empresa B
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/companies
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{ownerToken}}
+}
+
+body:json {
+  {
+    "ruc": "{{rucB}}",
+    "businessName": "{{businessNameB}}",
+    "activities": ["DYEING", "FINISHING"],
+    "adminEmail": "{{adminBEmail}}"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.company.status: eq ACTIVE
+}
+
+script:post-response {
+  bru.setVar("companyBId", res.body.company.id);
+}
+
+docs {
+  Empresa B, la que recibe las transferencias. Gasta una consulta de Chequea.pe (RUC en `rucB`, ACTIVO y HABIDO, distinto del de la empresa A).
+  Production la conoce solo por el evento `CompanyRegistered` de `orgaccess.company` (proyección `company_projection`).
+}

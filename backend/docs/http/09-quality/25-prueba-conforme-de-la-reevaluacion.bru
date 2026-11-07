@@ -1,0 +1,35 @@
+meta {
+  name: Prueba conforme de la reevaluación
+  type: http
+  seq: 25
+}
+
+post {
+  url: {{baseUrl}}/api/quality/controls/{{q1Control2Id}}/tests
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "criterionName": "Humedad",
+    "expectedValue": "8",
+    "obtainedValue": "7",
+    "unit": "%",
+    "testResult": "CONFORMING",
+    "remarks": "corregida"
+  }
+}
+
+assert {
+  res.status: eq 201
+}

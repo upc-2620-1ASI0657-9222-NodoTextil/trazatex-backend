@@ -1,0 +1,36 @@
+meta {
+  name: El comando interno por el Gateway no existe (404)
+  type: http
+  seq: 21
+}
+
+post {
+  url: {{baseUrl}}/internal/batches/{{lotId}}/phase-transitions
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{operatorToken}}
+}
+
+body:json {
+  {
+    "operation": "START_EVALUATION",
+    "requestId": "{{$guid}}",
+    "requestedBy": "{{operatorId}}"
+  }
+}
+
+assert {
+  res.status: eq 404
+  res.body.code: eq ROUTE_NOT_FOUND
+}
+
+docs {
+  `/internal/**` no se expone por el Gateway. Con o sin token, 404.
+}

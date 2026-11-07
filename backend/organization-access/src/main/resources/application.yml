@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: organization-access
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+server:
+  port: 8081
+
+trazatex:
+  # Base del enlace de aceptación que va en InvitationCreated.acceptUrl
+  frontend-url: ${TRAZATEX_FRONTEND_URL:http://localhost:5173}
+  invitations:
+    # Cada cuánto el job marca EXPIRED las invitaciones PENDING vencidas
+    expiration-job-delay: PT1M
+  idempotency:
+    cleanup-job-delay: PT1H
+  login:
+    # Cada cuánto el job borra los bloqueos terminados y los contadores parciales sin actividad
+    cleanup-job-delay: PT10M
+    attempts-retention: PT24H
+  messaging:
+    # false: sin broker (ni relay ni tópicos); el outbox sigue guardando los eventos
+    enabled: true
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    # Tópicos propios: 1 partición y 1 réplica en local; no cambiar las particiones de un tópico en uso
+    partitions: 1
+    replicas: 1
+    # Alinear con NewTopic la configuración de tópicos que ya existen (orgaccess.user debe quedar compactado). Azure: false
+    modify-topic-configs: true
+    relay-delay: PT1S
+    relay-batch-size: 100
+  chequea:
+    # ADR-012: GET {base-url}/api/v1/ruc/{ruc} con Authorization: Bearer <CHEQUEA_API_TOKEN>
+    base-url: https://api.chequea.pe
+    token: ${CHEQUEA_API_TOKEN:}
+    timeout: PT3S
+    cache-ttl: PT24H
+  hibp:
+    # ADR-007: Have I Been Pwned por k-anonymity. HIBP_ENABLED=false apaga la comprobación
+    enabled: ${HIBP_ENABLED:true}
+    base-url: https://api.pwnedpasswords.com
+    timeout: PT2S
+  jwt:
+    # El PEM completo en Base64, en una sola línea (infra/scripts/generate-jwt-keys.sh los genera y escribe en .env)
+    private-key: ${JWT_PRIVATE_KEY:}
+    public-key: ${JWT_PUBLIC_KEY:}
+    key-id: ${JWT_KEY_ID:}
+    ttl: PT8H
+  bootstrap:
+    # ADR-013: todas obligatorias, sin valores por defecto
+    owner-email: ${TRAZATEX_OWNER_EMAIL:}
+    owner-name: ${TRAZATEX_OWNER_NAME:}
+    max-companies: ${TRAZATEX_LICENSE_MAX_COMPANIES:}
+    max-users-per-company: ${TRAZATEX_LICENSE_MAX_USERS_PER_COMPANY:}

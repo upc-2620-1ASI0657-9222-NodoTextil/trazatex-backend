@@ -1,0 +1,37 @@
+meta {
+  name: Adjuntar una foto al control (US43)
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/api/quality/evidence
+  body: multipartForm
+  auth: bearer
+}
+
+headers {
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:multipart-form {
+  controlId: {{q1ControlId}}
+  files: @file(07-production/files/foto.jpg)
+}
+
+assert {
+  res.status: eq 201
+  res.body.items[0].ownerType: eq CONTROL
+}
+
+tests {
+  test("sin CLOUDINARY_URL queda PENDING; con Cloudinary configurado, UPLOADED", function () { expect(["PENDING", "UPLOADED"]).to.include(res.body.items[0].status); });
+}
+
+docs {
+  Exactamente uno de `controlId` / `failureId`. Formato por los primeros bytes, máximo 5 archivos de 10 MB. Con Quality sin `CLOUDINARY_URL` la evidencia se acepta y queda PENDING en `evidence_upload_queue`.
+}

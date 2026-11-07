@@ -1,0 +1,19 @@
+meta {
+  name: Resumen de la licencia
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/license
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{ownerToken}}
+}
+
+assert {
+  res.status: eq 200
+}

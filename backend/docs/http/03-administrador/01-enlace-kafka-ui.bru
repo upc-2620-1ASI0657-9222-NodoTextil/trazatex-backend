@@ -1,0 +1,53 @@
+meta {
+  name: Enlace de invitación (Kafka UI)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{kafkaUi}}/api/clusters/trazatex-local/topics/orgaccess.invitation/messages/v2?mode=EARLIEST&limit=500
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: text/event-stream
+}
+
+script:pre-request {
+  // La invitación sale a Kafka cuando el relay del outbox la publica (~1 s tras el commit): sin esta espera se encontraría el enlace
+  // de una ejecución anterior para el mismo correo
+  await bru.sleep(2000);
+}
+
+script:post-response {
+  // Kafka UI entrega los mensajes como eventos SSE ("data: {...}"). Se toma el ÚLTIMO InvitationCreated de ese correo
+  const wanted = (bru.getEnvVar("adminEmail") || "").toLowerCase();
+  let found = null;
+  String(res.body).split("\n").forEach(function (line) {
+    if (line.indexOf("data:") !== 0) return;
+    try {
+      const event = JSON.parse(line.substring(5));
+      if (event.type !== "MESSAGE") return;
+      const envelope = JSON.parse(event.message.value);
+      const p = envelope.payload || {};
+      if (envelope.type === "InvitationCreated" && (p.email || "").toLowerCase() === wanted
+          && (found === null || event.message.offset >= found.offset)) {
+        found = { offset: event.message.offset, url: p.acceptUrl };
+      }
+    } catch (e) { /* línea que no es un mensaje */ }
+  });
+  if (found) { bru.setVar("adminInvitationToken", found.url.split("/").pop()); }
+}
+
+tests {
+  test("hay un enlace de invitación del administrador en Kafka UI", function () {
+    expect(bru.getVar("adminInvitationToken")).to.be.a("string").with.lengthOf(43);
+  });
+}
+
+docs {
+  Sustituye el correo: lee de Kafka UI (tópico `orgaccess.invitation`) el último `InvitationCreated` de `adminEmail` y guarda
+  el token del `acceptUrl` en `adminInvitationToken`. En la interfaz de Kafka UI (http://localhost:8090 → Topics → orgaccess.invitation →
+  Messages) es el último segmento del `acceptUrl`. El envío real del correo es del servicio notification (siguiente sprint).
+}

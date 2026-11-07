@@ -1,0 +1,36 @@
+meta {
+  name: El administrador de A marca como compartidos el proveedor, el origen y la maquinaria
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{baseUrl}}/api/privacy-settings
+  body: json
+  auth: bearer
+}
+
+headers {
+  Idempotency-Key: {{$guid}}
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  { "fields": { "SUPPLIER": "SHARED", "ORIGIN": "SHARED", "MACHINERY": "SHARED" } }
+}
+
+assert {
+  res.status: eq 200
+}
+
+script:post-response {
+  await bru.sleep(4000);
+}
+
+docs {
+  Organization & Access publica CompanyPrivacyUpdated (mapa completo); Traceability lo aplica a TODOS los lotes de A, también a los que ya existían. La espera cubre el relay y el consumo.
+}

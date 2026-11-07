@@ -1,0 +1,23 @@
+meta {
+  name: El operario no genera reportes: 403
+  type: http
+  seq: 16
+}
+
+get {
+  url: {{baseUrl}}/api/quality/controls/{{q1ControlId}}/report
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{operatorToken}}
+}
+
+assert {
+  res.status: eq 403
+}
+
+tests {
+  test("no-store también en el error", function () { expect(res.getHeader("cache-control")).to.equal("no-store"); });
+}

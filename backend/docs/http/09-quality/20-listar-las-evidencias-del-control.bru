@@ -1,0 +1,24 @@
+meta {
+  name: Listar las evidencias del control
+  type: http
+  seq: 20
+}
+
+get {
+  url: {{baseUrl}}/api/quality/controls/{{q1ControlId}}/evidence
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.items.length: eq 1
+}
+
+docs {
+  Cada empresa ve solo las evidencias que subió ella; lo de la falla no se mezcla con lo del control.
+}

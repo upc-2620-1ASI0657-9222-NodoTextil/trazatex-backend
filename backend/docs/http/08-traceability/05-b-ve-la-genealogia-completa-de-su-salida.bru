@@ -1,0 +1,47 @@
+meta {
+  name: B consulta la genealogía completa de su salida: lo suyo completo, lo de A solo lo compartido, con el historial de transferencias
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/traceability/batches/{{outputId}}/lineage
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{operatorBToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  const node = (id) => res.body.nodes.find((n) => n.id === id);
+  const hidden = (n, fields) => fields.filter((f) => Object.prototype.hasOwnProperty.call(n, f));
+  const BATCH_PRIVATE = ["supplierName", "origin", "quantityKg", "composition", "receptionCharacteristics", "qualityHold"];
+  const TRANSFORMATION_PRIVATE = ["machineName", "machineType", "shrinkageKg", "wasteKg", "wasteReason"];
+
+  test("lo de B se ve completo y el historial de transferencias de la salida dice a quién pasó", function () {
+      const out = node(bru.getVar("outputId"));
+      expect(out.access).to.equal("OWN");
+      expect(out.quantityKg).to.equal(35);
+      expect(out.transferHistory.length).to.equal(1);
+      expect(out.transferHistory[0].toCompanyId).to.equal(bru.getVar("companyBId"));
+      expect(out.transferHistory[0].toBusinessName).to.equal(bru.getVar("nameOfB"));
+  });
+  test("lo de A, que no compartió nada: solo lo siempre compartido, con su nombre", function () {
+      const lot = node(bru.getVar("lotId"));
+      expect(lot.access).to.equal("SHARED");
+      expect(lot.businessName).to.equal(bru.getVar("nameOfA"));
+      expect(lot.traceabilityId).to.equal(bru.getVar("lotTraceabilityId"));
+      expect(hidden(lot, BATCH_PRIVATE)).to.deep.equal([]);
+      expect(hidden(node(bru.getVar("transformationId")), TRANSFORMATION_PRIVATE)).to.deep.equal([]);
+  });
+  test("ningún valor privado de A aparece en ningún lado de la respuesta", function () {
+      const text = JSON.stringify(res.body);
+      ["Textiles del Norte", "Piura", "Fibra limpia", "Orillo"].forEach((secret) => expect(text).to.not.contain(secret));
+  });
+}

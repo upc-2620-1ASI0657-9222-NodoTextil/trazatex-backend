@@ -1,0 +1,29 @@
+meta {
+  name: El administrador de B recibe los suyos, no los de A
+  type: http
+  seq: 2
+}
+
+GET {
+  url: {{baseUrl}}/api/analytics/summary?from={{analyticsFrom}}&to={{analyticsTo}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminBToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+script:post-response {
+  bru.setVar("analyticsB", JSON.stringify(res.body));
+}
+
+tests {
+  test("la empresa B no recibe el mismo documento que A", function () {
+    expect(JSON.stringify(res.body)).to.not.equal(bru.getVar("analyticsA"));
+  });
+}

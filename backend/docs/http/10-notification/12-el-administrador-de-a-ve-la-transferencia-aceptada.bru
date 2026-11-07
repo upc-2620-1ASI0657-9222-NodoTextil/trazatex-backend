@@ -1,0 +1,31 @@
+meta {
+  name: El administrador de A ve la transferencia aceptada
+  type: http
+  seq: 12
+}
+
+GET {
+  url: {{baseUrl}}/api/notifications?type=TRANSFER_ACCEPTED&size=100
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("A (origen) recibe TRANSFER_ACCEPTED de esta transferencia", function () {
+    const found = (res.body.items || []).find(n => n.data && n.data.transferId === bru.getVar("transferId"));
+    expect(found).to.be.an("object");
+    expect(found.type).to.equal("TRANSFER_ACCEPTED");
+  });
+}
+
+docs {
+  Depende de `07-production` paso 17 (B aceptó). La avisa a la empresa de origen, no a la de destino.
+}

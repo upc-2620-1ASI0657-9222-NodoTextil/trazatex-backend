@@ -1,0 +1,19 @@
+meta {
+  name: Listar empresas
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/companies
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{ownerToken}}
+}
+
+assert {
+  res.status: eq 200
+}

@@ -1,0 +1,47 @@
+meta {
+  name: Enlace de invitación (Kafka UI)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{kafkaUi}}/api/clusters/trazatex-local/topics/orgaccess.invitation/messages/v2?mode=EARLIEST&limit=500
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: text/event-stream
+}
+
+script:post-response {
+  // Kafka UI entrega los mensajes como eventos SSE ("data: {...}"). Se toma el ÚLTIMO InvitationCreated de ese correo
+  const wanted = (bru.getEnvVar("ownerEmail") || "").toLowerCase();
+  let found = null;
+  String(res.body).split("\n").forEach(function (line) {
+    if (line.indexOf("data:") !== 0) return;
+    try {
+      const event = JSON.parse(line.substring(5));
+      if (event.type !== "MESSAGE") return;
+      const envelope = JSON.parse(event.message.value);
+      const p = envelope.payload || {};
+      if (envelope.type === "InvitationCreated" && (p.email || "").toLowerCase() === wanted
+          && (found === null || event.message.offset >= found.offset)) {
+        found = { offset: event.message.offset, url: p.acceptUrl };
+      }
+    } catch (e) { /* línea que no es un mensaje */ }
+  });
+  if (found) { bru.setVar("ownerInvitationToken", found.url.split("/").pop()); }
+}
+
+tests {
+  test("hay un enlace de invitación del Dueño en Kafka UI", function () {
+    expect(bru.getVar("ownerInvitationToken")).to.be.a("string").with.lengthOf(43);
+  });
+}
+
+docs {
+  Sustituye el correo: lee de Kafka UI (tópico `orgaccess.invitation`) el último `InvitationCreated` de `ownerEmail` y guarda
+  el token del `acceptUrl` en `ownerInvitationToken`. En la interfaz de Kafka UI (http://localhost:8090 → Topics → orgaccess.invitation →
+  Messages) es el último segmento del `acceptUrl`. El envío real del correo es del servicio notification (siguiente sprint).
+}

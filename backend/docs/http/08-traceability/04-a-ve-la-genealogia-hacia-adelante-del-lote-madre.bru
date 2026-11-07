@@ -1,0 +1,44 @@
+meta {
+  name: A consulta hacia adelante el lote madre: ve las dos ramas, también la de B
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/traceability/batches/{{lotId}}/descendants
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{operatorToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  const node = (id) => res.body.nodes.find((n) => n.id === id);
+  const hidden = (n, fields) => fields.filter((f) => Object.prototype.hasOwnProperty.call(n, f));
+  const BATCH_PRIVATE = ["supplierName", "origin", "quantityKg", "composition", "receptionCharacteristics", "qualityHold"];
+  const TRANSFORMATION_PRIVATE = ["machineName", "machineType", "shrinkageKg", "wasteKg", "wasteReason"];
+
+  test("el lote madre, sus dos hijos, la transformación y la salida", function () {
+      expect(res.body.direction).to.equal("DESCENDANTS");
+      expect(res.body.nodes.length).to.equal(5);
+      expect(res.body.complete).to.equal(true);
+      expect(node(bru.getVar("child40Id")).level).to.equal(1);
+      expect(node(bru.getVar("child60Id")).level).to.equal(1);
+      expect(node(bru.getVar("outputId")).level).to.equal(2);
+  });
+  test("la bifurcación está en las relaciones: el lote madre se divide en dos", function () {
+      const splits = res.body.edges.filter((e) => e.type === "SPLIT_INTO" && e.from === bru.getVar("lotId"));
+      expect(splits.map((e) => e.to).sort()).to.deep.equal([bru.getVar("child40Id"), bru.getVar("child60Id")].sort());
+  });
+  test("el hijo de 60 kg es de B: A no ve sus datos privados", function () {
+      const child60 = node(bru.getVar("child60Id"));
+      expect(child60.access).to.equal("SHARED");
+      expect(hidden(child60, BATCH_PRIVATE)).to.deep.equal([]);
+  });
+}

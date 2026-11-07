@@ -1,0 +1,24 @@
+meta {
+  name: Un segundo control sobre el mismo lote: 409
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/quality/batches/{{q1Id}}/controls
+  body: none
+  auth: bearer
+}
+
+headers {
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 409
+  res.body.code: eq CONTROL_ALREADY_ACTIVE
+}

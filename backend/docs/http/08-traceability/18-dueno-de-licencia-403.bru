@@ -1,0 +1,24 @@
+meta {
+  name: El Dueño de Licencia (sin empresa) no consulta genealogías: 403
+  type: http
+  seq: 18
+}
+
+get {
+  url: {{baseUrl}}/api/traceability/batches/{{outputId}}/lineage
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{ownerToken}}
+}
+
+assert {
+  res.status: eq 403
+  res.body.code: eq FORBIDDEN
+}
+
+tests {
+  test("el 403 tampoco es cacheable", function () { expect(res.getHeader("cache-control")).to.equal("no-store"); });
+}
