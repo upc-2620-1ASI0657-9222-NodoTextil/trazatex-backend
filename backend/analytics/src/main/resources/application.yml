@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: analytics
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/analytics_db}
+    username: ${ANALYTICS_DB_USER}
+    password: ${ANALYTICS_DB_PASSWORD}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: analytics
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      properties:
+        allow.auto.create.topics: false
+    listener:
+      missing-topics-fatal: false
+server:
+  port: 8086
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
