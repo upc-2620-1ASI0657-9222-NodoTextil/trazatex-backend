@@ -1,0 +1,6 @@
+# Perfil `local` (docker compose): si DB_* no está definida se toman las variables con prefijo del .env compartido
+spring:
+  datasource:
+    url: ${DB_URL:${ORGACCESS_DB_URL:jdbc:postgresql://localhost:5432/orgaccess_db}}
+    username: ${DB_USER:${ORGACCESS_DB_USER}}
+    password: ${DB_PASSWORD:${ORGACCESS_DB_PASSWORD}}
