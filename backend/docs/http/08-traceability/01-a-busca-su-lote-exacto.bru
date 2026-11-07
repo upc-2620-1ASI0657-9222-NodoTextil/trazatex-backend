@@ -1,0 +1,36 @@
+meta {
+  name: Esperar a Traceability y buscar el lote de A por su Traceability ID exacto
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/traceability/lineages?traceabilityId={{lotTraceabilityId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{operatorToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("el lote que Production registró en la fase 04 ya está en la genealogía (llegó por eventos)", function () {
+      expect(res.body.totalElements).to.equal(1);
+      expect(res.body.items[0].batchId).to.equal(bru.getVar("lotId"));
+      expect(res.body.items[0].access).to.equal("OWN");
+  });
+  test("la respuesta no es cacheable (lo que se ve depende de quien consulta)", function () { expect(res.getHeader("cache-control")).to.equal("no-store"); });
+}
+
+script:pre-request {
+  await bru.sleep(4000);
+}
+
+docs {
+  Production publicó los eventos de la fase 04 (BatchRegistered, BatchSplit, TransformationCompleted, TransferAccepted…); Traceability los consumió y armó el grafo. La espera cubre el relay del outbox (~1 s) y el consumo.
+}

@@ -1,0 +1,31 @@
+meta {
+  name: Completar la falla del segundo lote
+  type: http
+  seq: 33
+}
+
+put {
+  url: {{baseUrl}}/api/quality/failures/{{q2FailureId}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "rootCause": "Contaminación",
+    "affectedQtyKg": 30
+  }
+}
+
+assert {
+  res.status: eq 200
+}

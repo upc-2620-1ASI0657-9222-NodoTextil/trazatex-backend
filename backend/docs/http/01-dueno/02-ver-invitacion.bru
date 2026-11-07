@@ -1,0 +1,21 @@
+meta {
+  name: Ver la invitación (pública)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/invitations/{{ownerInvitationToken}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.role: eq LICENSE_OWNER
+  res.body.status: eq PENDING
+}
+
+docs {
+  Si ya estaba aceptada, el estado es ACCEPTED: omite el paso siguiente (la colección no se puede repetir sobre la misma base; ver README).
+}

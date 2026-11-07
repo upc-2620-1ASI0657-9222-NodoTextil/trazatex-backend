@@ -1,0 +1,27 @@
+meta {
+  name: Enviar el lote a reevaluación
+  type: http
+  seq: 23
+}
+
+post {
+  url: {{baseUrl}}/api/quality/failures/{{q1FailureId}}/reevaluation
+  body: none
+  auth: bearer
+}
+
+headers {
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+docs {
+  La calidad pasa a PENDING_REEVALUATION y el lote sigue retenido. No llama a Production.
+}

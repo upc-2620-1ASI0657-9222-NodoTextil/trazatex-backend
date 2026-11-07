@@ -1,0 +1,20 @@
+meta {
+  name: B no lista las evidencias de A: 404
+  type: http
+  seq: 22
+}
+
+get {
+  url: {{baseUrl}}/api/quality/controls/{{q1ControlId}}/evidence
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminBToken}}
+}
+
+assert {
+  res.status: eq 404
+  res.body.code: eq CONTROL_NOT_FOUND
+}

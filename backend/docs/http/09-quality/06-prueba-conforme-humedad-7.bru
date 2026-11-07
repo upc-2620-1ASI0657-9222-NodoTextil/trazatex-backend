@@ -1,0 +1,35 @@
+meta {
+  name: Prueba conforme (humedad 7 %)
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/quality/controls/{{q1ControlId}}/tests
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "criterionName": "Humedad",
+    "expectedValue": "8",
+    "obtainedValue": "7",
+    "unit": "%",
+    "testResult": "CONFORMING",
+    "remarks": "dentro del rango"
+  }
+}
+
+assert {
+  res.status: eq 201
+}

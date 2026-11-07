@@ -1,0 +1,41 @@
+meta {
+  name: Dividir el lote en 40 + 60 kg
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/api/batches/{{lotId}}/split
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{operatorToken}}
+}
+
+body:json {
+  {
+    "children": [{ "name": "Hijo 40", "quantityKg": 40 }, { "name": "Hijo 60", "quantityKg": 60 }]
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.parent.phase: eq SPLIT
+  res.body.children.length: eq 2
+}
+
+script:post-response {
+  bru.setVar("child40Id", res.body.children[0].id);
+  bru.setVar("child60Id", res.body.children[1].id);
+}
+
+docs {
+  El padre pasa a SPLIT; cada hijo recibe su propio Traceability ID y QR. Eventos: `BatchSplit` y `BatchPhaseChanged` (AVAILABLE → SPLIT).
+}

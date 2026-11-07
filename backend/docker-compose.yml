@@ -1,0 +1,119 @@
+# Infraestructura local de TrazaTex: Kafka (KRaft), PostgreSQL 16, Neo4j 5 y Kafka UI.
+# Las credenciales vienen de .env (ver README.md). Los servicios Spring se corren desde la Mac, no aquí.
+name: trazatex
+
+services:
+  kafka:
+    image: apache/kafka:4.2.2
+    container_name: trazatex-kafka
+    # Cierre ordenado: el broker y Neo4j necesitan más de los 10 s por defecto para volcar a disco (sin esto Neo4j sale con 137)
+    stop_grace_period: 60s
+    hostname: kafka
+    ports:
+      - "9092:9092"   # EXTERNAL: servicios que corren en la Mac -> localhost:9092
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      # Dos listeners de clientes: INTERNAL para contenedores (kafka:29092) y EXTERNAL para la Mac (localhost:9092)
+      KAFKA_LISTENERS: INTERNAL://:29092,EXTERNAL://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      # Cada servicio declara sus tópicos y sus .DLT con NewTopic (docs/conventions.md)
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_HEAP_OPTS: "-Xms512m -Xmx512m"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      # La herramienta corre con su propio heap pequeño para no duplicar los 512 MB del broker
+      test: ["CMD-SHELL", "KAFKA_HEAP_OPTS='-Xmx128m' /opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
+      interval: 10s
+      timeout: 15s
+      retries: 12
+      start_period: 20s
+
+  kafka-ui:
+    image: kafbat/kafka-ui:v1.5.0
+    container_name: trazatex-kafka-ui
+    ports:
+      - "8090:8080"   # el 8080 del host es del api-gateway
+    environment:
+      KAFKA_CLUSTERS_0_NAME: trazatex-local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      DYNAMIC_CONFIG_ENABLED: "false"
+      JAVA_OPTS: "-Xmx256m"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  postgres:
+    image: postgres:16.15
+    container_name: trazatex-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?Falta POSTGRES_USER en .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Falta POSTGRES_PASSWORD en .env}
+      # Credenciales por servicio: las lee infra/postgres/init.sh al crear el volumen
+      ORGACCESS_DB_USER: ${ORGACCESS_DB_USER:?Falta ORGACCESS_DB_USER en .env}
+      ORGACCESS_DB_PASSWORD: ${ORGACCESS_DB_PASSWORD:?Falta ORGACCESS_DB_PASSWORD en .env}
+      PRODUCTION_DB_USER: ${PRODUCTION_DB_USER:?Falta PRODUCTION_DB_USER en .env}
+      PRODUCTION_DB_PASSWORD: ${PRODUCTION_DB_PASSWORD:?Falta PRODUCTION_DB_PASSWORD en .env}
+      QUALITY_DB_USER: ${QUALITY_DB_USER:?Falta QUALITY_DB_USER en .env}
+      QUALITY_DB_PASSWORD: ${QUALITY_DB_PASSWORD:?Falta QUALITY_DB_PASSWORD en .env}
+      NOTIFICATION_DB_USER: ${NOTIFICATION_DB_USER:?Falta NOTIFICATION_DB_USER en .env}
+      NOTIFICATION_DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD:?Falta NOTIFICATION_DB_PASSWORD en .env}
+      ANALYTICS_DB_USER: ${ANALYTICS_DB_USER:?Falta ANALYTICS_DB_USER en .env}
+      ANALYTICS_DB_PASSWORD: ${ANALYTICS_DB_PASSWORD:?Falta ANALYTICS_DB_PASSWORD en .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sh:/docker-entrypoint-initdb.d/10-init.sh:ro
+      - ./infra/postgres/init.sql:/opt/trazatex/init.sql:ro
+    healthcheck:
+      # Por TCP (-h 127.0.0.1): el servidor temporal de la inicialización solo escucha en el socket Unix,
+      # así que "healthy" significa que init.sh ya terminó
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  neo4j:
+    image: neo4j:5.26.32-community
+    container_name: trazatex-neo4j
+    stop_grace_period: 60s
+    ports:
+      - "7474:7474"   # navegador web
+      - "7687:7687"   # bolt
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:?Falta NEO4J_PASSWORD en .env}
+      NEO4J_server_memory_heap_initial__size: 512m
+      NEO4J_server_memory_heap_max__size: 512m
+      NEO4J_server_memory_pagecache_size: 256m
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p \"$${NEO4J_AUTH#neo4j/}\" 'RETURN 1' > /dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
+
+volumes:
+  kafka_data:
+  postgres_data:
+  neo4j_data:
+  neo4j_logs:

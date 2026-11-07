@@ -1,0 +1,6 @@
+# Perfil `local` (docker compose): si DB_* no está definida se toman las variables con prefijo del .env compartido
+spring:
+  datasource:
+    url: ${DB_URL:${PRODUCTION_DB_URL:jdbc:postgresql://localhost:5432/production_db}}
+    username: ${DB_USER:${PRODUCTION_DB_USER}}
+    password: ${DB_PASSWORD:${PRODUCTION_DB_PASSWORD}}

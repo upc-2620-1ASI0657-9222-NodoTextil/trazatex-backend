@@ -1,0 +1,28 @@
+meta {
+  name: El MISMO token del operario vuelve a servir
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/users
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{operatorToken}}
+}
+
+assert {
+  res.status: eq 403
+  res.body.code: eq FORBIDDEN
+}
+
+script:pre-request {
+  await bru.sleep(2500);
+}
+
+docs {
+  Ya no es 401: el token seguía vigente y el Gateway quitó al usuario del conjunto de inactivos. El 403 es del servicio (no es administrador).
+}

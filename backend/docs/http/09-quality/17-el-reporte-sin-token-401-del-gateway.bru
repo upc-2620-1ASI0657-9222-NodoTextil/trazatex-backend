@@ -1,0 +1,16 @@
+meta {
+  name: El reporte sin token: 401 del Gateway
+  type: http
+  seq: 17
+}
+
+get {
+  url: {{baseUrl}}/api/quality/controls/{{q1ControlId}}/report
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 401
+  res.body.code: eq MISSING_TOKEN
+}

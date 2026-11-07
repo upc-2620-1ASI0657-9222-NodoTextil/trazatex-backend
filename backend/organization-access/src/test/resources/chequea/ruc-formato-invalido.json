@@ -1,0 +1,1 @@
+{"type":"https://chequea.pe/errors/validation","title":"Validacion fallida","status":400,"detail":"params/ruc RUC inválido: debe tener 11 dígitos, empezar con 10, 15, 16, 17 o 20 y tener dígito verificador correcto","instance":"/api/v1/ruc/RUC_AQUI"}

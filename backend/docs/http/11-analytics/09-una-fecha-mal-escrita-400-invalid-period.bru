@@ -1,0 +1,20 @@
+meta {
+  name: Una fecha mal escrita: 400 INVALID_PERIOD
+  type: http
+  seq: 9
+}
+
+GET {
+  url: {{baseUrl}}/api/analytics/summary?from=2026-13-45&to=2026-12-31
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 400
+  res.body.code: eq INVALID_PERIOD
+}

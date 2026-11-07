@@ -1,0 +1,37 @@
+meta {
+  name: Una transferencia parcial se rechaza (400)
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{baseUrl}}/api/transfers
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{operatorToken}}
+}
+
+body:json {
+  {
+    "targetCompanyId": "{{companyBId}}",
+    "batchIds": ["{{outputId}}"],
+    "quantitiesKg": { "{{outputId}}": 10 }
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.code: eq PARTIAL_TRANSFER_NOT_ALLOWED
+}
+
+docs {
+  Solo se transfieren lotes completos: hay que dividir antes. El lote sigue AVAILABLE.
+}

@@ -1,0 +1,37 @@
+meta {
+  name: Un archivo que no es imagen: 400 UNSUPPORTED_FILE_FORMAT
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/api/quality/evidence
+  body: multipartForm
+  auth: bearer
+}
+
+headers {
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:multipart-form {
+  controlId: {{q1ControlId}}
+  files: @file(09-quality/files/no-es-imagen.txt)
+}
+
+assert {
+  res.status: eq 400
+  res.body.code: eq UNSUPPORTED_FILE_FORMAT
+}
+
+tests {
+  test("el mensaje lista los formatos permitidos", function () { expect(res.body.message).to.contain("JPEG, PNG y WebP"); });
+}
+
+docs {
+  El texto del archivo no es una imagen aunque se declare como tal: se decide por los primeros bytes.
+}

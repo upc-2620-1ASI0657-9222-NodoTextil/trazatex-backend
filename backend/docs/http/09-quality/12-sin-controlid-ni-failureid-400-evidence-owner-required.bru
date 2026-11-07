@@ -1,0 +1,28 @@
+meta {
+  name: Sin controlId ni failureId: 400 EVIDENCE_OWNER_REQUIRED
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{baseUrl}}/api/quality/evidence
+  body: multipartForm
+  auth: bearer
+}
+
+headers {
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:multipart-form {
+  files: @file(07-production/files/foto.jpg)
+}
+
+assert {
+  res.status: eq 400
+  res.body.code: eq EVIDENCE_OWNER_REQUIRED
+}

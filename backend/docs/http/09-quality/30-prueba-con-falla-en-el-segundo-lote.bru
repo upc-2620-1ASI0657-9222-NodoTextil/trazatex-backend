@@ -1,0 +1,35 @@
+meta {
+  name: Prueba con falla en el segundo lote
+  type: http
+  seq: 30
+}
+
+post {
+  url: {{baseUrl}}/api/quality/controls/{{q2ControlId}}/tests
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "criterionName": "Humedad",
+    "expectedValue": "8",
+    "obtainedValue": "18",
+    "unit": "%",
+    "testResult": "FAILED",
+    "remarks": "irrecuperable"
+  }
+}
+
+assert {
+  res.status: eq 201
+}

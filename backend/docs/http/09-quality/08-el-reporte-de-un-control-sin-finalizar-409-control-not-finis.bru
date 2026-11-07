@@ -1,0 +1,28 @@
+meta {
+  name: El reporte de un control sin finalizar: 409 CONTROL_NOT_FINISHED
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/api/quality/controls/{{q1ControlId}}/report
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 409
+  res.body.code: eq CONTROL_NOT_FINISHED
+}
+
+tests {
+  test("el error del reporte también lleva no-store", function () { expect(res.getHeader("cache-control")).to.equal("no-store"); });
+}
+
+docs {
+  El reporte (US44) solo existe para un control FINISHED.
+}

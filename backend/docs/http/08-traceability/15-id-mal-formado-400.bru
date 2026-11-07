@@ -1,0 +1,20 @@
+meta {
+  name: Un batchId que no es UUID: 400 INVALID_PARAMETER
+  type: http
+  seq: 15
+}
+
+get {
+  url: {{baseUrl}}/api/traceability/batches/no-es-un-uuid/ancestors
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{operatorToken}}
+}
+
+assert {
+  res.status: eq 400
+  res.body.code: eq INVALID_PARAMETER
+}

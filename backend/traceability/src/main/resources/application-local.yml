@@ -1,0 +1,7 @@
+# Perfil `local` (docker compose): Neo4j por bolt, con los valores del .env compartido
+spring:
+  neo4j:
+    uri: ${NEO4J_URI:bolt://localhost:7687}
+    authentication:
+      username: ${NEO4J_USER:neo4j}
+      password: ${NEO4J_PASSWORD}

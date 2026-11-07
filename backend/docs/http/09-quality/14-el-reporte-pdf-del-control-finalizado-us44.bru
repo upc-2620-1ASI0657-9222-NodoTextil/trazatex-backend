@@ -1,0 +1,31 @@
+meta {
+  name: El reporte PDF del control finalizado (US44)
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{baseUrl}}/api/quality/controls/{{q1ControlId}}/report
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("es un PDF que no se cachea", function () {
+    expect(res.getHeader("content-type")).to.contain("application/pdf");
+    expect(res.getHeader("cache-control")).to.equal("no-store");
+    expect(res.getHeader("content-disposition")).to.contain("attachment");
+  });
+}
+
+docs {
+  Generado al vuelo en Quality (OpenHTMLtoPDF), sin almacenarse. Lleva las pruebas con sus valores, resultados y observaciones, el Traceability ID del lote y las fechas en hora de Lima; no lleva las observaciones internas del control, la falla ni la identidad de quien lo hizo. Para verlo: «Save response» en Bruno o `curl -H "Authorization: Bearer $TOKEN" -o reporte.pdf`.
+}

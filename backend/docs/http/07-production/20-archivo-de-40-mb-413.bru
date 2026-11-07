@@ -1,0 +1,33 @@
+meta {
+  name: Un archivo de 40 MB se rechaza con 413 (ApiError)
+  type: http
+  seq: 20
+}
+
+post {
+  url: {{baseUrl}}/api/batches/{{lotId}}/evidence
+  body: multipartForm
+  auth: bearer
+}
+
+headers {
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{operatorToken}}
+}
+
+body:multipart-form {
+  files: @file(07-production/files/grande.jpg)
+}
+
+assert {
+  res.status: eq 413
+  res.body.code: eq FILE_TOO_LARGE
+}
+
+docs {
+  Necesita `files/grande.jpg`, que NO está en el repositorio: créalo antes (ver README, "Archivo grande").
+  El Gateway deja pasar la subida y Production responde 413 FILE_TOO_LARGE como `ApiError`, también a mitad de la subida.
+}

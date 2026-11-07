@@ -1,0 +1,28 @@
+meta {
+  name: Traceability solo consulta: un POST a sus rutas no cambia nada (405)
+  type: http
+  seq: 20
+}
+
+post {
+  url: {{baseUrl}}/api/traceability/lineages
+  body: json
+  auth: bearer
+}
+
+headers {
+  Idempotency-Key: {{$guid}}
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{operatorToken}}
+}
+
+body:json {
+  {}
+}
+
+assert {
+  res.status: eq 405
+}

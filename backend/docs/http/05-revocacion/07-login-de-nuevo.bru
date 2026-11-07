@@ -1,0 +1,26 @@
+meta {
+  name: El operario puede volver a iniciar sesión
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/api/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{operatorEmail}}",
+    "password": "{{operatorPassword}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+}

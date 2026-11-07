@@ -1,0 +1,27 @@
+meta {
+  name: El operario inactivo no puede iniciar sesión
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{operatorEmail}}",
+    "password": "{{operatorPassword}}"
+  }
+}
+
+assert {
+  res.status: eq 401
+  res.body.code: eq INVALID_CREDENTIALS
+}

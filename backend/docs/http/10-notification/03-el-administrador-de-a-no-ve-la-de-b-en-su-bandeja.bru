@@ -1,0 +1,26 @@
+meta {
+  name: El administrador de A no ve la de B en su bandeja
+  type: http
+  seq: 3
+}
+
+GET {
+  url: {{baseUrl}}/api/notifications?type=TRANSFER_RECEIVED&size=100
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("A no recibe el aviso de B (cada empresa ve solo lo suyo)", function () {
+    const found = (res.body.items || []).find(n => n.data && n.data.transferId === bru.getVar("transferId"));
+    expect(found).to.equal(undefined);
+  });
+}

@@ -1,0 +1,27 @@
+meta {
+  name: B busca el Traceability ID exacto del lote de A: lo encuentra
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{baseUrl}}/api/traceability/lineages?traceabilityId={{lotTraceabilityId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{operatorBToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("la coincidencia exacta con un lote de otra empresa sí sale (y como compartido)", function () {
+      expect(res.body.totalElements).to.equal(1);
+      expect(res.body.items[0].batchId).to.equal(bru.getVar("lotId"));
+      expect(res.body.items[0].access).to.equal("SHARED");
+  });
+}

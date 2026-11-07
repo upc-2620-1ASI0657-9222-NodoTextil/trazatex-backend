@@ -1,0 +1,34 @@
+meta {
+  name: El administrador invita al operario
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/invitations/operators
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "firstName": "Luis",
+    "lastName": "Rojas",
+    "email": "{{operatorEmail}}",
+    "position": "Tejedor"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.status: eq PENDING
+}

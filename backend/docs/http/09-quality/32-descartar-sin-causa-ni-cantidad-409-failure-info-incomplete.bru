@@ -1,0 +1,24 @@
+meta {
+  name: Descartar sin causa ni cantidad: 409 FAILURE_INFO_INCOMPLETE
+  type: http
+  seq: 32
+}
+
+post {
+  url: {{baseUrl}}/api/quality/failures/{{q2FailureId}}/discard
+  body: none
+  auth: bearer
+}
+
+headers {
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 409
+  res.body.code: eq FAILURE_INFO_INCOMPLETE
+}

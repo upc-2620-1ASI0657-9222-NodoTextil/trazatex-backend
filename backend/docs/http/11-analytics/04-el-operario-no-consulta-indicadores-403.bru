@@ -1,0 +1,20 @@
+meta {
+  name: El operario no consulta indicadores: 403
+  type: http
+  seq: 4
+}
+
+GET {
+  url: {{baseUrl}}/api/analytics/summary?from={{analyticsFrom}}&to={{analyticsTo}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{operatorToken}}
+}
+
+assert {
+  res.status: eq 403
+  res.body.code: eq FORBIDDEN
+}

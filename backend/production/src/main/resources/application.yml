@@ -1,0 +1,91 @@
+spring:
+  application:
+    name: production
+  servlet:
+    multipart:
+      # US42: 10 MB por archivo y hasta 5 archivos por petición (50 MB + las demás partes). Lo que excede se rechaza con 413 FILE_TOO_LARGE
+      max-file-size: 10MB
+      max-request-size: 52MB
+      file-size-threshold: 1MB
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+server:
+  port: 8082
+  tomcat:
+    # Al rechazar un archivo grande Tomcat deja de leer; si no puede descartar el resto del cuerpo (2 MB por defecto) cierra la conexión y el
+    # cliente ve un corte de red en vez del ApiError 413. Debe cubrir la petición máxima.
+    max-swallow-size: 60MB
+
+trazatex:
+  cloudinary:
+    # CLOUDINARY_URL = cloudinary://API_KEY:API_SECRET@CLOUD_NAME (secreto: solo por variable de entorno). Vacía: Production arranca igual
+    # con un WARN y todas las evidencias quedan PENDING en la cola local hasta que se configure (ADR-007)
+    url: ${CLOUDINARY_URL:}
+    base-url: https://api.cloudinary.com
+    connect-timeout: PT2S
+    read-timeout: PT8S
+    circuit-breaker: {sliding-window-size: 10, minimum-calls: 5, failure-rate-threshold: 50, wait-in-open-state: PT30S, half-open-calls: 2}
+  evidence:
+    max-files: 5
+    max-file-size: 10MB
+    upload:
+      # La cola diferida: cada cuánto corre el job, cuántas evidencias reclama por pasada y la espera creciente entre intentos
+      enabled: true
+      job-delay: PT30S
+      job-initial-delay: PT10S
+      # espera entre intentos de una evidencia: initial-delay × multiplier^(n-1), con tope max-delay; tras max-attempts → FAILED
+      initial-delay: PT30S
+      claims-per-run: 5
+      lease: PT5M
+      not-available-delay: PT5M
+      max-attempts: 30
+      multiplier: 2.0
+      max-delay: PT30M
+  messaging:
+    # false: sin broker (ni relay ni tópicos); el outbox sigue guardando los eventos
+    enabled: true
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    # Tópicos propios: 1 partición y 1 réplica en local; no cambiar las particiones de un tópico en uso
+    partitions: 1
+    replicas: 1
+    modify-topic-configs: true
+    relay-delay: PT1S
+    relay-batch-size: 100
+    consumer:
+      # Grupos separados por tópico: un quality.control ausente no afecta al consumo de empresas. Un grupo nuevo lee desde el inicio
+      company:
+        group: production.orgaccess-company
+      quality:
+        group: production.quality-control
+        # Cada cuánto se revisa si ya existe quality.control (de Quality, siguiente sprint); mientras no exista no se suscribe
+        topic-check-interval: PT15S
+      retry:
+        max-retries: 5
+        initial-interval: PT1S
+        multiplier: 2.0
+        max-interval: PT30S
+  idempotency:
+    cleanup-job-delay: PT1H
+  phase-transitions:
+    # Comando interno de Quality: bloqueo optimista; una carrera se reintenta dentro y, si persiste, responde 503
+    retry-attempts: 5
+    retry-backoff: PT0.02S
+    # Espera máxima a un bloqueo de fila (una operación del usuario con el lote en FOR UPDATE); menor que el timeout de 2 s de Quality
+    lock-timeout: PT1.5S
+  transformation:
+    # Rendimiento mínimo (salida total / entrada total, en %) que exige cada TransformationStrategy.
+    # Placeholders explícitos: el relaxed binding de Spring Boot no cruza los guiones de `min-yield-percent`
+    # desde una variable de entorno, así que cada una se lee con su nombre completo.
+    min-yield-percent:
+      spinning: ${TRAZATEX_TRANSFORMATION_MIN_YIELD_SPINNING:60}
+      weaving: ${TRAZATEX_TRANSFORMATION_MIN_YIELD_WEAVING:80}
+      dyeing: ${TRAZATEX_TRANSFORMATION_MIN_YIELD_DYEING:80}

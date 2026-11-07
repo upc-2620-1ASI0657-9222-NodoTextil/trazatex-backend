@@ -1,0 +1,20 @@
+meta {
+  name: La ruta vieja /api/analytics ya no existe: 404
+  type: http
+  seq: 10
+}
+
+GET {
+  url: {{baseUrl}}/api/analytics?from={{analyticsFrom}}&to={{analyticsTo}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 404
+  res.body.code: eq NOT_FOUND
+}

@@ -1,0 +1,31 @@
+meta {
+  name: Login
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/api/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{operatorBEmail}}",
+    "password": "{{operatorBPassword}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+script:post-response {
+  bru.setVar("operatorBToken", res.body.token);
+  bru.setVar("operatorBId", res.body.user.id);
+}

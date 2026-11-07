@@ -1,0 +1,37 @@
+meta {
+  name: El Dueño inactiva la empresa B
+  type: http
+  seq: 23
+}
+
+patch {
+  url: {{baseUrl}}/api/companies/{{companyBId}}/status
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{ownerToken}}
+}
+
+body:json {
+  { "status": "INACTIVE" }
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq INACTIVE
+}
+
+script:post-response {
+  await bru.sleep(3000);
+}
+
+docs {
+  Production lo sabe por `CompanyStatusChanged` (espera 3 s).
+}

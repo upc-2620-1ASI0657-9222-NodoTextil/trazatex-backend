@@ -1,0 +1,544 @@
+:root {
+  --work-forest: #0b2a1b;
+  --work-paper: #faf6ec;
+  --work-cream: #f3ead8;
+  --work-edge: rgb(15 46 32 / .18);
+  --work-mustard: #c3a26a;
+}
+
+.page:not(.trace-page):not(.work-page) .page-head .eyebrow:not(a),
+.page:not(.trace-page):not(.work-page) .page-head .page-lead {
+  display: none;
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) {
+  display: grid;
+  grid-template-columns: 12.25rem minmax(0, 1fr);
+  column-gap: 1rem;
+  align-content: start;
+  min-width: 0;
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > .page-head {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(9rem, 1fr) minmax(0, auto) minmax(9rem, 1fr);
+  align-items: center;
+  margin-bottom: .9rem;
+  padding-bottom: .2rem;
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > .page-head::before {
+  display: block;
+  content: '';
+  position: static;
+  grid-column: 1;
+  background: none;
+  height: 0;
+  width: 0;
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > .page-head > div:first-of-type {
+  grid-column: 2;
+  text-align: center;
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > .page-head > .actions {
+  grid-column: 3;
+  justify-self: end;
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > app-subnav {
+  grid-column: 1;
+  grid-row: 2 / span 4;
+  align-self: start;
+  position: sticky;
+  top: 4.25rem;
+  display: block;
+  min-width: 0;
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > app-subnav > .subnav {
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+  padding: .7rem;
+  border: 0;
+  background: linear-gradient(rgb(6 30 18 / .66), rgb(6 30 18 / .66)), url('/tex/verde.webp') center / 380px, var(--work-forest);
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > app-subnav > .subnav button {
+  width: 100%;
+  min-height: 2.55rem;
+  justify-content: space-between;
+  padding: .45rem .65rem;
+  text-align: left;
+  color: #f7f0dc;
+  white-space: normal;
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > app-subnav > .subnav button:hover {
+  color: #fffaf0;
+  background: rgb(255 255 255 / .12);
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > app-subnav > .subnav button[aria-selected='true'] {
+  background: #e8d7b3;
+  color: var(--work-forest);
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > app-subnav > .subnav .n {
+  color: inherit;
+  background: rgb(255 255 255 / .12);
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > .filters {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+  align-self: start;
+  display: flex;
+  margin-bottom: .9rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > .filters .search {
+  max-width: none;
+  flex: 1 1 23rem;
+  min-width: min(100%, 13rem);
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > :is(.rows, .empty) {
+  grid-column: 2;
+  grid-row: 3;
+  min-width: 0;
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > app-pager {
+  grid-column: 2;
+  grid-row: 4;
+  min-width: 0;
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) .rows {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+  gap: .75rem;
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) .row-card {
+  min-height: 6.2rem;
+  background: #fcf9f2;
+  border: 1px solid var(--work-edge);
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) .row-card .rc-title {
+  line-height: 1.25;
+}
+.detail-page .page-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  row-gap: .65rem;
+  padding-bottom: .15rem;
+}
+.detail-page .page-head > div:first-child { min-width: 0; }
+.detail-page .detail-identity {
+  display: grid;
+  grid-template-columns: minmax(7.5rem, 11.5rem) minmax(0, 1fr);
+  gap: 0;
+  align-items: stretch;
+  min-height: 5.2rem;
+}
+.detail-page .lot-code {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 5.2rem;
+  padding: .75rem .9rem;
+  background: var(--work-forest);
+  color: #f7ecd6;
+  text-align: center;
+  font: 700 clamp(.95rem, 1.4vw, 1.15rem)/1.35 var(--f-body);
+  overflow-wrap: anywhere;
+}
+.detail-page .detail-identity > .page-title {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 5.2rem;
+  margin: 0;
+  padding: .55rem 1rem;
+  background: #e8d7b3;
+  color: var(--work-forest);
+  line-height: 1.14;
+  overflow-wrap: anywhere;
+}
+.detail-page .page-head > .actions {
+  justify-content: flex-end;
+  gap: .4rem;
+}
+.detail-page .page-head > .actions > :is(a, button, app-action, app-readonly) { min-width: 0; }
+.detail-page .split { grid-template-columns: minmax(0, 1.35fr) minmax(16rem, .72fr); gap: .85rem; }
+.detail-page .folds { gap: .6rem; }
+.detail-page .fold { background: #faf6ec; }
+.detail-page .fold.open > .fold-head { background: var(--work-forest); }
+.detail-page .fold-body { padding: .9rem; }
+.detail-page .qr-sheet {
+  background: linear-gradient(rgb(6 30 18 / .6), rgb(6 30 18 / .6)), url('/tex/verde.webp') center / 400px, var(--work-forest);
+}
+.detail-page .mini-cards { grid-template-columns: repeat(auto-fit, minmax(min(100%, 12.5rem), 1fr)); }
+.trace-page .trace-layout { align-items: start; }
+.trace-page .trace-sidebar {
+  position: sticky;
+  top: 4.25rem;
+  display: flex;
+  flex-direction: column;
+  height: min(79dvh, 51rem);
+  min-height: 29rem;
+  gap: .55rem;
+  overflow: hidden;
+}
+.trace-page .trace-filters {
+  height: 15rem;
+  max-height: none;
+  min-height: 15rem;
+  flex: 0 0 15rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.trace-page .trace-detail {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #faf6ed;
+  border: 1px solid var(--work-edge);
+}
+.trace-page .trace-detail-head {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+  padding: .9rem .9rem .75rem;
+  background: linear-gradient(rgb(6 30 18 / .65), rgb(6 30 18 / .65)), url('/tex/verde.webp') center / 380px, var(--work-forest);
+  color: #f8edd7;
+}
+.trace-page .trace-detail-head h2 {
+  margin: 0;
+  color: inherit;
+  font: 700 .98rem/1.35 var(--f-body);
+}
+.trace-page .trace-detail-head .detail-id {
+  margin: .1rem 0 0;
+  padding: 0;
+  background: none;
+  color: #f2d8a5;
+  font: 700 .82rem/1.3 var(--f-body);
+}
+.trace-page .trace-detail-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: .85rem .9rem 1rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.trace-page .trace-detail-scroll .detail-data dd { border-bottom-color: rgb(15 46 32 / .12); }
+.trace-page .trace-block-nav {
+  grid-template-columns: 2.65rem minmax(0, 1fr) 2.65rem auto;
+  gap: .35rem;
+}
+.trace-page .tree-zoom {
+  display: inline-flex;
+  align-items: stretch;
+  gap: .2rem;
+  min-width: 0;
+}
+.trace-page .tree-zoom button {
+  min-width: 3.55rem;
+  border: 1px solid var(--work-forest);
+  background: #faf6ec;
+  color: var(--work-forest);
+  font: 700 .72rem/1.3 var(--f-body);
+  cursor: pointer;
+}
+.trace-page .tree-zoom button[aria-pressed='true'] { background: var(--work-forest); color: #f8edd7; }
+.trace-page .tree-zoom button:focus-visible { outline: 2px solid #b18b50; outline-offset: 2px; }
+.drawer header, .dialog header {
+  background: linear-gradient(rgb(6 30 18 / .57), rgb(6 30 18 / .57)), url('/tex/verde.webp') center / 390px, var(--work-forest);
+}
+.sheet { background: #fcf9f2; }
+.dialog footer, .drawer footer { background: #eadfc9; }
+.page--privacidad .toggles li { border-bottom-style: solid; }
+.page--licencia .tag { background: linear-gradient(rgb(6 30 18 / .64), rgb(6 30 18 / .64)), url('/tex/verde.webp') center / 390px, var(--work-forest); }
+
+@media (max-width: 1060px) {
+  .detail-page .split { grid-template-columns: minmax(0, 1fr); }
+  .detail-page .aside-stack { grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); }
+}
+@media (max-width: 900px) {
+  :is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) { grid-template-columns: 10rem minmax(0, 1fr); gap: .6rem; }
+  :is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > app-subnav { top: 4rem; }
+  :is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > .page-head { display: flex; flex-wrap: wrap; justify-content: center; }
+  :is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > .page-head::before { display: none; }
+  :is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > .page-head > div:first-of-type { flex: 1 1 100%; }
+  :is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > .page-head > .actions { flex: 1 1 100%; justify-content: center; }
+}
+@media (max-width: 700px) {
+  :is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) { grid-template-columns: minmax(0, 1fr); }
+  :is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > app-subnav { position: static; grid-column: 1; grid-row: 2; }
+  :is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > app-subnav > .subnav { flex-direction: row; overflow-x: auto; padding: .3rem; }
+  :is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > app-subnav > .subnav button { width: auto; min-width: max-content; }
+  :is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > .filters { grid-column: 1; grid-row: 3; }
+  :is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > :is(.rows, .empty) { grid-column: 1; grid-row: 4; }
+  :is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > app-pager { grid-column: 1; grid-row: 5; }
+  .trace-page .trace-sidebar { position: static; height: auto; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: stretch; }
+  .trace-page .trace-filters { height: 18rem; min-height: 0; flex: auto; }
+  .trace-page .trace-detail { height: 18rem; min-height: 0; }
+  .detail-page .detail-identity { grid-template-columns: minmax(6.4rem, 32%) minmax(0, 1fr); }
+}
+@media (max-width: 520px) {
+  .trace-page .trace-block-nav { grid-template-columns: 2.3rem minmax(0, 1fr) 2.3rem; }
+  .trace-page .tree-zoom { grid-column: 1 / -1; min-height: 2.3rem; justify-content: flex-end; }
+  .detail-page .detail-identity > .page-title { font-size: clamp(2rem, 9vw, 2.8rem); }
+}
+@media (max-width: 420px) {
+  .trace-page .trace-sidebar { grid-template-columns: minmax(0, 1fr); }
+  .trace-page .trace-filters { height: 13rem; }
+  .trace-page .trace-detail { height: 16rem; }
+}
+.page--privacidad {
+  display: grid;
+  grid-template-columns: 12.25rem minmax(0, 1fr);
+  gap: .8rem 1rem;
+  align-content: start;
+}
+.page--privacidad > .page-head { grid-column: 1 / -1; justify-content: center; text-align: center; margin-bottom: .25rem; }
+.page--privacidad > app-subnav { grid-column: 1; grid-row: 2 / span 2; align-self: start; }
+.page--privacidad > app-subnav > .subnav {
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+  padding: .6rem;
+  border: none;
+  background: linear-gradient(rgb(6 30 18 / .65), rgb(6 30 18 / .65)), url('/tex/verde.webp') center / 380px, var(--work-forest);
+}
+.page--privacidad > app-subnav > .subnav button { justify-content: space-between; width: 100%; color: #f8edd7; text-align: left; padding: .5rem .6rem; white-space: normal; }
+.page--privacidad > app-subnav > .subnav button:hover { background: rgb(255 255 255 / .12); color: #fff; }
+.page--privacidad > app-subnav > .subnav button[aria-selected='true'] { background: #e8d7b3; color: var(--work-forest); }
+.page--privacidad > .tabpanel > .filters { grid-column: 2; grid-row: 2; margin: 0; }
+.page--privacidad > .tabpanel > .panel-list { grid-column: 2; grid-row: 3; max-width: none; }
+.page--privacidad > .tabpanel > .panel-list .toggles li { min-height: 3.1rem; }
+.page--privacidad > .tabpanel > .small { grid-column: 2; }
+.page--licencia > .page-head { justify-content: center; text-align: center; }
+.page--perfil > .page-head { justify-content: space-between; align-items: center; }
+.page--perfil > .grid-2 .sheet { min-height: 14rem; }
+.page--licencia .lic { gap: 1rem; }
+.page--licencia .tag .kind { color: #f4e4bc; }
+
+@media (max-width: 700px) {
+  .page--privacidad { grid-template-columns: 1fr; }
+  .page--privacidad > .page-head { grid-column: 1; }
+  .page--privacidad > app-subnav { grid-column: 1; grid-row: 2; }
+  .page--privacidad > app-subnav > .subnav { flex-direction: row; padding: .35rem; overflow-x: auto; }
+  .page--privacidad > app-subnav > .subnav button { width: auto; min-width: max-content; }
+  .page--privacidad > .tabpanel > .filters { grid-column: 1; grid-row: 3; }
+  .page--privacidad > .tabpanel > .panel-list { grid-column: 1; grid-row: 4; }
+  .page--privacidad > .tabpanel > .small { grid-column: 1; }
+}
+:root { --work-mustard: #d4c4a9; }
+.detail-page .detail-identity > .page-title {
+  background: #f3e9da;
+}
+.detail-page .lot-code {
+  background: linear-gradient(rgb(6 30 18 / .64), rgb(6 30 18 / .64)), url('/tex/verde.webp') center / 320px, var(--work-forest);
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--privacidad, .page--licencia) .page-title {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .65rem;
+}
+.page-title .section-icon {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 2.45rem;
+  height: 2.45rem;
+  border: 1px solid rgb(15 46 32 / .2);
+  background: #f4ebdc;
+  color: var(--work-forest);
+}
+:is(.page--maquinaria, .page--transferencias, .page--procesos, .page--lotes, .page--empresas, .page--usuarios, .page--calidad) .row-card {
+  border-color: rgb(15 46 32 / .2);
+  box-shadow: none;
+}
+.page--lotes .row-card {
+  background: linear-gradient(rgb(250 247 240 / .93), rgb(250 247 240 / .93)), url('/tex/blanca.webp') center / 310px, #f9f6ee;
+}
+.page--procesos .row-card {
+  background: linear-gradient(rgb(249 245 234 / .95), rgb(249 245 234 / .95)), url('/tex/marron.webp') center / 290px, #f9f5e9;
+}
+.page--maquinaria .row-card {
+  background: linear-gradient(rgb(250 246 235 / .92), rgb(250 246 235 / .92)), url('/tex/dots.webp') center / 300px, #faf6ec;
+}
+.page--transferencias .row-card {
+  background: linear-gradient(rgb(251 248 241 / .93), rgb(251 248 241 / .93)), url('/tex/blanca.webp') center / 280px, #faf6ec;
+}
+.page--empresas .row-card {
+  background: linear-gradient(rgb(249 245 234 / .92), rgb(249 245 234 / .92)), url('/tex/marron.webp') center / 290px, #faf6ed;
+}
+.page--usuarios .row-card {
+  background: linear-gradient(rgb(251 248 241 / .94), rgb(251 248 241 / .94)), url('/tex/dots.webp') center / 320px, #fbf8f1;
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) .row-card .rc-id {
+  display: inline-flex;
+  justify-self: start;
+  padding: .15rem .37rem;
+  background: var(--work-forest);
+  color: #fdf9ed;
+  font-weight: 700;
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) .row-card:hover {
+  border-color: var(--work-forest);
+}
+.page--privacidad .panel-list {
+  background: linear-gradient(rgb(253 249 239 / .94), rgb(253 249 239 / .94)), url('/tex/blanca.webp') center / 380px, #fdf9ef;
+}
+.page--privacidad .toggles li:has(app-priv) {
+  background: linear-gradient(rgb(248 241 226 / .86), rgb(248 241 226 / .86)), url('/tex/marron.webp') center / 220px;
+  padding-inline: .5rem;
+}
+.detail-page .fold-body .dl > dd:has(.masked),
+.drawer .dl > dd:has(.masked) {
+  background: linear-gradient(rgb(247 240 226 / .8), rgb(247 240 226 / .8)), url('/tex/marron.webp') center / 220px;
+}
+@media (max-width: 600px) {
+  .page-title .section-icon { width: 2rem; height: 2rem; }
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > app-subnav {
+  position: static;
+  grid-column: 1;
+  grid-row: auto;
+  margin-bottom: .85rem;
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > app-subnav > .subnav {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: .25rem;
+  padding: .3rem;
+  border: 0;
+  background: linear-gradient(rgb(6 30 18 / .73), rgb(6 30 18 / .73)), url('/tex/verde.webp') center / 370px, var(--green-950);
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > app-subnav > .subnav button {
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 2.45rem;
+  white-space: nowrap;
+  justify-content: center;
+  padding: .5rem .82rem;
+  color: #f3ecd9;
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > app-subnav > .subnav button[aria-selected='true'] {
+  background: #f0e9d9;
+  color: #0b2a1b;
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > .filters,
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > :is(.rows, .empty),
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > app-pager {
+  grid-column: 1;
+  grid-row: auto;
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > .filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .65rem;
+  padding: .2rem 0 .85rem;
+  margin: 0 0 .95rem;
+  border-bottom: 1px solid rgb(15 46 32 / .12);
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > .filters .search {
+  max-width: none;
+  flex: 1 1 18rem;
+}
+:is(.page--lotes, .page--procesos, .page--transferencias, .page--maquinaria, .page--empresas, .page--usuarios, .page--calidad) > :is(.rows, .empty) {
+  margin-bottom: .6rem;
+}
+.page-title .section-icon {
+  display: inline-flex;
+  width: .9em;
+  height: .9em;
+  border: 0;
+  background: transparent;
+  color: currentColor;
+  padding: 0;
+}
+.page-title .section-icon svg {
+  width: 100%;
+  height: 100%;
+  stroke-width: 1.45;
+}
+.page--usuarios .row-card:has(> .rc-figure),
+.page--maquinaria .row-card:has(> .rc-figure) {
+  position: relative;
+  min-height: 8.2rem;
+  padding-left: .95rem;
+}
+.page--usuarios .row-card > .rc-figure,
+.page--maquinaria .row-card > .rc-figure {
+  position: absolute;
+  top: 3rem;
+  left: 1rem;
+  display: inline-flex;
+  color: #1b4c34;
+  opacity: .95;
+}
+.page--usuarios .row-card > .rc-title,
+.page--usuarios .row-card > .rc-meta,
+.page--maquinaria .row-card > .rc-title,
+.page--maquinaria .row-card > .rc-meta {
+  padding-left: 4.2rem;
+}
+.page--usuarios .row-card > .rc-title,
+.page--maquinaria .row-card > .rc-title {
+  min-height: 1.6rem;
+}
+.page--lotes .row-card {
+  background: linear-gradient(rgb(250 247 240 / .87), rgb(250 247 240 / .87)), url('/tex/blanca.webp') center / 310px, #f9f6ee;
+}
+.page--procesos .row-card {
+  background: linear-gradient(rgb(249 245 234 / .87), rgb(249 245 234 / .87)), url('/tex/marron.webp') center / 290px, #f9f5e9;
+}
+.page--maquinaria .row-card {
+  background: linear-gradient(rgb(250 246 235 / .84), rgb(250 246 235 / .84)), url('/tex/dots.webp') center / 300px, #faf6ec;
+}
+.page--transferencias .row-card {
+  background: linear-gradient(rgb(251 248 241 / .86), rgb(251 248 241 / .86)), url('/tex/blanca.webp') center / 280px, #faf6ec;
+}
+.page--empresas .row-card {
+  background: linear-gradient(rgb(249 245 234 / .84), rgb(249 245 234 / .84)), url('/tex/marron.webp') center / 290px, #faf6ed;
+}
+.page--usuarios .row-card {
+  background: linear-gradient(rgb(251 248 241 / .85), rgb(251 248 241 / .85)), url('/tex/dots.webp') center / 320px, #fbf8f1;
+}
+.page--licencia .tag {
+  background: linear-gradient(rgb(7 28 17 / .76), rgb(7 28 17 / .76)), url('/tex/marron.webp') center / 320px, var(--green-950);
+  color: #fff9ed;
+}
+.page--licencia .tag .kind,
+.page--licencia .tag .dl > dd { color: #fff9ed !important; }
+.page--licencia .tag .label,
+.page--licencia .tag .dl > dt { color: #dfdac6 !important; }
+.page--licencia .tag .dl > * { background: transparent !important; }
+.topbar {
+  min-height: 3.65rem;
+  background: linear-gradient(90deg, #f5efe3 0%, #fdf9f0 58%, #f5efe3 100%);
+  border-bottom: 1px solid rgb(15 46 32 / .19);
+}
+.topbar .top-current { font-size: .88rem; }
+.topbar .proto { border-left: 1px solid rgb(15 46 32 / .14); padding-left: .8rem; }
+@media (max-width: 900px) {
+  .topbar .proto { border-left: 0; padding-left: 0; }
+}
+@media (max-width: 650px) {
+  .page--usuarios .row-card > .rc-figure,
+  .page--maquinaria .row-card > .rc-figure { left: .75rem; }
+  .page--usuarios .row-card > .rc-title,
+  .page--usuarios .row-card > .rc-meta,
+  .page--maquinaria .row-card > .rc-title,
+  .page--maquinaria .row-card > .rc-meta { padding-left: 3.4rem; }
+}

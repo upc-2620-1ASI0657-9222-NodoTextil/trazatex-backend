@@ -1,0 +1,28 @@
+meta {
+  name: Un lote que no existe: 404 BATCH_NOT_FOUND, sin pistas
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{baseUrl}}/api/traceability/batches/00000000-0000-4000-8000-000000000000/lineage
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{operatorToken}}
+}
+
+assert {
+  res.status: eq 404
+  res.body.code: eq BATCH_NOT_FOUND
+}
+
+tests {
+  test("el mismo cuerpo para inexistente, provisional o incompleto: no dice cuál es el caso ni nombra el lote", function () {
+      expect(res.body.message).to.equal("El lote no existe.");
+      expect(res.body.details.length).to.equal(0);
+      expect(JSON.stringify(res.body)).to.not.contain("00000000-0000-4000-8000-000000000000");
+  });
+}

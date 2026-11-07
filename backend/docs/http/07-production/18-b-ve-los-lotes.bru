@@ -1,0 +1,24 @@
+meta {
+  name: B ve el lote transferido; A ya no
+  type: http
+  seq: 18
+}
+
+get {
+  url: {{baseUrl}}/api/batches/{{outputId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{operatorBToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.phase: eq AVAILABLE
+}
+
+docs {
+  Con el token de la empresa A el mismo GET da 404.
+}

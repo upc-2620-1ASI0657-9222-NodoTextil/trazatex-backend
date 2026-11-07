@@ -1,0 +1,32 @@
+meta {
+  name: Completar la información de la falla
+  type: http
+  seq: 18
+}
+
+put {
+  url: {{baseUrl}}/api/quality/failures/{{q1FailureId}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Idempotency-Key: {{$guid}}
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "rootCause": "Humedad excesiva en bodega",
+    "affectedQtyKg": 12.5,
+    "observations": "Lote almacenado junto a la pared"
+  }
+}
+
+assert {
+  res.status: eq 200
+}

@@ -1,0 +1,380 @@
+name: trazatex-platform
+x-backend: &backend
+  restart: unless-stopped
+  environment: &management
+    JAVA_TOOL_OPTIONS: -Xmx384m
+    MANAGEMENT_SERVER_PORT: 18080
+    MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,metrics
+    MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: never
+services:
+  kafka:
+    restart: unless-stopped
+    extends: { file: ./backend/docker-compose.yml, service: kafka }
+    container_name: "${TRAZATEX_CONTAINER_PREFIX:-trazatex}-kafka-1"
+    environment:
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    ports: !reset []
+    volumes: !override
+      - kafka_data:/var/lib/kafka/data
+      - kafka_secrets:/etc/kafka/secrets
+      - kafka_config:/mnt/shared/config
+  postgres:
+    restart: unless-stopped
+    extends: { file: ./backend/docker-compose.yml, service: postgres }
+    container_name: "${TRAZATEX_CONTAINER_PREFIX:-trazatex}-postgres-1"
+    ports: !reset []
+    volumes: !override
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/infra/platform/postgres-init.sh:/docker-entrypoint-initdb.d/10-init.sh:ro
+  database-init:
+    container_name: "${TRAZATEX_CONTAINER_PREFIX:-trazatex}-database-init-1"
+    image: postgres:16.15
+    environment:
+      PGHOST: postgres
+      POSTGRES_USER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGADMIN_EMAIL: ${PGADMIN_EMAIL}
+      PORTAINER_PASSWORD: ${PORTAINER_PASSWORD}
+      ORGACCESS_DB_USER: ${ORGACCESS_DB_USER}
+      ORGACCESS_DB_PASSWORD: ${ORGACCESS_DB_PASSWORD}
+      PRODUCTION_DB_USER: ${PRODUCTION_DB_USER}
+      PRODUCTION_DB_PASSWORD: ${PRODUCTION_DB_PASSWORD}
+      QUALITY_DB_USER: ${QUALITY_DB_USER}
+      QUALITY_DB_PASSWORD: ${QUALITY_DB_PASSWORD}
+      NOTIFICATION_DB_USER: ${NOTIFICATION_DB_USER}
+      NOTIFICATION_DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
+      ANALYTICS_DB_USER: ${ANALYTICS_DB_USER}
+      ANALYTICS_DB_PASSWORD: ${ANALYTICS_DB_PASSWORD}
+    tmpfs: ["/var/lib/postgresql/data:size=1m"]
+    entrypoint: ["bash", "/init/databases.sh"]
+    volumes:
+      - ./backend/infra/platform/postgres-init.sh:/init/databases.sh:ro
+      - ./backend/infra/platform/panel-config.sh:/init/panels.sh:ro
+      - panel_config:/config
+      - pgadmin_data:/pgadmin-data
+    depends_on:
+      postgres: { condition: service_healthy }
+  neo4j:
+    restart: unless-stopped
+    extends: { file: ./backend/docker-compose.yml, service: neo4j }
+    container_name: "${TRAZATEX_CONTAINER_PREFIX:-trazatex}-neo4j-1"
+    ports: !override ["127.0.0.1:17474:7474", "127.0.0.1:17687:7687"]
+    environment:
+      TRAZATEX_NEO4J_USER: ${NEO4J_USER:-neo4j}
+      NEO4J_server_http_advertised__address: localhost:17474
+      NEO4J_server_bolt_advertised__address: localhost:17687
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          cypher-shell -u "$${TRAZATEX_NEO4J_USER}" -p "$${NEO4J_AUTH#*/}" 'RETURN 1' > /dev/null 2>&1 ||
+          cypher-shell -u neo4j -p "$${NEO4J_AUTH#*/}" 'RETURN 1' > /dev/null 2>&1
+      interval: 10s
+      timeout: 15s
+      retries: 12
+      start_period: 30s
+  administration-init:
+    container_name: "${TRAZATEX_CONTAINER_PREFIX:-trazatex}-administration-init-1"
+    image: dpage/pgadmin4@sha256:c332c5f6dfba995d9ebc4af261d93506d6876085d712eaaa3defc8dd1a3f26de
+    environment:
+      NEO4J_USER: ${NEO4J_USER:-neo4j}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      PORTAINER_PASSWORD: ${PORTAINER_PASSWORD}
+    tmpfs: ["/var/lib/pgadmin:size=1m"]
+    entrypoint: ["/venv/bin/python3", "/init/administration-init.py"]
+    volumes:
+      - ./backend/infra/platform/administration-init.py:/init/administration-init.py:ro
+    depends_on:
+      neo4j: { condition: service_healthy }
+      portainer: { condition: service_started }
+  organization:
+    container_name: "${TRAZATEX_CONTAINER_PREFIX:-trazatex}-organization-microservice-1"
+    <<: *backend
+    build: { context: ., dockerfile: backend/infra/platform/backend.Dockerfile, args: { MODULE: organization-access } }
+    environment:
+      <<: *management
+      ORGACCESS_DB_USER: ${ORGACCESS_DB_USER}
+      ORGACCESS_DB_PASSWORD: ${ORGACCESS_DB_PASSWORD}
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      JWT_KEY_ID: ${JWT_KEY_ID}
+      CHEQUEA_API_TOKEN: ${CHEQUEA_API_TOKEN:-}
+      HIBP_ENABLED: ${HIBP_ENABLED:-true}
+      TRAZATEX_OWNER_EMAIL: ${TRAZATEX_OWNER_EMAIL}
+      TRAZATEX_OWNER_NAME: ${TRAZATEX_OWNER_NAME}
+      TRAZATEX_LICENSE_MAX_COMPANIES: ${TRAZATEX_LICENSE_MAX_COMPANIES}
+      TRAZATEX_LICENSE_MAX_USERS_PER_COMPANY: ${TRAZATEX_LICENSE_MAX_USERS_PER_COMPANY}
+      SPRING_PROFILES_ACTIVE: local
+      DB_URL: jdbc:postgresql://postgres:5432/orgaccess_db
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      TRAZATEX_FRONTEND_URL: "${TRAZATEX_FRONTEND_URL:-http://127.0.0.1:14200}"
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:18080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+  production:
+    container_name: "${TRAZATEX_CONTAINER_PREFIX:-trazatex}-production-microservice-1"
+    <<: *backend
+    build: { context: ., dockerfile: backend/infra/platform/backend.Dockerfile, args: { MODULE: production } }
+    environment:
+      <<: *management
+      PRODUCTION_DB_USER: ${PRODUCTION_DB_USER}
+      PRODUCTION_DB_PASSWORD: ${PRODUCTION_DB_PASSWORD}
+      CLOUDINARY_URL: ${CLOUDINARY_URL:-}
+      TRAZATEX_TRANSFORMATION_MIN_YIELD_SPINNING: ${TRAZATEX_TRANSFORMATION_MIN_YIELD_SPINNING:-60}
+      TRAZATEX_TRANSFORMATION_MIN_YIELD_WEAVING: ${TRAZATEX_TRANSFORMATION_MIN_YIELD_WEAVING:-80}
+      TRAZATEX_TRANSFORMATION_MIN_YIELD_DYEING: ${TRAZATEX_TRANSFORMATION_MIN_YIELD_DYEING:-80}
+      SPRING_PROFILES_ACTIVE: local
+      DB_URL: jdbc:postgresql://postgres:5432/production_db
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+      organization: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:18080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+  traceability:
+    container_name: "${TRAZATEX_CONTAINER_PREFIX:-trazatex}-traceability-microservice-1"
+    <<: *backend
+    build: { context: ., dockerfile: backend/infra/platform/backend.Dockerfile, args: { MODULE: traceability } }
+    environment:
+      <<: *management
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD}
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: ${NEO4J_USER:-neo4j}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    depends_on:
+      neo4j: { condition: service_healthy }
+      administration-init: { condition: service_completed_successfully }
+      kafka: { condition: service_healthy }
+      organization: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:18080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+  quality:
+    container_name: "${TRAZATEX_CONTAINER_PREFIX:-trazatex}-quality-microservice-1"
+    <<: *backend
+    build: { context: ., dockerfile: backend/infra/platform/backend.Dockerfile, args: { MODULE: quality } }
+    environment:
+      <<: *management
+      QUALITY_DB_USER: ${QUALITY_DB_USER}
+      QUALITY_DB_PASSWORD: ${QUALITY_DB_PASSWORD}
+      CLOUDINARY_URL: ${CLOUDINARY_URL:-}
+      SPRING_PROFILES_ACTIVE: local
+      DB_URL: jdbc:postgresql://postgres:5432/quality_db
+      PRODUCTION_URL: http://production:8082
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    depends_on:
+      database-init: { condition: service_completed_successfully }
+      production: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:18080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+  notification:
+    container_name: "${TRAZATEX_CONTAINER_PREFIX:-trazatex}-notification-microservice-1"
+    <<: *backend
+    build: { context: ., dockerfile: backend/infra/platform/backend.Dockerfile, args: { MODULE: notification } }
+    environment:
+      <<: *management
+      NOTIFICATION_DB_USER: ${NOTIFICATION_DB_USER}
+      NOTIFICATION_DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+      SENDGRID_FROM_EMAIL: ${SENDGRID_FROM_EMAIL:-}
+      SENDGRID_BASE_URL: ${SENDGRID_BASE_URL:-https://api.sendgrid.com}
+      TRAZATEX_MAIL_BLOCKED_DOMAINS: ${TRAZATEX_MAIL_BLOCKED_DOMAINS:-}
+      DB_URL: jdbc:postgresql://postgres:5432/notification_db
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    depends_on:
+      database-init: { condition: service_completed_successfully }
+      organization: { condition: service_healthy }
+      quality: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:18080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+  analytics:
+    container_name: "${TRAZATEX_CONTAINER_PREFIX:-trazatex}-analytics-microservice-1"
+    <<: *backend
+    build: { context: ., dockerfile: backend/infra/platform/backend.Dockerfile, args: { MODULE: analytics } }
+    environment:
+      <<: *management
+      ANALYTICS_DB_USER: ${ANALYTICS_DB_USER}
+      ANALYTICS_DB_PASSWORD: ${ANALYTICS_DB_PASSWORD}
+      DB_URL: jdbc:postgresql://postgres:5432/analytics_db
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    depends_on:
+      database-init: { condition: service_completed_successfully }
+      quality: { condition: service_healthy }
+      traceability: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:18080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+  gateway:
+    container_name: "${TRAZATEX_CONTAINER_PREFIX:-trazatex}-api-gateway-1"
+    <<: *backend
+    build: { context: ., dockerfile: backend/infra/platform/backend.Dockerfile, args: { MODULE: api-gateway } }
+    environment:
+      <<: *management
+      # M8: el gateway solo es alcanzable por el Nginx de `web` (no se publica en el host), así que la IP de conexión es siempre la de Nginx:
+      # sin esto todos los clientes comparten un solo cubo. Nginx fija X-Forwarded-For con la IP real (web.nginx.conf) y es el único salto.
+      TRAZATEX_RATE_LIMIT_TRUST_FORWARDED_FOR: ${TRAZATEX_RATE_LIMIT_TRUST_FORWARDED_FOR:-true}
+      TRAZATEX_RATE_LIMIT_TRUSTED_HOPS: ${TRAZATEX_RATE_LIMIT_TRUSTED_HOPS:-1}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      JWKS_URI: http://organization:8081/.well-known/jwks.json
+      ORGANIZATION_ACCESS_URL: http://organization:8081
+      PRODUCTION_URL: http://production:8082
+      TRACEABILITY_URL: http://traceability:8084
+      QUALITY_URL: http://quality:8083
+      NOTIFICATION_URL: http://notification:8085
+      ANALYTICS_URL: http://analytics:8086
+      TRAZATEX_FRONTEND_URL: "${TRAZATEX_FRONTEND_URL:-http://127.0.0.1:14200}"
+    depends_on:
+      organization: { condition: service_healthy }
+      production: { condition: service_healthy }
+      traceability: { condition: service_healthy }
+      quality: { condition: service_healthy }
+      notification: { condition: service_healthy }
+      analytics: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:18080/actuator/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+  web:
+    container_name: "${TRAZATEX_CONTAINER_PREFIX:-trazatex}-angular-1"
+    restart: unless-stopped
+    build: { context: ., dockerfile: backend/infra/platform/web.Dockerfile }
+    ports: ["127.0.0.1:14200:80"]
+    depends_on: { gateway: { condition: service_healthy } }
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  landing:
+    container_name: "${TRAZATEX_CONTAINER_PREFIX:-trazatex}-landing-1"
+    restart: unless-stopped
+    # El enlace «Ir al login» sale de VITE_APP_URL en la compilación: la misma variable que el CORS del gateway (TRAZATEX_FRONTEND_URL).
+    build:
+      context: .
+      dockerfile: backend/infra/platform/landing.Dockerfile
+      args: { VITE_APP_URL: "${TRAZATEX_FRONTEND_URL:-http://127.0.0.1:14200}" }
+    ports: ["127.0.0.1:15173:80"]
+    depends_on: { web: { condition: service_healthy } }
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  portainer:
+    container_name: "${TRAZATEX_CONTAINER_PREFIX:-trazatex}-portainer-1"
+    command: ["-H", "unix:///var/run/docker.sock", "--admin-password-file", "/config/portainer-password"]
+    image: portainer/portainer-ce@sha256:3609c307943bca8e5c492f69ddd6965df177208b50678a4cff28391c8dd4e96e
+    restart: unless-stopped
+    ports: ["127.0.0.1:19443:9443"]
+    volumes: ["/var/run/docker.sock:/var/run/docker.sock", "portainer_data:/data", "panel_config:/config:ro"]
+    depends_on: { database-init: { condition: service_completed_successfully } }
+  pgadmin:
+    container_name: "${TRAZATEX_CONTAINER_PREFIX:-trazatex}-pgadmin-1"
+    image: dpage/pgadmin4@sha256:c332c5f6dfba995d9ebc4af261d93506d6876085d712eaaa3defc8dd1a3f26de
+    restart: unless-stopped
+    ports: ["127.0.0.1:15050:80"]
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:?Configure PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:?Configure PGADMIN_PASSWORD}
+      PGPASSFILE: /config/pgpass
+      PGADMIN_SERVER_JSON_FILE: /config/servers.json
+      PGADMIN_REPLACE_SERVERS_ON_STARTUP: "True"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "True"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - panel_config:/config:ro
+    depends_on: { database-init: { condition: service_completed_successfully } }
+    healthcheck:
+      test: ["CMD", "/venv/bin/python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1/misc/ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+  kafka-ui:
+    container_name: "${TRAZATEX_CONTAINER_PREFIX:-trazatex}-kafka-ui-1"
+    image: kafbat/kafka-ui@sha256:7cda86a33344160309fdb65146332e4da65db81a945614f2fe32e210803f6fd1
+    restart: unless-stopped
+    ports: ["127.0.0.1:18090:8080"]
+    environment:
+      KAFKA_CLUSTERS_0_NAME: TrazaTex
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      DYNAMIC_CONFIG_ENABLED: "false"
+      AUTH_TYPE: LOGIN_FORM
+      SPRING_SECURITY_USER_NAME: ${ADMIN_USERNAME:-admin}
+      SPRING_SECURITY_USER_PASSWORD: ${KAFKA_UI_PASSWORD:?Configure KAFKA_UI_PASSWORD}
+      JAVA_OPTS: -Xmx256m
+    depends_on: { kafka: { condition: service_healthy } }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+  boot-admin:
+    container_name: "${TRAZATEX_CONTAINER_PREFIX:-trazatex}-spring-boot-admin-1"
+    build: { context: ., dockerfile: backend/infra/platform/admin.Dockerfile }
+    restart: unless-stopped
+    ports: ["127.0.0.1:18095:8080"]
+    environment:
+      SPRING_SECURITY_USER_NAME: ${ADMIN_USERNAME:-admin}
+      SPRING_SECURITY_USER_PASSWORD: ${BOOT_ADMIN_PASSWORD:?Configure BOOT_ADMIN_PASSWORD}
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health
+      JAVA_TOOL_OPTIONS: -Xmx256m
+    depends_on:
+      organization: { condition: service_healthy }
+      production: { condition: service_healthy }
+      traceability: { condition: service_healthy }
+      gateway: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+  e2e:
+    container_name: "${TRAZATEX_CONTAINER_PREFIX:-trazatex}-e2e-1"
+    profiles: [tests]
+    build: { context: ., dockerfile: backend/infra/platform/e2e.Dockerfile }
+    working_dir: /workspace/frontend
+    environment:
+      TRAZATEX_TEST_INTERNAL_NETWORK: "true"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./frontend/e2e:/workspace/frontend/e2e:ro
+      - ./frontend/playwright.config.ts:/workspace/frontend/playwright.config.ts:ro
+      - ./.env:/workspace/.env:ro
+      - ./frontend/.auth:/workspace/frontend/.auth
+      - ./frontend/test-results:/workspace/frontend/test-results
+      - ./frontend/playwright-report:/workspace/frontend/playwright-report
+    depends_on:
+      web: { condition: service_healthy }
+      landing: { condition: service_healthy }
+volumes:
+  postgres_data: { name: "${TRAZATEX_POSTGRES_VOLUME:-trazatex-integration_postgres_data}" }
+  neo4j_data: { name: "${TRAZATEX_NEO4J_VOLUME:-trazatex-integration_neo4j_data}" }
+  neo4j_logs: { name: "${TRAZATEX_NEO4J_LOGS_VOLUME:-trazatex-integration_neo4j_logs}" }
+  kafka_data: { name: "${TRAZATEX_KAFKA_VOLUME:-trazatex-integration_kafka_data}" }
+  kafka_secrets: { name: "${TRAZATEX_KAFKA_SECRETS_VOLUME:-trazatex-kafka-secrets}" }
+  kafka_config: { name: "${TRAZATEX_KAFKA_CONFIG_VOLUME:-trazatex-kafka-config}" }
+  panel_config:
+  portainer_data:
+  pgadmin_data:

@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "TrazaTex — Gateway (fase 03)",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}
