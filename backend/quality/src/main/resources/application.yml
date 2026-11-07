@@ -1,0 +1,88 @@
+spring:
+  application:
+    name: quality
+  servlet:
+    multipart:
+      # US43: 10 MB por archivo y hasta 5 archivos por petición (50 MB + las demás partes). Lo que excede se rechaza con 413 FILE_TOO_LARGE
+      max-file-size: 10MB
+      max-request-size: 52MB
+      file-size-threshold: 1MB
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+  flyway:
+    enabled: true
+
+server:
+  port: 8083
+  tomcat:
+    # Al rechazar un archivo grande Tomcat deja de leer; si no puede descartar el resto del cuerpo (2 MB por defecto) cierra la conexión y el
+    # cliente ve un corte de red en vez del ApiError 413. Debe cubrir la petición máxima.
+    max-swallow-size: 60MB
+trazatex:
+  production:
+    # El comando interno Quality → Production (ADR-009): la dirección de Production en la red interna, NUNCA el Gateway (responde 404 a /internal/**)
+    base-url: ${PRODUCTION_URL:http://localhost:8082}
+    connect-timeout: PT1S
+    read-timeout: PT2S
+    # 2 intentos en total (una repetición) solo ante 5xx, timeout o error de red; siempre con el mismo requestId
+    retry: {max-attempts: 2, wait-duration: PT0.3S}
+    circuit-breaker: {sliding-window-size: 10, minimum-calls: 5, failure-rate-threshold: 50, wait-in-open-state: PT30S, half-open-calls: 2}
+  cloudinary:
+    # CLOUDINARY_URL = cloudinary://API_KEY:API_SECRET@CLOUD_NAME (secreto: solo por variable de entorno). Vacía: Quality arranca igual
+    # con un WARN y todas las evidencias quedan PENDING en la cola local hasta que se configure (ADR-007)
+    url: ${CLOUDINARY_URL:}
+    base-url: https://api.cloudinary.com
+    connect-timeout: PT2S
+    read-timeout: PT8S
+    circuit-breaker: {sliding-window-size: 10, minimum-calls: 5, failure-rate-threshold: 50, wait-in-open-state: PT30S, half-open-calls: 2}
+  evidence:
+    max-files: 5
+    max-file-size: 10MB
+    upload:
+      # La cola diferida: cada cuánto corre el job, cuántas evidencias reclama por pasada y la espera creciente entre intentos
+      enabled: true
+      job-delay: PT30S
+      job-initial-delay: PT10S
+      # espera entre intentos de una evidencia: initial-delay × multiplier^(n-1), con tope max-delay; tras max-attempts → FAILED
+      initial-delay: PT30S
+      claims-per-run: 5
+      lease: PT5M
+      not-available-delay: PT5M
+      max-attempts: 30
+      multiplier: 2.0
+      max-delay: PT30M
+  quality:
+    start:
+      # Inicio de un control: el control STARTING queda reservado a la petición que lo creó durante `grace`; después lo reclama el job
+      grace: PT30S
+      claims-per-run: 10
+      lease: PT2M
+      # Espera entre intentos sin respuesta: initial-delay × multiplier^(n-1), con tope max-delay. NO hay tope de intentos
+      # (cancelar por cansancio podría desincronizar el lote: Production pudo aplicar el comando); desde el intento 20 cada fallo es un ERROR
+      initial-delay: PT15S
+      multiplier: 2.0
+      max-delay: PT5M
+      error-after-attempts: 20
+      job-enabled: true
+      job-initial-delay: PT10S
+      job-delay: PT15S
+  idempotency:
+    cleanup-job-delay: PT1H
+  messaging:
+    # false: sin broker (ni relay ni tópicos ni consumidores)
+    enabled: true
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    # Tópicos propios: 1 partición y 1 réplica en local; no cambiar las particiones de un tópico en uso
+    partitions: 1
+    replicas: 1
+    modify-topic-configs: true
+    consumer:
+      # Cada cuánto se pregunta qué tópicos ajenos ya existen (ningún contenedor arranca solo); deja de preguntar al arrancar todos
+      topic-check-interval: PT15S
+      retry:
+        max-retries: 5
+        initial-interval: PT1S
+        multiplier: 2.0
+        max-interval: PT30S
