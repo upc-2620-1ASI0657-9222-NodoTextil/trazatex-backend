@@ -1,0 +1,21 @@
+# Despliegue en AWS (una EC2 detrás de CloudFront). Se usa junto con compose.yaml:
+#   docker compose -f compose.yaml -f compose.aws.yaml up -d
+# - web (app + /api) se publica en el puerto 80 y landing en el 8080; el Security Group solo deja entrar a CloudFront.
+# - pgAdmin, Kafka UI y Spring Boot Admin no arrancan por defecto (perfil "admin") para caber en 8 GB de RAM.
+#   Portainer y administration-init siguen activos: administration-init crea el usuario de Neo4j que usa traceability
+#   y necesita a Portainer; Portainer consume muy poca memoria y queda solo en 127.0.0.1.
+#   Para usarlas un momento: docker compose -f compose.yaml -f compose.aws.yaml --profile admin up -d pgadmin
+services:
+  web:
+    ports: !override ["80:80"]
+    volumes:
+      # IP real del cliente detrás de CloudFront (sin esto el rate limit y el bloqueo de login ven a todos como una sola IP).
+      - ./backend/infra/platform/web.realip.aws.conf:/etc/nginx/conf.d/00-realip.conf:ro
+  landing:
+    ports: !override ["8080:80"]
+  pgadmin:
+    profiles: [admin]
+  kafka-ui:
+    profiles: [admin]
+  boot-admin:
+    profiles: [admin]
