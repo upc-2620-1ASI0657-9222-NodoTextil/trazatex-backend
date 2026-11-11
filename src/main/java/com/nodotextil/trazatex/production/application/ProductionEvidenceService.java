@@ -97,6 +97,7 @@ public class ProductionEvidenceService {
         }
 
         String normalizedContentType = contentType.toLowerCase(Locale.ROOT);
+        // Se revisa la firma del archivo porque el Content-Type lo declara el cliente.
         boolean supported = switch (normalizedContentType) {
             case JPEG -> isJpeg(content);
             case PNG -> isPng(content);
