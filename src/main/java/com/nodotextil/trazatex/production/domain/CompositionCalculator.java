@@ -41,6 +41,7 @@ public final class CompositionCalculator {
         for (Map.Entry<String, BigDecimal> entry : materialWeights.entrySet()) {
             index++;
             BigDecimal percentage;
+            // El último material toma el resto para que la suma sea exactamente 100.
             if (index == materialWeights.size()) {
                 percentage = ONE_HUNDRED.subtract(accumulated);
             } else {
