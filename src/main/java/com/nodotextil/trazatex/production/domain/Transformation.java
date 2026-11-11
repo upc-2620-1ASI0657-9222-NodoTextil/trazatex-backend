@@ -61,6 +61,7 @@ public final class Transformation {
             this.wasteReason = null;
             this.shrinkageKg = null;
         } else {
+            // Al reconstruir se recalcula la merma para detectar un balance inconsistente.
             BigDecimal calculatedShrinkage = calculateShrinkage(
                     totalInputKg, totalOutputKg, wasteKg, wasteReason);
             if (shrinkageKg == null || shrinkageKg.compareTo(calculatedShrinkage) != 0) {
@@ -171,6 +172,7 @@ public final class Transformation {
                     "Waste reason is required when waste is greater than zero");
         }
 
+        // La merma no se ingresa: es entrada − salida − desperdicio y no puede ser negativa.
         BigDecimal shrinkageKg = totalInputKg.subtract(totalOutputKg).subtract(wasteKg);
         if (shrinkageKg.compareTo(BigDecimal.ZERO) < 0) {
             throw new InvalidTransformationException(
