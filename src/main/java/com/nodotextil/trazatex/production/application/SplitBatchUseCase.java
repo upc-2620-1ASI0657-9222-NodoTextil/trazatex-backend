@@ -43,6 +43,7 @@ public class SplitBatchUseCase {
         validateExactTotal(parent.quantityKg(), childQuantitiesKg);
 
         LocalDateTime occurredAt = LocalDateTime.now(clock);
+        // Los hijos aún no están guardados: estos conjuntos evitan que repitan identificadores.
         Set<UUID> allocatedIds = new HashSet<>();
         Set<String> allocatedTraceabilityIds = new HashSet<>();
         Set<String> allocatedQrCodes = new HashSet<>();
