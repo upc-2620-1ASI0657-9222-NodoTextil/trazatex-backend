@@ -69,4 +69,6 @@ landing/    sitio web de presentación
 compose.yaml, .env.example, start.ps1, status.ps1, stop.ps1
 ```
 
-> El sistema inicia vacío; no incluye datos de prueba.
+# Despliegue
+
+AWS 
