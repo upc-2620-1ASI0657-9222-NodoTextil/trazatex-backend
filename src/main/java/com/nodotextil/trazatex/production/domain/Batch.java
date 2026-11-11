@@ -354,6 +354,7 @@ public final class Batch {
         operationalPhase = OperationalPhase.AVAILABLE;
     }
 
+    // Un producto final o un lote bloqueado ya no puede dividirse, transformarse ni transferirse.
     public boolean isOperationallyEligible() {
         return operationalPhase == OperationalPhase.AVAILABLE
                 && !finalProduct
