@@ -65,6 +65,7 @@ public class CompleteTransformationUseCase {
         TransformationStrategy strategy = strategyFactory.getStrategy(transformation.type());
         List<CompositionComponent> outputComposition =
                 strategy.calculateOutputComposition(inputs);
+        // En una mezcla no hay un proveedor único, por eso la salida queda sin proveedor.
         String supplierName = inputs.size() == 1 ? inputs.getFirst().supplierName() : null;
         Set<UUID> allocatedIds = new HashSet<>();
         Set<String> allocatedTraceabilityIds = new HashSet<>();
