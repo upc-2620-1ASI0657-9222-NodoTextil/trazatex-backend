@@ -58,3 +58,13 @@ Solo `INPUT_OF`, `PRODUCED` y `SPLIT_INTO` forman la genealogía. `OWNS_BATCH` i
 | `traceability.impact` | `PossibleDerivedFailureDetected` (US33) |
 
 Los eventos inválidos van a su tópico `.DLT`.
+
+
+## Códigos de error
+
+| Código | HTTP | Cuándo |
+|---|---|---|
+| `BATCH_NOT_FOUND` | 404 | El lote no existe o está incompleto |
+| `MISSING_SEARCH_CRITERIA` | 400 | Búsqueda sin QR ni Traceability ID |
+| `INVALID_PAGINATION` | 400 | `page` o `size` inválidos |
+| `INVALID_EVENT` | — | Evento sin datos obligatorios; se envía a la DLT |
