@@ -68,3 +68,10 @@ Los eventos inválidos van a su tópico `.DLT`.
 | `MISSING_SEARCH_CRITERIA` | 400 | Búsqueda sin QR ni Traceability ID |
 | `INVALID_PAGINATION` | 400 | `page` o `size` inválidos |
 | `INVALID_EVENT` | — | Evento sin datos obligatorios; se envía a la DLT |
+
+
+## Pruebas
+
+- Unitarias: `mvn -pl traceability -am test`
+- Aceptación (Cucumber): `src/test/resources/features/` (US29, US30, US31, US32, US33, US36)
+- Colección Bruno: `backend/docs/http/08-traceability/`
