@@ -24,3 +24,17 @@ Todos son de solo lectura y requieren rol `OPERATOR` o `COMPANY_ADMIN`.
 | GET | `/api/traceability/batches/{batchId}/lineage` | US36 | Genealogía completa con historial de transferencias |
 
 Las respuestas llevan `Cache-Control: no-store` porque lo visible depende de la empresa que consulta.
+
+
+## Modelo del grafo (Neo4j)
+
+```mermaid
+graph LR
+  C[Company] -- OWNS_BATCH --> B1[Batch]
+  B1 -- INPUT_OF --> T[Transformation]
+  T -- PRODUCED --> B2[Batch]
+  B2 -- SPLIT_INTO --> B3[Batch]
+  B2 -- TRANSFERRED_VIA --> C2[Company]
+```
+
+Solo `INPUT_OF`, `PRODUCED` y `SPLIT_INTO` forman la genealogía. `OWNS_BATCH` indica el dueño actual y `TRANSFERRED_VIA` es historial: una transferencia no crea lotes ni relaciones padre-hijo.
