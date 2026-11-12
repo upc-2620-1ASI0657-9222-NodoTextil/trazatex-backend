@@ -38,3 +38,23 @@ graph LR
 ```
 
 Solo `INPUT_OF`, `PRODUCED` y `SPLIT_INTO` forman la genealogía. `OWNS_BATCH` indica el dueño actual y `TRANSFERRED_VIA` es historial: una transferencia no crea lotes ni relaciones padre-hijo.
+
+
+## Mensajería (Kafka)
+
+**Consume**
+| Tópico | Origen |
+|---|---|
+| `orgaccess.company` | organization-access |
+| `production.batch` | production |
+| `production.transformation` | production |
+| `production.transfer` | production |
+| `quality.control` | quality |
+| `quality.failure` | quality |
+
+**Produce**
+| Tópico | Evento |
+|---|---|
+| `traceability.impact` | `PossibleDerivedFailureDetected` (US33) |
+
+Los eventos inválidos van a su tópico `.DLT`.
