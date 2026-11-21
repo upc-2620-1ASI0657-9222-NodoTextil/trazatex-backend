@@ -10,11 +10,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * US33: al confirmarse una falla, calcula su familia ({@link ImpactAnalyzer}) y registra {@code PossibleDerivedFailureDetected} en el outbox, en la transacción
- * del evento. No publica nada si no hay lotes afectados ni una segunda vez para la misma falla; si la familia está incompleta, la excepción hace que se revierta todo
- * y el evento se reintente.
- */
 @Service
 @Transactional
 class FailureImpactService implements AnalyzeFailureImpactUseCase {

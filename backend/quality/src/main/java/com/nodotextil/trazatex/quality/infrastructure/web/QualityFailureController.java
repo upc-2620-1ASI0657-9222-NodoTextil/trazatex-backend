@@ -36,25 +36,18 @@ class QualityFailureController {
         return failures.get(failureId, actor);
     }
 
-    /** US26 esc. 1: causa, cantidad afectada y observaciones. */
     @PutMapping("/{failureId}")
     @RequiresRole(Role.COMPANY_ADMIN)
     FailureResult complete(@PathVariable UUID failureId, @RequestBody FailureInfoCommand request, Actor actor) {
         return failures.complete(failureId, request, actor);
     }
 
-    /** US26 esc. 2: el lote pasa a {@code PENDING_REEVALUATION} y sigue retenido. */
     @PostMapping("/{failureId}/reevaluation")
     @RequiresRole(Role.COMPANY_ADMIN)
     FailureResult reevaluate(@PathVariable UUID failureId, Actor actor) {
         return failures.reevaluate(failureId, actor);
     }
 
-    /**
-     * US27. {@code 200}: Production confirmó {@code DISCARD} y la falla está {@code CONFIRMED}. {@code 202}: Production no respondió; la falla sigue
-     * {@code OPEN} con {@code discardPending} y se resuelve sola (consultar {@code Location}). Exige causa y cantidad afectada
-     * ({@code 409 FAILURE_INFO_INCOMPLETE}).
-     */
     @PostMapping("/{failureId}/discard")
     @RequiresRole(Role.COMPANY_ADMIN)
     ResponseEntity<DiscardFailureResult> discard(@PathVariable UUID failureId, Actor actor) {

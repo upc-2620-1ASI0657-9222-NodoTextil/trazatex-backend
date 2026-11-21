@@ -32,11 +32,6 @@ import static com.nodotextil.trazatex.organizationaccess.infrastructure.external
 import static com.nodotextil.trazatex.organizationaccess.infrastructure.external.ChequeaStubs.required;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Pasos de los escenarios de {@code src/test/resources/features/}. Cada paso usa la API real (MockMvc) con las cabeceras que
- * inyecta el Gateway, PostgreSQL real y, para Chequea.pe y HIBP, los adaptadores reales contra WireMock. Los datos de partida se
- * insertan directamente en la base; todo lo que el escenario "hace" pasa por los endpoints.
- */
 public class AcceptanceSteps extends IntegrationTestBase {
 
     private static final BCryptPasswordEncoder ENCODER = new BCryptPasswordEncoder();
@@ -53,7 +48,6 @@ public class AcceptanceSteps extends IntegrationTestBase {
         }
     }
 
-    // ---- Estado del escenario ----
     private UUID company;
     private UUID admin;
     private String adminEmail = "ana@hilos.pe";
@@ -84,8 +78,6 @@ public class AcceptanceSteps extends IntegrationTestBase {
     public void freshWorld() {
         resetDatabaseAndWorld();
     }
-
-    // ================================================================ utilidades
 
     private UUID company() {
         if (company == null) {
@@ -127,7 +119,6 @@ public class AcceptanceSteps extends IntegrationTestBase {
         return send(perform(body(POST("/api/auth/login"), jsonOf("email", email, "password", password))));
     }
 
-    /** Valida el JWT con la clave pública del JWKS (como hará el Gateway) y devuelve sus claims. */
     private JWTClaimsSet verified(String jwt) throws Exception {
         String jwks = perform(GET("/.well-known/jwks.json")).andReturn().getResponse().getContentAsString();
         SignedJWT signed = SignedJWT.parse(jwt);
@@ -136,7 +127,6 @@ public class AcceptanceSteps extends IntegrationTestBase {
         return signed.getJWTClaimsSet();
     }
 
-    /** Lo que hace el Gateway: toma los claims del JWT validado y los pasa como cabeceras. */
     private MockHttpServletRequestBuilder withJwt(MockHttpServletRequestBuilder request, String jwt) throws Exception {
         JWTClaimsSet claims = verified(jwt);
         MockHttpServletRequestBuilder builder = request.header("X-User-Id", claims.getSubject()).header("X-User-Role", claims.getStringClaim("role"));
@@ -161,7 +151,6 @@ public class AcceptanceSteps extends IntegrationTestBase {
     }
 
     private void fillTheCompanyToTheUserLimit() {
-        // administrador activo + invitaciones pendientes hasta los 3 usuarios de la licencia de partida
         company();
         insertInvitation(company, "pendiente1@hilos.pe", "OPERATOR", "PENDING", admin, START);
         insertInvitation(company, "pendiente2@hilos.pe", "OPERATOR", "PENDING", admin, START);
@@ -188,8 +177,6 @@ public class AcceptanceSteps extends IntegrationTestBase {
         newCompanyBody = "{\"ruc\":\"%s\",\"businessName\":\"Superintendencia de Prueba SAC\",\"activities\":[\"WEAVING\",\"DYEING\"],\"adminEmail\":\"admin@sunat.pe\"}"
                 .formatted(RUC);
     }
-
-    // ================================================================ US01 — Consultar licencia
 
     @Dado("que el dueño de licencia ha iniciado sesión")
     public void ownerHasLoggedIn() throws Exception {
@@ -222,8 +209,6 @@ public class AcceptanceSteps extends IntegrationTestBase {
         assertThat(usage.get("usedSlots").asInt()).as("administrador + operario activos").isEqualTo(2);
         assertThat(usage.get("maxUsers").asInt()).isEqualTo(3);
     }
-
-    // ================================================================ US02 — Crear empresa textil
 
     @Dado("que existe capacidad disponible en la licencia")
     public void licenseHasCompanyCapacity() {
@@ -304,8 +289,6 @@ public class AcceptanceSteps extends IntegrationTestBase {
         assertThat(last.text("message")).contains("RUC no es válido");
     }
 
-    // ================================================================ US03 — Gestionar estado de empresa
-
     private String companyName;
     private long usersBefore;
 
@@ -338,7 +321,6 @@ public class AcceptanceSteps extends IntegrationTestBase {
 
     @Y("sus usuarios no pueden iniciar nuevas operaciones productivas.")
     public void usersCannotStartProductiveOperations() throws Exception {
-        // Production lo aplica con su proyección: recibe CompanyStatusChanged = INACTIVE; aquí, además, sus escrituras se rechazan
         assertThat(events("CompanyStatusChanged")).last().satisfies(event -> {
             assertThat(event.get("companyId").asString()).isEqualTo(company.toString());
             assertThat(event.get("status").asString()).isEqualTo("INACTIVE");
@@ -371,8 +353,6 @@ public class AcceptanceSteps extends IntegrationTestBase {
         Reply write = reply(perform(body(byAdmin(POST("/api/invitations/operators")), operatorJson("nuevo@hilos.pe"))));
         assertThat(write.status()).isEqualTo(201);
     }
-
-    // ================================================================ US04 — Aceptar invitación
 
     @Dado("que el usuario posee una invitación Pendiente y vigente")
     public void userHasAValidInvitation() {
@@ -467,7 +447,6 @@ public class AcceptanceSteps extends IntegrationTestBase {
         useRealExternalServices();
         acceptPassword = "password";
         acceptConfirmation = "password";
-        // SHA-1("password") = 5BAA6 1E4C9B93F3F0682250B6CF8331B7EE68FD8
         WIREMOCK.stubFor(get(urlEqualTo("/range/5BAA6")).willReturn(aResponse().withStatus(200)
                 .withBody("0018A45C4D1DEF81644B54AB7F969B88D65:1\r\n1E4C9B93F3F0682250B6CF8331B7EE68FD8:3861493\r\n")));
     }
@@ -489,8 +468,6 @@ public class AcceptanceSteps extends IntegrationTestBase {
     public void aDifferentPasswordIsRequested() {
         assertThat(last.text("message")).contains("diferente");
     }
-
-    // ================================================================ US05 — Iniciar sesión
 
     @Dado("que el usuario posee una cuenta Activa")
     public void userHasAnActiveAccount() {
@@ -546,8 +523,6 @@ public class AcceptanceSteps extends IntegrationTestBase {
         assertThat(last.text("code")).isEqualTo("INVALID_CREDENTIALS");
         assertThat(last.text("message")).contains("credenciales no son válidas");
     }
-
-    // ================================================================ US06 — Invitar operario
 
     @Dado("que existe capacidad de usuarios disponible")
     public void userCapacityAvailable() {
@@ -611,8 +586,6 @@ public class AcceptanceSteps extends IntegrationTestBase {
         assertThat(last.text("message")).contains("capacidad");
     }
 
-    // ================================================================ US07 — Solicitar administrador
-
     @Dado("que el administrador completa el nombre, correo y cargo del nuevo administrador")
     public void adminFillsTheRequest() {
         company();
@@ -663,8 +636,6 @@ public class AcceptanceSteps extends IntegrationTestBase {
         last.body().get("details").forEach(detail -> details.add(detail.asString()));
         assertThat(details).containsExactlyInAnyOrder("fullName", "position");
     }
-
-    // ================================================================ US08 — Revisar solicitud de administrador
 
     @Dado("que existe una solicitud Pendiente")
     public void aPendingRequestExists() throws Exception {
@@ -725,8 +696,6 @@ public class AcceptanceSteps extends IntegrationTestBase {
         assertThat(count("SELECT count(*) FROM invitations")).isEqualTo(invitationsBefore);
     }
 
-    // ================================================================ US09 — Gestionar estado de usuario
-
     private void anOperator(String status) {
         company();
         userEmail = "operario@hilos.pe";
@@ -764,7 +733,6 @@ public class AcceptanceSteps extends IntegrationTestBase {
         Reply attempt = login(userEmail, PASSWORD);
         assertThat(attempt.status()).isEqualTo(401);
         assertThat(attempt.body().has("token")).isFalse();
-        // las demás partes del sistema se enteran por el evento
         assertThat(events("UserAccountUpdated")).last().satisfies(event -> {
             assertThat(event.get("userId").asString()).isEqualTo(user.toString());
             assertThat(event.get("status").asString()).isEqualTo("INACTIVE");
@@ -817,8 +785,6 @@ public class AcceptanceSteps extends IntegrationTestBase {
         assertThat(last.text("code")).isEqualTo("USER_LIMIT_REACHED");
         assertThat(userStatus()).isEqualTo("INACTIVE");
     }
-
-    // ================================================================ US11 — Configurar privacidad B2B
 
     private static final List<String> NOT_CONFIGURABLE_SHARED = List.of("TRACEABILITY_ID", "RESPONSIBLE_COMPANY", "GENEALOGY_RELATIONS",
             "MATERIAL_TYPE", "OPERATIONAL_PHASE", "QUALITY_STATUS", "REGISTERED_AT", "FINAL_PRODUCT_INDICATOR");
@@ -876,7 +842,6 @@ public class AcceptanceSteps extends IntegrationTestBase {
 
     @Y("permite visualizarlo desde otras empresas cuando corresponda.")
     public void itCanBeSeenByOtherCompanies() throws Exception {
-        // Traceability filtra con el mapa que recibe en CompanyPrivacyUpdated
         assertThat(events("CompanyPrivacyUpdated")).last().satisfies(event -> {
             assertThat(event.get("companyId").asString()).isEqualTo(company.toString());
             assertThat(event.get("fields").get("SUPPLIER").asString()).isEqualTo("SHARED");
@@ -936,8 +901,6 @@ public class AcceptanceSteps extends IntegrationTestBase {
 
     @Cuando("otra empresa accede a la trazabilidad")
     public void anotherCompanyAccessesTheTraceability() throws Exception {
-        // Lo que organization-access controla de esto: lo que se publica para Traceability (CompanyPrivacyUpdated) y que
-        // esa información no se pueda compartir. El filtro en sí (US36) lo ejecuta y prueba Traceability.
         replies.clear();
         for (String name : fixedFieldNames) {
             setVisibility(name, "SHARED");
@@ -952,8 +915,6 @@ public class AcceptanceSteps extends IntegrationTestBase {
                 fixedFieldNames.forEach(name -> assertThat(event.get("fields").has(name)).as("%s no puede salir en el mapa de privacidad", name).isFalse()));
         assertThat(privacyOfTheCompany().size()).isEqualTo(11);
     }
-
-    // ================================================================ US41 — Cancelar invitación
 
     @Dado("que existe una invitación Pendiente emitida por el usuario")
     public void aPendingInvitationIssuedByTheUserExists() throws Exception {

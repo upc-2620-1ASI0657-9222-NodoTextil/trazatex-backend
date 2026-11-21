@@ -16,16 +16,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * Único camino para guardar lotes (una regla de ArchUnit prohíbe llamar a {@code BatchRepositoryPort.save} desde otro lado).
- * Garantiza la regla de docs/architecture/communication.md: por cada lote cuya fase o retención por calidad cambie se
- * publica un {@code BatchPhaseChanged}, sea cual sea la operación, además del evento de negocio.
- *
- * <p>Hay dos formas de guardar. {@link #persist} es para lotes que nacen o cuyos datos cambian sin tocar fase ni retención;
- * si alguno trae un cambio sin publicar, falla en voz alta en lugar de perderlo en silencio. {@link #persistAndPublish}
- * es para los que cambiaron: guarda, publica el evento de negocio y después un {@code BatchPhaseChanged} por lote, todo en
- * la transacción del caso de uso (ADR-004).
- */
 @Component
 class BatchChanges {
 
@@ -51,10 +41,6 @@ class BatchChanges {
         batches.saveAll(toSave);
     }
 
-    /**
-     * Guarda los lotes que cambiaron, publica {@code businessEvent} (si lo hay) y luego un {@code BatchPhaseChanged} por cada
-     * cambio, en orden de id de lote (determinista).
-     */
     void persistAndPublish(Collection<Batch> changed, PhaseChangeCause cause, ProductionEvent businessEvent) {
         Map<UUID, Long> versions = batches.saveAll(changed);
         if (businessEvent != null) {
@@ -63,7 +49,6 @@ class BatchChanges {
         List<BatchPhaseChange> changes = changed.stream().flatMap(batch -> batch.drainPhaseChanges().stream())
                 .sorted(Comparator.comparing((BatchPhaseChange change) -> change.batchId().toString()))
                 .toList();
-        // Dos cambios del mismo lote en una transacción compartirían versión y el consumidor descartaría uno: fallar en voz alta
         Set<UUID> seen = new HashSet<>();
         for (BatchPhaseChange change : changes) {
             if (!seen.add(change.batchId())) {

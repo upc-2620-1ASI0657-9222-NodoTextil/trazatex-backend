@@ -7,15 +7,9 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
 
-/**
- * Cantidad de material en kg (ADR-003). Escala fija de {@value #SCALE} decimales (gramos): un valor con más decimales
- * se rechaza, nunca se redondea en silencio, de modo que sumar y restar es siempre exacto y el balance de masa no
- * acumula error. Nunca es negativa; {@link #positive} exige además que sea mayor que cero.
- */
 public final class Quantity implements Comparable<Quantity> {
 
     public static final int SCALE = 3;
-    /** Tope por cantidad (un lote de mil millones de kg ya es un dato erróneo) para no desbordar las columnas numéricas. */
     public static final BigDecimal MAX_KG = new BigDecimal("999999999.999");
     public static final Quantity ZERO = new Quantity(BigDecimal.ZERO.setScale(SCALE));
 
@@ -25,7 +19,6 @@ public final class Quantity implements Comparable<Quantity> {
         this.kg = kg;
     }
 
-    /** Cantidad mayor que cero: la de un lote, una entrada o una salida. */
     public static Quantity positive(BigDecimal kg) {
         Quantity quantity = nonNegative(kg);
         if (quantity.kg.signum() == 0) {
@@ -34,7 +27,6 @@ public final class Quantity implements Comparable<Quantity> {
         return quantity;
     }
 
-    /** Cantidad mayor o igual que cero: el desperdicio puede ser nulo. */
     public static Quantity nonNegative(BigDecimal kg) {
         if (kg == null) {
             throw invalid("La cantidad es obligatoria.");
@@ -59,7 +51,6 @@ public final class Quantity implements Comparable<Quantity> {
         return kg;
     }
 
-    /** Gramos como entero: la aritmética exacta del reparto por mayor resto trabaja con enteros. */
     public BigInteger grams() {
         return kg.movePointRight(SCALE).toBigIntegerExact();
     }
@@ -68,7 +59,6 @@ public final class Quantity implements Comparable<Quantity> {
         return new Quantity(kg.add(other.kg));
     }
 
-    /** Diferencia con signo: el balance necesita saber si la merma sería negativa. */
     public BigDecimal minus(Quantity other) {
         return kg.subtract(other.kg);
     }

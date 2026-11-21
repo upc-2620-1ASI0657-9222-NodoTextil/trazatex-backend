@@ -1,5 +1,5 @@
 import { test, expect, Page } from './base';
-import { clickAndDecide, saveEvidence, unfold } from './support';
+import { chooseLoginRole, clickAndDecide, saveEvidence, unfold } from './support';
 import { readFileSync } from 'node:fs';
 import qrcode from 'qrcode-generator';
 import { appUrl, credentialsFile, localFile } from './paths';
@@ -9,13 +9,14 @@ const operator = accounts.findIndex(a => a.role === 'OPERATOR');
 const admin = accounts.findIndex(a => a.role === 'COMPANY_ADMIN');
 async function login(page: Page, index: number) {
   await page.goto('/login');
+  await chooseLoginRole(page, accounts[index].role);
   await page.getByLabel('Correo', { exact: true }).fill(accounts[index].email);
   await page.getByLabel('Contraseña', { exact: true }).fill(accounts[index].password);
   await page.getByRole('button', { name: 'Ingresar', exact: true }).click();
   await expect(page.locator('app-shell')).toBeVisible();
   await expect(page.locator('main.content')).toHaveAttribute('aria-busy', 'false', { timeout: 60000 });
 }
-test('16 cuentas: acceso real desde Angular sin suplantación por selector', async ({ page }) => {
+test('16 cuentas: acceso real desde Angular con el rol de cada cuenta, sin suplantación por selector', async ({ page }) => {
   test.setTimeout(600000);
   expect(accounts).toHaveLength(16);
   for (let index = 0; index < accounts.length; index++) {
@@ -140,18 +141,16 @@ test('genealogías variadas reales: cadenas completas, parciales y lotes inicial
     const select = page.getByLabel('Bloque genealógico', { exact: true });
     const options = await select.locator('option').evaluateAll(es => es.map(e => (e as HTMLOptionElement).value));
     console.log('Bloques de empresa: ' + options.length);
-    expect(options.length).toBeGreaterThanOrEqual(2); // depende de los datos de cada empresa; la variedad real se exige abajo (máx ≥10 nodos, mín 1)
+    expect(options.length).toBeGreaterThanOrEqual(2);
     const sizes: number[] = [];
     for (let index = 0; index < Math.min(options.length, 30); index++) {
-      // las opciones se vuelven a leer en cada vuelta: la lista de bloques se recalcula al cargar cada genealogía
       const current = await select.locator('option').evaluateAll(es => es.map(e => (e as HTMLOptionElement).value));
       if (index >= current.length) break;
       const value = current[index];
-      const already = (await select.inputValue()) === value; // elegir el bloque ya mostrado no pide nada al servidor
+      const already = (await select.inputValue()) === value;
       const loaded = already ? Promise.resolve(null) : page.waitForResponse(r => r.url().includes('/lineage') && !r.url().includes('/lineages?') && r.request().method() === 'GET');
       await select.selectOption(value);
-      await loaded.catch(() => null); // el bloque puede salir del almacén sin pedir la genealogía de nuevo; lo que se comprueba abajo es el árbol
-      // setBloque() recalcula el id tras cargar la genealogía del lote raíz (el bloque puede fusionarse con otro): solo se exige que haya un bloque elegido.
+      await loaded.catch(() => null);
       await expect(select).not.toHaveValue('');
       await page.waitForTimeout(600);
       sizes.push(await page.locator('[data-node]').count());
@@ -164,7 +163,6 @@ test('genealogías variadas reales: cadenas completas, parciales y lotes inicial
     expect(Math.min(...sizes)).toBe(1);
   }
 });
-// El código del producto final ya no está fijo (era el de la instalación oficial): sale de verification.json de la siembra de ESTA instalación.
 const finalBatch = (): { traceabilityId: string; name: string; lineageNodes: number; lineageEdges: number } => {
   const report = JSON.parse(readFileSync(localFile('verification.json'), 'utf8'));
   return { traceabilityId: report.finalBatch.traceabilityId, name: report.finalBatch.name, lineageNodes: report.lineageNodes, lineageEdges: report.lineageEdges };
@@ -179,14 +177,13 @@ test('producto final original y formulario descriptivo de salida', async ({ page
   await expect(page.locator('[data-node="' + final.traceabilityId + '"]')).toBeVisible({ timeout: 60000 });
   expect(await page.locator('[data-node]').count()).toBeGreaterThanOrEqual(Math.min(17, final.lineageNodes));
   expect(await page.locator('path.edge').count()).toBeGreaterThanOrEqual(Math.min(17, final.lineageEdges));
-  // Al trazar, el lote buscado ya queda seleccionado; pulsarlo otra vez alterna la selección, así que solo se pulsa si no lo está.
   if (!(await page.locator('.trace-detail .detail-id').count())) await page.locator('[data-node="' + final.traceabilityId + '"]').click();
   await expect(page.locator('.trace-detail .detail-id'), 'el detalle muestra el lote seleccionado').not.toBeEmpty();
   const session = await (await request.post('/api/auth/login', { data: { email: accounts[operator].email, password: accounts[operator].password } })).json();
   const body = await (await request.get('/api/transformations', { headers: { Authorization: 'Bearer ' + session.token } })).json();
   const auth = { Authorization: 'Bearer ' + session.token };
   let process = (body.items ?? body.content ?? body).find((p: { endTime?: string }) => !p.endTime);
-  if (!process) { // en una siembra limpia no queda ninguna transformación abierta: se abre una propia (lote raíz + hilado)
+  if (!process) {
     const root = await (await request.post('/api/batches', { headers: auth, data: { name: 'Raiz proc ' + String(Date.now()).slice(-6), materialType: 'Fibra de algodón Pima', quantityKg: 20,
       composition: [{ name: 'Algodón Pima', percentage: 100 }], origin: 'Piura, Perú', supplierName: 'Proveedor prueba', receptionCharacteristics: 'Proceso abierto de prueba.' } })).json();
     const machines = (await (await request.get('/api/machines', { headers: auth })).json()) as { id: string }[];
@@ -236,16 +233,13 @@ test('QR mostrado: enlace real, retorno tras login y bloqueo B2B', async ({ page
   const otherBatch=(otherBody.items??otherBody.content??otherBody)[0];
   await page.goto('/lotes'); await fakeCamera(page,appUrl()+'/lotes/'+otherBatch.traceabilityId);
   await page.getByRole('button',{name:'Escanear QR',exact:true}).click();
-  // FE-I1: un QR de otra empresa abre la vista compartida (SHARED); no es un error. Rige FE-C1: sin nombre y sin datos privados.
   await expect(page).toHaveURL(new RegExp('/lotes/'+otherBatch.traceabilityId+'$'),{timeout:30000});
   await expect(page.locator('app-qr-scanner')).toHaveCount(0);
   const shared = page.locator('main.content');
   await expect(shared).toContainText(otherBatch.traceabilityId,{timeout:30000});
   await expect(page.locator('.topbar')).toContainText('Lote compartido');
-  // la vista compartida no ofrece acciones de propietario (Dividir, Transformar, Transferir, evidencias)
   await expect(page.getByRole('button', { name: /^(Dividir|Transformar|Transferir)$/ })).toHaveCount(0);
   if (otherBatch.name) await expect(page.locator('body')).not.toContainText(otherBatch.name);
-  // Ronda 4a (fila 29): aviso de lote de otra empresa.
   await expect(shared).toContainText(/Pertenece a .+; solo ves los datos que comparte\./);
 });
 test('transformación: eliminación real de evidencia desde su ficha', async ({ page, request }) => {
@@ -334,12 +328,10 @@ test('genealogía: la combinación de relaciones conserva campos privados B2B', 
   await page.getByLabel('Buscar lote',{exact:true}).fill(finalId);
   const loaded = page.waitForResponse(r=>r.url().includes('/batches/'+found.items[0].batchId+'/lineage'));
   await page.getByRole('button',{name:'Trazar',exact:true}).click(); await loaded;
-  // FE-C1 (fila 1): el panel de detalle muestra el NOMBRE del lote (propio) o «—» (ajeno), no el Traceability ID.
   const mine=graph.nodes.find((n:{traceabilityId:string})=>n.traceabilityId===finalId);
   await expect(page.locator('.trace-detail .detail-id')).toHaveText(mine?.name??'—');
   await expect(page.locator('[data-node="'+finalId+'"] .mat.id')).toHaveText(finalId);
   await page.locator('[data-node="'+foreign.traceabilityId+'"]').click();
-  // Fila 4: un nodo ajeno muestra «—» como nombre (nodo, title y panel) y su texto real no aparece en la página.
   await expect(page.locator('.trace-detail .detail-id')).toHaveText('—');
   await expect(page.locator('[data-node="'+foreign.traceabilityId+'"] .row1 b')).toHaveText('—');
   await expect(page.locator('[data-node="'+foreign.traceabilityId+'"]')).toHaveAttribute('title',new RegExp('^— / '+foreign.traceabilityId+' / '));
@@ -349,7 +341,6 @@ test('genealogía: la combinación de relaciones conserva campos privados B2B', 
   await expect(page.locator('.trace-detail').getByRole('button',{name:/^Abrir lote$/})).toBeDisabled();
 });
 
-// ── Ronda 5: pendientes de FE-I1 (QR) y FE-M4 (login por rol). Sin ejecutar hasta la ronda 5b. ──
 async function tokenOf(request: import('@playwright/test').APIRequestContext, a: { email: string; password: string }) {
   return (await (await request.post('/api/auth/login', { data: { email: a.email, password: a.password } })).json()).token as string;
 }
@@ -363,10 +354,9 @@ test('QR inválido: se consulta una sola vez, no se repite y «Volver a leer» l
   await expect(page.locator('app-qr-scanner')).toContainText('no corresponde', { timeout: 30000 });
   const first = lookups.length;
   expect(first).toBeLessThanOrEqual(1);
-  await page.waitForTimeout(6000); // el QR inválido sigue frente a la cámara
+  await page.waitForTimeout(6000);
   expect(lookups.length, 'la desduplicación evita repetir la petición mientras el QR sigue a la vista').toBe(first);
   await page.getByRole('button', { name: 'Volver a leer', exact: true }).click();
-  // El mismo QR se procesa otra vez de inmediato: el aviso reaparece y, si la comprobación pasa por la red, hay una petición más.
   await expect(page.locator('app-qr-scanner')).toContainText('no corresponde', { timeout: 30000 });
   if (first > 0) await expect.poll(() => lookups.length, { timeout: 10000 }).toBeGreaterThan(first);
 });
@@ -397,20 +387,25 @@ test('abrir directamente /lotes/<Traceability ID ajeno> muestra la vista compart
   page.on('response', r => { if (r.url().includes('/api/traceability/')) statuses.push({ url: r.url(), status: r.status() }); });
   await page.goto('/lotes/' + other.traceabilityId);
   await expect(page.locator('.topbar')).toContainText('Lote compartido', { timeout: 30000 });
-  // las dos lecturas llegan después de pintarse la cabecera: se esperan, no se leen de inmediato
   await expect.poll(() => statuses.some(s => s.url.includes('/lineages?traceabilityId=' + other.traceabilityId) && s.status === 200), { timeout: 30000 }).toBe(true);
   await expect.poll(() => statuses.some(s => /\/batches\/[0-9a-f-]{36}\/lineage$/.test(new URL(s.url).pathname) && s.status === 200), { timeout: 30000 }).toBe(true);
   expect(statuses.filter(s => s.status >= 400)).toEqual([]);
 });
-test('login: «El rol lo define tu cuenta» y aviso cuando el rol elegido no es el de la cuenta (FE-M4)', async ({ page }) => {
+test('login: si el rol elegido no es el de la cuenta no entra y permite corregirlo (H4)', async ({ page }) => {
   test.setTimeout(60000);
   await page.goto('/login');
-  await expect(page.getByText('El rol lo define tu cuenta.', { exact: true })).toBeVisible();
+  await expect(page.getByText('Elige el rol registrado en tu cuenta.', { exact: true })).toBeVisible();
   const user = accounts[admin];
   await page.getByRole('button', { name: 'Operario', exact: true }).click();
   await page.getByLabel('Correo', { exact: true }).fill(user.email);
   await page.getByLabel('Contraseña', { exact: true }).fill(user.password);
   await page.getByRole('button', { name: 'Ingresar', exact: true }).click();
+  await expect(page.getByRole('alert')).toHaveText('Esta cuenta no tiene el rol Operario. Selecciona el rol de tu cuenta y vuelve a ingresar.');
+  await expect(page).toHaveURL(/\/login/);
+  await expect(page.getByLabel('Correo', { exact: true })).toHaveValue(user.email);
+  await page.getByRole('button', { name: 'Administrador', exact: true }).click();
+  await expect(page.getByRole('alert')).toHaveText('');
+  await page.getByRole('button', { name: 'Ingresar', exact: true }).click();
   await expect(page.locator('app-shell')).toBeVisible();
-  await expect(page.getByRole('status').filter({ hasText: /^Tu cuenta es de .+; entraste con ese rol\.$/ })).toBeVisible();
+  await expect(page.locator('.proto')).toContainText('Administrador de Empresa');
 });

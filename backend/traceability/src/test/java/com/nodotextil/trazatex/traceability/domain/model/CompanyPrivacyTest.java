@@ -7,7 +7,6 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Lo que no dice {@code SHARED} nunca se comparte (docs/domain/organization-access.md: los configurables son PRIVATE por defecto). */
 class CompanyPrivacyTest {
 
     @Test

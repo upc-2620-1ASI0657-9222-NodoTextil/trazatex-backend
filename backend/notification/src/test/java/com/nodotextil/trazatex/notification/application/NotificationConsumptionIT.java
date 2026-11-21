@@ -23,10 +23,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * El consumo sobre PostgreSQL real y con el contexto de Spring (la transacción es la de {@code @Transactional}): la notificación y los
- * correos de sus destinatarios nacen juntos, el destinatario se resuelve al crearlas y el job de envío no recorre las notificaciones.
- */
 @SpringBootTest(properties = {"trazatex.messaging.enabled=false", "SENDGRID_API_KEY=", "SENDGRID_FROM_EMAIL=", "trazatex.mail.job-delay=PT1H"})
 class NotificationConsumptionIT {
     static final PostgreSQLContainer DB = new PostgreSQLContainer("postgres:16.15").withPassword(UUID.randomUUID().toString());
@@ -139,8 +135,6 @@ class NotificationConsumptionIT {
         assertThat(jdbc.sql("SELECT count(*) FROM processed_events WHERE event_type LIKE :t").param("t", "%" + token + "%").query(Long.class).single()).isZero();
     }
 
-    // ---- cierre de la fase 07 (I19): orden, usuario INACTIVE, directorio incompleto, secretos fuera de los logs ----
-
     private void userAt(UUID id, UUID company, String role, String email, String status, Instant at) {
         notifications.consume(mapper.writeValueAsString(BaseDomainEvent.of("UserAccountUpdated", id.toString(),
                 Map.of("userId", id.toString(), "companyId", company.toString(), "role", role, "email", email, "status", status), Clock.fixed(at, ZoneOffset.UTC))));
@@ -152,26 +146,23 @@ class NotificationConsumptionIT {
         return jdbc.sql("SELECT count(*) FROM notification WHERE resource_id=:t").param("t", transfer.toString()).query(Long.class).single();
     }
 
-    /** Fuera de orden: una actualización del usuario que llega tarde (más vieja) no deshace la más nueva que ya se aplicó. */
     @Test void aUserUpdateThatArrivesLateDoesNotUndoANewerOne() {
         UUID company = UUID.randomUUID(), admin = UUID.randomUUID();
         Instant earlier = Instant.parse("2026-01-10T10:00:00Z"), later = Instant.parse("2026-01-10T11:00:00Z");
         String email = "orden-" + admin + "@correo.controlado";
-        userAt(admin, company, "COMPANY_ADMIN", email, "INACTIVE", later);      // lo más nuevo llega primero
-        userAt(admin, company, "COMPANY_ADMIN", email, "ACTIVE", earlier);      // lo viejo llega después
+        userAt(admin, company, "COMPANY_ADMIN", email, "INACTIVE", later);
+        userAt(admin, company, "COMPANY_ADMIN", email, "ACTIVE", earlier);
         assertThat(status(admin)).as("gana la más nueva, no la última en llegar").isEqualTo("INACTIVE");
 
         notifications.consume(transfer(UUID.randomUUID(), company));
         assertThat(emails(email)).as("sigue inactivo: no recibe").isZero();
 
-        // y al revés: lo nuevo que llega después sí se aplica
         userAt(admin, company, "COMPANY_ADMIN", email, "ACTIVE", later.plusSeconds(60));
         assertThat(status(admin)).isEqualTo("ACTIVE");
         notifications.consume(transfer(UUID.randomUUID(), company));
         assertThat(emails(email)).isEqualTo(1);
     }
 
-    /** Usuario INACTIVE: no recibe correo aunque haya sido activo; si se reactiva, recibe los siguientes pero no los de antes. */
     @Test void aDeactivatedUserReceivesNoEmailAndAReactivatedOneOnlyTheNextOnes() {
         UUID company = UUID.randomUUID(), admin = UUID.randomUUID();
         Instant t0 = Instant.parse("2026-02-01T08:00:00Z");
@@ -191,24 +182,22 @@ class NotificationConsumptionIT {
         assertThat(emails(email)).as("reactivado: recibe el siguiente, no el que se perdió").isEqualTo(2);
     }
 
-    /** Directorio incompleto: sin usuarios conocidos no hay a quién escribir, pero el hecho no se pierde ni falla el consumo. */
     @Test void withAnIncompleteDirectoryTheNotificationIsKeptNoEmailIsMadeAndNothingIsSentLater() {
         UUID company = UUID.randomUUID(), transfer = UUID.randomUUID(), operator = UUID.randomUUID(), admin = UUID.randomUUID();
         String event = transfer(transfer, company);
 
-        notifications.consume(event);                                           // la empresa aún no está en el directorio
+        notifications.consume(event);
 
         assertThat(notificationsOf(transfer)).as("la notificación dentro de la aplicación existe").isEqualTo(1);
         assertThat(jdbc.sql("SELECT count(*) FROM deferred_email WHERE event_id=(SELECT event_id FROM notification WHERE resource_id=:t)")
                 .param("t", transfer.toString()).query(Long.class).single()).isZero();
-        user(operator, company, "OPERATOR", "operario-" + operator + "@correo.controlado", "ACTIVE");     // solo un rol que no recibe
-        user(admin, company, "COMPANY_ADMIN", "tarde-" + admin + "@correo.controlado", "ACTIVE");          // el directorio llega después
-        notifications.consume(event);                                                                       // reentrega del mismo evento
+        user(operator, company, "OPERATOR", "operario-" + operator + "@correo.controlado", "ACTIVE");
+        user(admin, company, "COMPANY_ADMIN", "tarde-" + admin + "@correo.controlado", "ACTIVE");
+        notifications.consume(event);
         assertThat(emails("tarde-" + admin + "@correo.controlado")).as("el directorio tardío no escribe retroactivamente").isZero();
         assertThat(notificationsOf(transfer)).isEqualTo(1);
     }
 
-    /** Un administrador sin correo conocido no genera un correo a «» ni rompe el consumo. */
     @Test void anAdministratorWithoutAnEmailGeneratesNoEmailRow() {
         UUID company = UUID.randomUUID(), admin = UUID.randomUUID(), transfer = UUID.randomUUID();
         user(admin, company, "COMPANY_ADMIN", "   ", "ACTIVE");
@@ -219,7 +208,6 @@ class NotificationConsumptionIT {
         assertThat(jdbc.sql("SELECT count(*) FROM deferred_email WHERE btrim(recipient)=''").query(Long.class).single()).isZero();
     }
 
-    /** El token de una invitación vive solo en el cuerpo del correo pendiente; no aparece en ningún log, ni al consumir ni al intentar entregar. */
     @Test void theInvitationTokenNeverShowsUpInTheLogs() {
         String token = "tok-" + UUID.randomUUID() + "-un-solo-uso";
         String acceptUrl = "https://app.trazatex.example/invitations/" + token;
@@ -229,7 +217,7 @@ class NotificationConsumptionIT {
             notifications.consume(event("InvitationCreated", invitation.toString(), Map.of("invitationId", invitation.toString(),
                     "email", "invitado-" + invitation + "@correo.controlado", "acceptUrl", acceptUrl,
                     "expiresAt", java.time.Instant.now().plus(java.time.Duration.ofDays(2)).toString())));
-            delivery.deliver();                                                 // sin proveedor configurado: no se reclama ni se envía
+            delivery.deliver();
 
             assertThat(logs.lines()).as("la captura está viva").contains("captura-activa");
             assertThat(logs.lines()).noneMatch(line -> line.contains(token) || line.contains(acceptUrl));

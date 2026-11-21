@@ -5,10 +5,6 @@ import com.nodotextil.trazatex.quality.domain.model.QualityStatusChange;
 
 import java.util.UUID;
 
-/**
- * Tópico {@code quality.control}, clave batchId. Lo consumen production, traceability y analytics. {@code controlId} es nulo cuando el
- * cambio no viene de un control (un lote enviado a reevaluación, o retenido por una posible falla derivada).
- */
 public record QualityStatusChanged(UUID batchId, UUID companyId, QualityStatus previousStatus, QualityStatus newStatus, UUID controlId)
         implements QualityEvent {
 

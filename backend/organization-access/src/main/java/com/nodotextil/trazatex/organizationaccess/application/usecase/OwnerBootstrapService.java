@@ -18,17 +18,6 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Bootstrap del Dueño de Licencia (ADR-013) con la recuperación que pidió el usuario. Nunca crea contraseñas: el Dueño
- * recibe una invitación {@code LICENSE_OWNER} (publica {@code InvitationCreated}) y crea su cuenta al aceptarla.
- *
- * <ol>
- *   <li>Sin licencia: la crea con los límites del entorno y emite la invitación.</li>
- *   <li>Con licencia, sin ningún LICENSE_OWNER ACTIVE ni invitación LICENSE_OWNER PENDING vigente: emite una nueva.</li>
- *   <li>En cualquier otro caso no hace nada. Los límites de una licencia existente no se modifican.</li>
- * </ol>
- * La fila de la licencia se bloquea, de modo que varias instancias arrancando a la vez emiten una sola invitación.
- */
 @Service
 @Transactional
 class OwnerBootstrapService implements BootstrapOwnerUseCase {

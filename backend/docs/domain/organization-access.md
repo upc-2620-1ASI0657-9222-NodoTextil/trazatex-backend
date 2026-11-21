@@ -64,7 +64,7 @@ Nombres de enums: `glossary.md`.
 - Campos configurables (`ConfigurableField`), `PRIVATE` por defecto: `SUPPLIER`, `ORIGIN`, `QUANTITY`, `COMPOSITION`, `RECEPTION_CHARACTERISTICS`, `MACHINERY`, `SHRINKAGE`, `WASTE`, `WASTE_REASON`, `FAILURE_CAUSE`, `QUALITY_TEST_VALUES`.
 - Siempre compartidos (no configurables; intentar cambiarlos → 400): Traceability ID, empresa responsable, relaciones de genealogía, tipo de material, fase operativa, estado de calidad, fecha de registro, indicador de producto final.
 - Siempre privados (no configurables): identidad del operario, observaciones internas de controles y fallas, datos comerciales del producto final.
-- Solo para la empresa dueña (no configurable): `name`, el nombre libre del lote. Traceability lo devuelve únicamente en los lotes `OWN`; nunca sale en la vista `SHARED` de la genealogía de otra empresa, aunque esta comparta todos los campos configurables (decisión del usuario, 2026-11-03; ver `glossary.md` y `communication.md`).
+- Solo para la empresa dueña (no configurable): `name`, el nombre libre del lote. Traceability lo devuelve únicamente en los lotes `OWN`; nunca sale en la vista `SHARED` de la genealogía de otra empresa, aunque esta comparta todos los campos configurables (decisión del equipo, 2026-11-03; ver `glossary.md` y `communication.md`).
 - Solo `COMPANY_ADMIN` de la propia empresa. Evento `CompanyPrivacyUpdated` con el mapa completo.
 
 ### Bootstrap del Dueño (ADR-013)
@@ -76,7 +76,7 @@ Nombres de enums: `glossary.md`.
 ## Auditoría (RNF-11)
 Las operaciones de este contexto no están en la lista crítica de RNF-11, pero registra en `audit_log` los cambios de estado de empresas y usuarios y las decisiones sobre solicitudes.
 
-## Decisiones abiertas (confirmar con el usuario antes de implementar)
+## Decisiones abiertas (confirmar con el equipo antes de implementar)
 - Duración del JWT (propuesta: 8 h, sin refresh token).
 - Política de contraseña además de HIBP (el informe no fija longitud mínima; propuesta: mínimo 8 caracteres).
 - Si un usuario de una empresa `INACTIVE` puede iniciar sesión para consultar (propuesta: sí, solo lectura).

@@ -11,7 +11,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** La IP de las rutas públicas: la de la conexión, salvo que se confíe explícitamente en el valor que agrega el ingress. */
 class ClientIpResolverTest {
 
     private static final String CONNECTION = "203.0.113.9";
@@ -34,8 +33,6 @@ class ClientIpResolverTest {
         return builder.build();
     }
 
-    // ---- por defecto: la conexión, y X-Forwarded-For no se mira ----
-
     @Test
     void byDefaultTheIpIsTheConnectionAndAForgedForwardedForIsNeverUsed() throws Exception {
         ClientIpResolver resolver = new ClientIpResolver(false, 1);
@@ -55,8 +52,6 @@ class ClientIpResolverTest {
             assertThat(resolver.resolve(request("10.0." + i + ".1"))).isEqualTo(CONNECTION);
         }
     }
-
-    // ---- confianza en el ingress: el valor de más a la derecha ----
 
     @Test
     void whenTheIngressIsTrustedTheRightmostValueWinsAndWhatTheClientPutOnTheLeftIsIgnored() throws Exception {
@@ -102,8 +97,6 @@ class ClientIpResolverTest {
         assertThat(resolver.resolve(request("1.2.3.4, " + forged))).isEqualTo(CONNECTION);
     }
 
-    // ---- normalización: no se esquiva el límite cambiando de dirección en la misma red ----
-
     @Test
     void anIpv6AddressIsReducedToItsSlash64() throws Exception {
         ClientIpResolver resolver = new ClientIpResolver(false, 1);
@@ -139,7 +132,6 @@ class ClientIpResolverTest {
 
     @Test
     void theResolverNeverTouchesTheNetwork() {
-        // Un nombre con aspecto de host no puede provocar una consulta DNS: se descarta como literal inválido
         assertThat(ClientIpResolver.parseLiteral("host-" + UUID.randomUUID() + ".invalid")).isNull();
     }
 }

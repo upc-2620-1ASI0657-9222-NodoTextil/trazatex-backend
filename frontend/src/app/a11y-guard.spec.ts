@@ -1,7 +1,6 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-/** Recorre `src/app` y devuelve los .ts de producción (sin specs). */
 function fuentes(dir: string): { file: string; text: string }[] {
   return readdirSync(dir).flatMap((name: string) => {
     const path = join(dir, name);
@@ -32,14 +31,12 @@ describe('Guardas de accesibilidad sobre las plantillas (FE-I8)', () => {
 
   it('un solo h1 por página: el del shell (role=heading nivel 1); las páginas del shell usan h2', () => {
     const h1 = todas.filter(({ text }) => /<h1\b/.test(text)).map(({ file }) => file.split('/').pop());
-    // Fuera del shell, con su propio h1: la portada de acceso y la invitación.
     expect(h1.sort()).toEqual(['invitation.page.ts', 'login.page.ts']);
     const shell = todas.find(({ file }) => file.endsWith('shell.component.ts'))!;
     expect(shell.text).toContain('role="heading" aria-level="1"');
   });
 });
 
-/** Hojas de estilo reales de `src/`: el contraste se calcula con los valores que de verdad se publican. */
 const css = (name: string) => readFileSync(join(process.cwd(), 'src', name), 'utf8');
 const luminancia = (hex: string) => {
   const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(c => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
@@ -63,7 +60,6 @@ describe('Contraste de texto >= 4,5:1 (FE-I8)', () => {
     expect(css('polish.css')).toMatch(/\.kpi:nth-child\(1\) \{\s*background: var\(--green-800\)/);
     expect(css('section-finishes.css')).toContain('app-shell .kpi:nth-child(1) :is(.v, small, .capacity-percent) { color: var(--cream); }');
     expect(contraste(token('cream'), fondo)).toBeGreaterThanOrEqual(4.5);
-    // lo que había antes: verde oscuro sobre verde oscuro
     expect(contraste(token('green-900'), fondo)).toBeLessThan(1.2);
   });
 

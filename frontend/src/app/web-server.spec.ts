@@ -2,7 +2,6 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-/** La configuración del Nginx de `web` y su Dockerfile, tal como se publican (FE-I6, FE-M10). */
 const plataforma = (archivo: string) => readFileSync(join(process.cwd(), '..', 'backend', 'infra', 'platform', archivo), 'utf8').replace(/\r\n/g, '\n');
 const cabeceras = plataforma('web.security-headers.conf');
 const nginx = plataforma('web.nginx.conf');

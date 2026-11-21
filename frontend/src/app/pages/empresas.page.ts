@@ -150,5 +150,3 @@ export class EmpresasPage {
     this.ui.toast(`${e.razonSocial} ${estado === 'Activa' ? 'activada' : 'inactivada'}`);
   }
 }
-
-

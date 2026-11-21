@@ -73,7 +73,6 @@ class InvitationService implements ManageInvitationsUseCase {
     @Override
     public InvitationResult inviteOperator(InviteOperatorCommand command, Actor actor) {
         Instant now = clock.instant();
-        // La fila de la empresa serializa quienes usan sus cupos: dos invitaciones por el último cupo no pasan ambas.
         Company company = companyGuard.lockActive(actor.companyId());
         License license = licenses.find()
                 .orElseThrow(() -> new NotFoundException("LICENSE_NOT_FOUND", "La licencia no está inicializada."));
@@ -134,7 +133,6 @@ class InvitationService implements ManageInvitationsUseCase {
         users.save(user);
         invitations.save(invitation);
         if (breach == PasswordBreachCheckerPort.Result.UNAVAILABLE) {
-            // ADR-007: si HIBP no responde se acepta la contraseña y se deja constancia
             audit.record(user.id(), user.companyId(), "PASSWORD_BREACH_CHECK_SKIPPED", "User", user.id().toString(),
                     Map.of("reason", "El servicio de contraseñas filtradas no respondió"));
         }

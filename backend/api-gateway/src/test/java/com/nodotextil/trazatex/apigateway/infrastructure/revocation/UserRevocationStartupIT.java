@@ -16,13 +16,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-/**
- * El Gateway arranca antes de que organization-access haya creado {@code orgaccess.user}: no está listo (readiness 503), las rutas
- * autenticadas responden 503 (no 401, no 200), las públicas funcionan, y en cuanto el tópico aparece carga y queda listo.
- */
 class UserRevocationStartupIT extends RevocationItSupport {
 
-    static final String TOPIC = KafkaTestSupport.uniqueTopic();   // NO se crea todavía
+    static final String TOPIC = KafkaTestSupport.uniqueTopic();
 
     @DynamicPropertySource
     static void revocation(DynamicPropertyRegistry registry) {
@@ -40,7 +36,6 @@ class UserRevocationStartupIT extends RevocationItSupport {
         UUID inactive = UUID.randomUUID();
         UUID other = UUID.randomUUID();
 
-        // 1) sin tópico
         Thread.sleep(1_500);
         assertThat(readinessStatus()).isEqualTo(503);
         anonymous.get().uri("/actuator/health/liveness").exchange().expectStatus().isOk();
@@ -50,7 +45,6 @@ class UserRevocationStartupIT extends RevocationItSupport {
         anonymous.post().uri("/api/auth/login").contentType(MediaType.APPLICATION_JSON).bodyValue("{}").exchange().expectStatus().isOk();
         assertThat(ORG_ACCESS.getAllServeEvents().stream().filter(e -> e.getRequest().getUrl().equals("/api/license"))).as("nada autenticado llegó al servicio").isEmpty();
 
-        // 2) organization-access crea el tópico y publica
         KafkaTestSupport.createCompactedTopic(TOPIC, 1);
         KafkaTestSupport.publish(TOPIC, inactive, RevocationEvents.userUpdated(inactive, "INACTIVE"));
 

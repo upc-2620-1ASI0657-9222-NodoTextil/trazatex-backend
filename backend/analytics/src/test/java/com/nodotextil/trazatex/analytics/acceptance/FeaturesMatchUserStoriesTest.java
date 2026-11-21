@@ -14,11 +14,6 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Los escenarios ejecutables (RNF-10) son el texto exacto de {@code docs/domain/user-stories.md}: título y cada paso. Si alguien edita un
- * {@code .feature} a mano, cambia la historia sin regenerar, o falta algún escenario de US37 a US40, esta prueba falla. Las pruebas de abajo
- * comprueban la prueba: aplican cada tipo de cambio a una copia y exigen que se note.
- */
 class FeaturesMatchUserStoriesTest {
 
     private static final Path DOCS = Path.of("..", "docs", "domain", "user-stories.md");
@@ -52,8 +47,6 @@ class FeaturesMatchUserStoriesTest {
         return UserStoriesComparator.differences(DOCS, copy);
     }
 
-    // ---- lo real ----
-
     @Test
     void theFeaturesAreExactlyTheScenariosOfUs37ToUs40() throws IOException {
         assertThat(UserStoriesComparator.differences(DOCS, FEATURES)).isEmpty();
@@ -72,8 +65,6 @@ class FeaturesMatchUserStoriesTest {
             assertThat(scenarios).isEqualTo(4);
         }
     }
-
-    // ---- la prueba de la prueba ----
 
     @Test
     void aMissingScenarioIsNoticed() throws IOException {
@@ -160,7 +151,6 @@ class FeaturesMatchUserStoriesTest {
         String original = "    Dado que existen registros dentro del periodo seleccionado";
         String text = Files.readString(file);
         assertThat(text).contains(original);
-        // espacios de más y el texto en forma NFD (la palabra clave del paso queda intacta)
         String changed = "      Dado   que   existen   " + Normalizer.normalize("registros", Normalizer.Form.NFD) + " dentro del periodo seleccionado  ";
         Files.writeString(file, text.replace(original, changed));
 

@@ -4,7 +4,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/** Todos los datos de una transformación, para reconstruirla con {@code TransformationFactory.restore}. */
 public record TransformationSnapshot(
         UUID id,
         UUID companyId,

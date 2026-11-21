@@ -5,10 +5,6 @@ import com.nodotextil.trazatex.sharedkernel.exception.ValidationException;
 
 import java.util.random.RandomGenerator;
 
-/**
- * Identificador interno del lote: {@code TT-} + {@value #RANDOM_LENGTH} caracteres aleatorios Crockford Base32 (50
- * bits). Único y nunca cambia, ni al transferir el lote. La unicidad la garantiza la base (restricción {@code UNIQUE}).
- */
 public record TraceabilityId(String value) {
 
     public static final String PREFIX = "TT-";
@@ -25,7 +21,6 @@ public record TraceabilityId(String value) {
         return new TraceabilityId(PREFIX + Crockford32.generate(RANDOM_LENGTH, random));
     }
 
-    /** Lee un Traceability ID escrito por una persona (minúsculas, {@code O} por {@code 0}...). */
     public static TraceabilityId parse(String text) {
         if (text == null) {
             throw new ValidationException(ErrorCodes.INVALID_CODE, "El Traceability ID es obligatorio.", null);
@@ -33,10 +28,6 @@ public record TraceabilityId(String value) {
         return new TraceabilityId(Crockford32.normalize(text));
     }
 
-    /**
-     * Prefijo escrito por una persona para buscar (mayúsculas, O→0, I/L→1). No se valida: un prefijo con letras que
-     * ningún código contiene (como la U) simplemente no encuentra nada.
-     */
     public static String normalizePrefix(String text) {
         return text == null ? "" : Crockford32.normalize(text);
     }

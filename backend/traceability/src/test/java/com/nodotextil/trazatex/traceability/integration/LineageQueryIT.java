@@ -34,7 +34,6 @@ import static com.nodotextil.trazatex.traceability.integration.GraphBuilder.id;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** Las consultas de genealogía (US30–US32, US36) sobre Neo4j real, con el grafo armado por los mismos casos de uso que usan los consumidores. */
 class LineageQueryIT extends IntegrationTestBase {
 
     static final UUID A = UUID.fromString("00000000-0000-0000-0000-0000000000a1");
@@ -76,8 +75,6 @@ class LineageQueryIT extends IntegrationTestBase {
     private static List<String> edges(VisibleLineage lineage) {
         return lineage.edges().stream().map(e -> e.type() + " " + e.from().toString().substring(0, 6) + ">" + e.to().toString().substring(0, 6)).sorted().toList();
     }
-
-    // ---- datos y privacidad ----
 
     @Test
     void theOwnCompanySeesEveryFieldOfItsBatchesAndTheNamesComeFromCompanyRegistered() {
@@ -144,8 +141,6 @@ class LineageQueryIT extends IntegrationTestBase {
         assertThat(own.wasteKg()).isEqualByComparingTo("1");
     }
 
-    // ---- recorrido ----
-
     @Test
     void aDiamondOfDivisionsAndMixesIsWalkedBothWays() {
         graph.batch("A0", A).split("A0", A, "B0", "C0").transform("T", A, List.of("B0", "C0"), "D0");
@@ -164,7 +159,7 @@ class LineageQueryIT extends IntegrationTestBase {
 
     @Test
     void aGenealogyOfTenLevelsIsNotCutAndOneOfElevenIs() {
-        graph.chain("n", A, 12); // n0 → … → n11
+        graph.chain("n", A, 12);
 
         VisibleLineage tenLevels = queries.ancestors(id("n10"), A);
         VisibleLineage elevenLevels = queries.ancestors(id("n11"), A);
@@ -183,7 +178,6 @@ class LineageQueryIT extends IntegrationTestBase {
 
     @Test
     void theTraversalStopsAtABatchWhoseRegistrationHasNotArrivedAndSaysSo() {
-        // la transformación nombra una entrada que aún no se registró: queda provisional
         graph.batch("OK", A).transform("T", A, List.of("OK", "TARDIO"), "Z");
 
         VisibleLineage view = queries.ancestors(id("Z"), A);
@@ -194,7 +188,7 @@ class LineageQueryIT extends IntegrationTestBase {
         assertThat(view.complete()).isFalse();
         assertThat(view.truncated()).isFalse();
 
-        graph.batch("TARDIO", A); // llega su registro: la genealogía se completa sola
+        graph.batch("TARDIO", A);
 
         VisibleLineage completed = queries.ancestors(id("Z"), A);
         assertThat(levels(completed)).containsEntry("TARDIO", -1);
@@ -203,7 +197,7 @@ class LineageQueryIT extends IntegrationTestBase {
 
     @Test
     void aProvisionalOrUnknownStartingBatchIsNotFoundWithoutSayingWhich() {
-        graph.transform("T", A, List.of("FANTASMA"), "Z"); // FANTASMA solo existe como entrada provisional
+        graph.transform("T", A, List.of("FANTASMA"), "Z");
 
         assertThatThrownBy(() -> queries.lineage(id("FANTASMA"), A)).isInstanceOf(NotFoundException.class).hasMessage("El lote no existe.");
         assertThatThrownBy(() -> queries.lineage(UUID.randomUUID(), A)).isInstanceOf(NotFoundException.class).hasMessage("El lote no existe.");
@@ -235,8 +229,6 @@ class LineageQueryIT extends IntegrationTestBase {
         assertThat(back.direction()).isEqualTo(LineageDirection.DESCENDANTS);
         assertThat(back.nodes()).filteredOn(VisibleBatch.class::isInstance).extracting(n -> ((VisibleBatch) n).transferHistory()).containsOnlyNulls();
     }
-
-    // ---- búsqueda ----
 
     @Test
     void theSearchFindsByQrByExactTraceabilityIdAndByPrefixOnlyAmongTheOwnBatches() {
@@ -286,7 +278,7 @@ class LineageQueryIT extends IntegrationTestBase {
     @Test
     void theSearchNeverReturnsIncompleteBatches() {
         graph.batch("AAA1", A).batch("AAA2", A);
-        neo4j.query("MATCH (b:Batch {batchId: $id}) REMOVE b.phase").bind(id("AAA2").toString()).to("id").run(); // un dato obligatorio ausente
+        neo4j.query("MATCH (b:Batch {batchId: $id}) REMOVE b.phase").bind(id("AAA2").toString()).to("id").run();
         neo4j.query("CREATE (:Batch {batchId: $id, provisional: true})").bind(UUID.randomUUID().toString()).to("id").run();
 
         assertThat(queries.search(A, null, "TT-AAA", null, null).items()).extracting(VisibleBatchSummary::traceabilityId).containsExactly("TT-AAA1");

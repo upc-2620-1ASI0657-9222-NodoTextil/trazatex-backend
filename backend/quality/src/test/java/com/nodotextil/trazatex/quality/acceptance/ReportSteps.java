@@ -16,7 +16,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** US44: el reporte PDF de un control finalizado, generado al vuelo y sin almacenarse; y qué pasa si el generador no responde. */
 public class ReportSteps extends StepSupport {
 
     public ReportSteps(World world, QualityApi api, JdbcClient jdbc, ObjectMapper json) {
@@ -34,8 +33,6 @@ public class ReportSteps extends StepSupport {
             throw new IllegalStateException("el reporte no es un PDF legible", e);
         }
     }
-
-    // ---- esc. 1: generación exitosa ----
 
     @Dado("^que existe un control de calidad finalizado$")
     public void aFinishedQualityControlExists() {
@@ -55,22 +52,20 @@ public class ReportSteps extends StepSupport {
         assertThat(world.last.header("content-type")).isEqualTo("application/pdf");
         assertThat(new String(world.last.bytes(), 0, 5, java.nio.charset.StandardCharsets.ISO_8859_1)).isEqualTo("%PDF-");
         assertThat(textOf(world.last.bytes())).contains(world.control.toString())
-                .contains("Humedad", "medición de planta")          // la prueba y su observación
-                .contains("8").contains("7").contains("15").contains("%")   // el esperado, los obtenidos y la unidad
-                .contains("Conforme").contains("Con falla");        // el resultado de cada prueba y el general
+                .contains("Humedad", "medición de planta")
+                .contains("8").contains("7").contains("15").contains("%")
+                .contains("Conforme").contains("Con falla");
     }
 
     @Y("^no lo almacena dentro del sistema\\.$")
     public void doesNotStoreItInsideTheSystem() {
         Map<String, Long> after = tableCounts();
         Map<String, Long> expected = new java.util.TreeMap<>(world.tablesBefore);
-        expected.merge("audit_log", 1L, Long::sum);          // lo único que queda: quién lo pidió, no el contenido
+        expected.merge("audit_log", 1L, Long::sum);
         assertThat(after).as("ninguna tabla guarda el documento; solo la auditoría de que se generó").isEqualTo(expected);
         assertThat(world.last.header("cache-control")).isEqualTo("no-store");
         assertThat(count("SELECT count(*) FROM audit_log WHERE action = 'REPORT_GENERATED' AND entity_id = ?", world.control.toString())).isEqualTo(1);
     }
-
-    // ---- esc. 2: el generador no responde ----
 
     @Dado("^que el servicio de generación de PDF no responde$")
     public void thePdfGenerationServiceDoesNotRespond() {
@@ -96,7 +91,7 @@ public class ReportSteps extends StepSupport {
     @Y("^permite reintentar\\.$")
     public void allowsRetrying() {
         assertThat(world.last.header("retry-after")).isEqualTo("5");
-        PdfSwitch.start();          // el generador vuelve
+        PdfSwitch.start();
         Reply retried = world.submit();
         assertThat(retried.status()).as("reintentar el reporte: %s", retried.raw()).isEqualTo(200);
         assertThat(new String(retried.bytes(), 0, 5, java.nio.charset.StandardCharsets.ISO_8859_1)).isEqualTo("%PDF-");

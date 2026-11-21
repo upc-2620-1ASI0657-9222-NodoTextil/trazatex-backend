@@ -31,28 +31,16 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-/**
- * Un caso con una división, una transformación y una transferencia, repartido en flujos de eventos (cada flujo es un tópico y
- * una clave de Kafka: su orden interno se conserva, entre flujos no hay orden) y con el grafo que debe quedar escrito a mano.
- * Cada corrida usa ids propios (derivados de su número) para poder ejecutarse en paralelo sin tocar los nodos de otra.
- *
- * <p>El caso pequeño ({@link #small}) tiene 8 eventos: se recorren todas sus mezclas. El grande ({@link #large}) tiene 19, con
- * un lote registrado que se mezcla en la transformación, estados de calidad, privacidad y una segunda transformación
- * encadenada: se recorren mezclas al azar de semilla fija.
- */
 final class OrderScenario {
 
-    /** Una entrega de un evento: se aplica por el manejador idempotente, como lo haría su consumidor. */
     record Ev(String name, String stream, UUID eventId, Runnable deliver) {
     }
 
-    /** Beans con los que se aplican los eventos. */
     record Beans(IdempotentEventHandler handler, RegisterBatchUseCase register, ApplyBatchSplitUseCase split,
                  ApplyTransformationCompletedUseCase transformation, ApplyBatchPhaseChangedUseCase phase,
                  ApplyTransferAcceptedUseCase transfer, ApplyQualityStatusUseCase quality, ApplyCompanyPrivacyUseCase privacy) {
     }
 
-    /** Una corrida lista para ejecutarse: sus eventos planos (los flujos uno tras otro), el grafo esperado y sus ids. */
     record Instance(List<String> streamNames, int[] streamLengths, List<Ev> events, List<String> expected, List<UUID> entityIds,
                     Map<String, String> names, Map<String, EventMessages.Message> messages) {
 
@@ -69,21 +57,15 @@ final class OrderScenario {
         }
     }
 
-    /** Los órdenes difíciles del caso pequeño, por nombre de evento; los comparten la prueba directa y la de Kafka real. */
     static final List<List<String>> NAMED_ORDERS = List.of(
-            // el orden en que ocurrió
             List.of("BR(L1)", "BS(L1>H1,H2)", "BPC(L1 SPLIT v1)", "BPC(H1 IN_TRANSFORMATION v1)", "BPC(H1 PROCESSED v2)", "TC(T1)",
                     "BPC(H2 AVAILABLE cB v2)", "TA(TR1>cB)"),
-            // el primer cambio de fase del hijo antes que el BatchSplit que lo crea
             List.of("BPC(H1 IN_TRANSFORMATION v1)", "BS(L1>H1,H2)", "BR(L1)", "BPC(H1 PROCESSED v2)", "BPC(L1 SPLIT v1)", "TC(T1)",
                     "BPC(H2 AVAILABLE cB v2)", "TA(TR1>cB)"),
-            // el hijo ya transferido a B: el BatchSplit tardío no le devuelve la empresa A
             List.of("BPC(H2 AVAILABLE cB v2)", "TA(TR1>cB)", "BR(L1)", "BS(L1>H1,H2)", "BPC(L1 SPLIT v1)", "BPC(H1 IN_TRANSFORMATION v1)",
                     "BPC(H1 PROCESSED v2)", "TC(T1)"),
-            // la transformación y la transferencia antes que todo lo demás
             List.of("TC(T1)", "TA(TR1>cB)", "BPC(H1 PROCESSED v2)", "BPC(H2 AVAILABLE cB v2)", "BS(L1>H1,H2)", "BPC(H1 IN_TRANSFORMATION v1)",
                     "BPC(L1 SPLIT v1)", "BR(L1)"),
-            // los cambios de fase del padre antes de que exista, y el registro al final
             List.of("BPC(L1 SPLIT v1)", "BPC(H1 PROCESSED v2)", "BPC(H2 AVAILABLE cB v2)", "BPC(H1 IN_TRANSFORMATION v1)", "TC(T1)",
                     "TA(TR1>cB)", "BS(L1>H1,H2)", "BR(L1)"));
 
@@ -114,8 +96,6 @@ final class OrderScenario {
         return new OrderScenario(run, beans, true).build();
     }
 
-    // ---- ids ----
-
     private UUID id(String name) {
         return ids.computeIfAbsent(name, key -> {
             UUID id = UUID.nameUUIDFromBytes(("orden-" + run + "-" + key).getBytes(StandardCharsets.UTF_8));
@@ -139,12 +119,9 @@ final class OrderScenario {
                 .add(new Ev(name, stream, eventId, () -> beans.handler().handle(envelope, e -> apply.accept(eventId))));
     }
 
-    /** El mismo evento como lo publica Kafka (solo el caso pequeño lo necesita). */
     private void message(String name, java.util.function.Function<UUID, EventMessages.Message> message) {
         messages.put(name, message.apply(UUID.nameUUIDFromBytes(("evento-" + run + "-" + name).getBytes(StandardCharsets.UTF_8))));
     }
-
-    // ---- el caso ----
 
     private Instance build() {
         UUID cA = id("cA");
@@ -159,26 +136,21 @@ final class OrderScenario {
         UUID s2 = id("S2");
         UUID t2 = id("T2");
 
-        // production.batch / L1
         add("batch/L1", "BR(L1)", e -> beans.register().apply(new RegisterBatchCommand(e, l1, trace("L1"), qr("L1"), cA, "Algodón", COTTON,
                 new BigDecimal("100"), "Piura", "Textiles del Norte", "Fibra limpia", T0)));
         add("batch/L1", "BS(L1>H1,H2)", e -> beans.split().apply(new ApplyBatchSplitCommand(e, l1, cA, List.of(
                 child(h1, "H1", "40"), child(h2, "H2", "60")))));
         add("batch/L1", "BPC(L1 SPLIT v1)", e -> beans.phase().apply(new ApplyBatchPhaseChangedCommand(e, l1, cA, BatchPhase.SPLIT, false, 1L)));
-        // production.batch / H1 (el primer cambio de fase del hijo puede llegar antes que el BatchSplit que lo crea)
         add("batch/H1", "BPC(H1 IN_TRANSFORMATION v1)", e -> beans.phase().apply(
                 new ApplyBatchPhaseChangedCommand(e, h1, cA, BatchPhase.IN_TRANSFORMATION, false, 1L)));
         add("batch/H1", "BPC(H1 PROCESSED v2)", e -> beans.phase().apply(new ApplyBatchPhaseChangedCommand(e, h1, cA, BatchPhase.PROCESSED, false, 2L)));
-        // production.batch / H2: la aceptación de la transferencia le cambia el dueño (la versión puede saltar)
         add("batch/H2", "BPC(H2 AVAILABLE cB v2)", e -> beans.phase().apply(new ApplyBatchPhaseChangedCommand(e, h2, cB, BatchPhase.AVAILABLE, false, 2L)));
-        // production.transformation / T1
         List<UUID> inputs = large ? List.of(l2, h1) : List.of(h1);
         String outputKg = large ? "80" : "35";
         add("transformation/T1", "TC(T1)", e -> beans.transformation().apply(new ApplyTransformationCompletedCommand(e, t1, TransformationType.DYEING, cA,
                 "Cardadora", "Cardado", inputs, List.of(new ApplyTransformationCompletedCommand.Output(s, trace("S"), qr("S"), "Tela teñida",
                 new BigDecimal(outputKg), COTTON, true)), new BigDecimal(large ? "5" : "2"), "Orillo", new BigDecimal(large ? "5" : "3"),
                 T0, T0.plusSeconds(3600))));
-        // production.transfer / TR1
         add("transfer/TR1", "TA(TR1>cB)", e -> beans.transfer().apply(new ApplyTransferAcceptedCommand(e, transfer, List.of(h2), cB, T0.plusSeconds(120))));
 
         if (!large) {
@@ -195,21 +167,17 @@ final class OrderScenario {
             message("TA(TR1>cB)", e -> EventMessages.transferAccepted(e, transfer, List.of(h2), cA, cB, T0.plusSeconds(120)));
         }
         if (large) {
-            // un lote registrado que se mezcla en la transformación, con sus dos cambios de fase
             add("batch/L2", "BR(L2)", e -> beans.register().apply(new RegisterBatchCommand(e, l2, trace("L2"), qr("L2"), cA, "Algodón", COTTON,
                     new BigDecimal("50"), "Piura", "Textiles del Norte", "Fibra limpia", T0)));
             add("batch/L2", "BPC(L2 IN_TRANSFORMATION v1)", e -> beans.phase().apply(
                     new ApplyBatchPhaseChangedCommand(e, l2, cA, BatchPhase.IN_TRANSFORMATION, false, 1L)));
             add("batch/L2", "BPC(L2 PROCESSED v2)", e -> beans.phase().apply(new ApplyBatchPhaseChangedCommand(e, l2, cA, BatchPhase.PROCESSED, false, 2L)));
-            // quality.control / H1: dos estados seguidos; el último es el que queda
             add("quality/H1", "QSC(H1 CONFORMING)", e -> beans.quality().apply(new ApplyQualityStatusCommand(e, h1, QualityStatus.CONFORMING)));
             add("quality/H1", "QSC(H1 FAILED)", e -> beans.quality().apply(new ApplyQualityStatusCommand(e, h1, QualityStatus.FAILED)));
-            // orgaccess.company: dos cambios de privacidad de A (el segundo reemplaza al primero) y uno de B
             add("company/cA", "CPU(cA 1)", e -> beans.privacy().apply(new ApplyCompanyPrivacyCommand(e, cA, Map.of("SUPPLIER", "SHARED"))));
             add("company/cA", "CPU(cA 2)", e -> beans.privacy().apply(new ApplyCompanyPrivacyCommand(e, cA,
                     Map.of("SUPPLIER", "SHARED", "ORIGIN", "SHARED", "MACHINERY", "SHARED"))));
             add("company/cB", "CPU(cB 1)", e -> beans.privacy().apply(new ApplyCompanyPrivacyCommand(e, cB, Map.of("WASTE", "SHARED"))));
-            // una segunda transformación encadenada: consume la salida de la primera
             add("transformation/T2", "TC(T2)", e -> beans.transformation().apply(new ApplyTransformationCompletedCommand(e, t2, TransformationType.DYEING, cA,
                     "Estampadora", "Estampado", List.of(s), List.of(new ApplyTransformationCompletedCommand.Output(s2, trace("S2"), qr("S2"),
                     "Tela estampada", new BigDecimal("70"), COTTON, true)), new BigDecimal("4"), "Recorte", new BigDecimal("6"),
@@ -231,8 +199,6 @@ final class OrderScenario {
         return new ApplyBatchSplitCommand.Child(batch, trace(name), qr(name), "Algodón", new BigDecimal(kg), COTTON, "Piura", "Textiles del Norte",
                 "Fibra limpia", QualityStatus.NOT_REVIEWED, T0.plusSeconds(60));
     }
-
-    // ---- el grafo que debe quedar, escrito a mano ----
 
     private void node(String label, String name, Object... keysAndValues) {
         expected.add(GraphSnapshot.node(label, name, props(name, label, keysAndValues)));
@@ -321,7 +287,6 @@ final class OrderScenario {
         expected.sort(String::compareTo);
     }
 
-    /** El JSON de privacidad con los 11 campos: los indicados {@code SHARED} y el resto {@code PRIVATE}. */
     private static String privacy(String... shared) {
         List<String> sharedFields = List.of(shared);
         StringBuilder json = new StringBuilder("{");

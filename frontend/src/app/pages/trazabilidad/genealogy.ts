@@ -1,7 +1,5 @@
 import { StoreService } from '../../core/store.service';
 
-                                                                                                     
-
 export type NodeKind = 'lote' | 'proceso' | 'division' | 'control';
 
 export interface GNode {
@@ -61,7 +59,6 @@ const SIZE: Record<NodeKind, { w: number; h: number }> = {
   control: { w: 116, h: 38 },
 };
 
-                                                                           
 export function bloques(store: StoreService): Bloque[] {
   const seen = new Set<string>();
   const out: Bloque[] = [];
@@ -76,7 +73,7 @@ export function bloques(store: StoreService): Bloque[] {
       seen.add(cur);
       comp.push(cur);
       stack.push(...store.padres(cur), ...store.hijos(cur));
-                                                                      
+
       store.procesosConsumidores(cur).forEach((p) => stack.push(...p.entradas.map((e) => e.loteId)));
     }
     const raices = comp.filter((id) => store.padres(id).length === 0).sort();
@@ -121,13 +118,12 @@ export function layout(store: StoreService, loteIds: string[], conControles: boo
     for (const c of store.controles()) {
       if (!set.has(c.loteId)) continue;
       kinds.set(c.id, 'control');
-                                                                                         
+
       empresa.set(c.id, store.lote(c.loteId)!.empresaId);
       link(c.loteId, c.id, 'control');
     }
   }
 
-                           
   const depth = new Map<string, number>();
   const ids = [...kinds.keys()];
   const visit = (id: string): number => {
@@ -140,7 +136,6 @@ export function layout(store: StoreService, loteIds: string[], conControles: boo
   };
   ids.forEach(visit);
 
-                                                          
   const minDepth = new Map<string, number>();
   ids.forEach((id) => {
     const e = empresa.get(id)!;
@@ -148,7 +143,6 @@ export function layout(store: StoreService, loteIds: string[], conControles: boo
   });
   const companies = [...minDepth.keys()].sort((a, b) => minDepth.get(a)! - minDepth.get(b)! || a.localeCompare(b));
 
-                                                                   
   const colOf = new Map<string, number>();
   const companyCols: { empresaId: string; first: number; last: number; idx: number }[] = [];
   let col = 0;
@@ -163,7 +157,6 @@ export function layout(store: StoreService, loteIds: string[], conControles: boo
   });
   const companyIdx = new Map(companyCols.map((c) => [c.empresaId, c.idx]));
 
-                                                                               
   const rowOf = new Map<string, number>();
   const order = new Map(ids.map((id, i) => [id, i]));
   for (let c = 0; c < col; c++) {
@@ -181,7 +174,6 @@ export function layout(store: StoreService, loteIds: string[], conControles: boo
     }
   }
 
-                                                                                           
   for (let c = col - 1; c >= 0; c--) {
     const inCol = ids.filter((id) => colOf.get(id) === c).sort((a, b) => rowOf.get(a)! - rowOf.get(b)!);
     inCol.forEach((id, i) => {

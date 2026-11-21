@@ -9,7 +9,6 @@ import org.springframework.context.annotation.Configuration;
 
 import java.time.Duration;
 
-/** Claves JWT del Identity Provider (solo por variables de entorno, nunca en archivos del proyecto). */
 @Configuration
 class SecurityConfig {
 

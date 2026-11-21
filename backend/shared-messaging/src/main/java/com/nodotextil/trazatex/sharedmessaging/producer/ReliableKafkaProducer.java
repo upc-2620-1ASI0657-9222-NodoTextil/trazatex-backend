@@ -9,16 +9,11 @@ import org.springframework.kafka.core.ProducerFactory;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Productor para el relay del outbox: {@code acks=all} y productor idempotente, que no se pueden relajar por
- * configuración (ADR-004: entrega at-least-once sin pérdidas ni duplicados por reintentos del propio productor).
- */
 public final class ReliableKafkaProducer {
 
     private ReliableKafkaProducer() {
     }
 
-    /** Devuelve una copia de {@code base} con los ajustes obligatorios aplicados encima. */
     public static Map<String, Object> enforce(Map<String, Object> base) {
         Map<String, Object> config = new HashMap<>(base);
         config.put(ProducerConfig.ACKS_CONFIG, "all");

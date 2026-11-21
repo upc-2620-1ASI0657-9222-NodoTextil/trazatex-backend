@@ -21,10 +21,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
-/**
- * Base de las pruebas de la API: peticiones como las manda el Gateway (cabeceras {@code X-User-*}/{@code X-Company-Id}),
- * dos empresas {@code ACTIVE} en la proyección y un operario y un administrador de cada una.
- */
 abstract class ApiTestBase extends IntegrationTestBase {
 
     static final UUID COMPANY_A = COMPANY;
@@ -35,7 +31,6 @@ abstract class ApiTestBase extends IntegrationTestBase {
     static final UUID ADMIN_B = UUID.fromString("00000000-0000-0000-0000-00000000b0ad");
     static final UUID OWNER = UUID.fromString("00000000-0000-0000-0000-0000000000f0");
 
-    /** Quien llama: usuario, empresa y rol, como los inyecta el Gateway. */
     record Caller(UUID userId, UUID companyId, String role) {
     }
 
@@ -55,8 +50,6 @@ abstract class ApiTestBase extends IntegrationTestBase {
         saveCompany(COMPANY_A, CompanyStatus.ACTIVE);
         saveCompany(COMPANY_B, CompanyStatus.ACTIVE);
     }
-
-    // ---- peticiones ----
 
     protected static MockHttpServletRequestBuilder as(MockHttpServletRequestBuilder request, Caller caller) {
         MockHttpServletRequestBuilder builder = request.header("X-User-Id", caller.userId().toString()).header("X-User-Role", caller.role());
@@ -87,13 +80,11 @@ abstract class ApiTestBase extends IntegrationTestBase {
         return call(caller, put(url).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(body)));
     }
 
-    /** El comando interno de Quality: sin identidad, sin roles y sin Idempotency-Key (no está bajo /api). */
     protected ResultActions internalCommand(UUID batchId, Object body) throws Exception {
         return mockMvc.perform(post("/internal/batches/" + batchId + "/phase-transitions").contentType(MediaType.APPLICATION_JSON)
                 .content(body instanceof String text ? text : json.writeValueAsString(body)));
     }
 
-    /** Cuerpo del comando interno con un requestedBy fijo. */
     protected static Map<String, Object> phaseCommand(String operation, String requestId) {
         return obj("operation", operation, "requestId", requestId, "requestedBy", OPERATOR_A);
     }
@@ -102,7 +93,6 @@ abstract class ApiTestBase extends IntegrationTestBase {
         return obj("operation", operation, "requestId", requestId, "qualityHold", qualityHold, "reason", reason, "requestedBy", OPERATOR_A);
     }
 
-    /** Una subida multipart (campo "files") como la manda el Gateway: con las cabeceras de identidad. */
     protected ResultActions multipartAs(Caller caller, String url, org.springframework.mock.web.MockMultipartFile... files) throws Exception {
         var request = org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart(url);
         for (var file : files) {
@@ -128,7 +118,6 @@ abstract class ApiTestBase extends IntegrationTestBase {
         return read(result).path("code").asString();
     }
 
-    /** Un objeto JSON a partir de pares clave-valor; admite nulos (a diferencia de {@code Map.of}). */
     protected static Map<String, Object> obj(Object... keysAndValues) {
         Map<String, Object> map = new LinkedHashMap<>();
         for (int i = 0; i < keysAndValues.length; i += 2) {
@@ -136,8 +125,6 @@ abstract class ApiTestBase extends IntegrationTestBase {
         }
         return map;
     }
-
-    // ---- datos de partida, por la propia API ----
 
     protected static Map<String, Object> component(String name, double percentage) {
         return obj("name", name, "percentage", percentage);
@@ -149,7 +136,6 @@ abstract class ApiTestBase extends IntegrationTestBase {
                 "quantityKg", kg, "origin", "Piura", "supplierName", "Textiles del Norte", "receptionCharacteristics", "Fibra limpia");
     }
 
-    /** Registra un lote como operario de A por la API y devuelve su respuesta. */
     protected JsonNode registerBatch(double kg) throws Exception {
         return read(postAs(OPERATOR_OF_A, "/api/batches", batchBody(kg)).andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isCreated()));
     }
@@ -163,7 +149,6 @@ abstract class ApiTestBase extends IntegrationTestBase {
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isCreated()));
     }
 
-    /** Inicia una transformación como operario de A por la API. */
     protected JsonNode startTransformation(String type, UUID machineId, UUID... batchIds) throws Exception {
         return read(postAs(OPERATOR_OF_A, "/api/transformations", obj("type", type, "machineId", machineId,
                 "batchIds", List.of(batchIds))).andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isCreated()));

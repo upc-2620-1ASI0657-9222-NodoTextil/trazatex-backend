@@ -11,7 +11,6 @@ import static com.nodotextil.trazatex.traceability.application.dto.EventFields.c
 import static com.nodotextil.trazatex.traceability.application.dto.EventFields.positiveKg;
 import static com.nodotextil.trazatex.traceability.application.dto.EventFields.required;
 
-/** {@code BatchRegistered}. {@code origin}, {@code supplierName} y {@code receptionCharacteristics} son opcionales. */
 public record RegisterBatchCommand(
         UUID eventId,
         UUID batchId,
@@ -40,7 +39,6 @@ public record RegisterBatchCommand(
         Instant createdAt) {
         this(eventId, batchId, traceabilityId, qrCode, companyId, materialType, composition, quantityKg, origin, supplierName, receptionCharacteristics, createdAt, null);
     }
-
 
     public RegisterBatchCommand {
         required(eventId, "eventId");

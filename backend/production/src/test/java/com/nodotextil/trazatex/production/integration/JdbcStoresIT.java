@@ -20,10 +20,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * El contrato SQL de los puertos del shared-kernel contra PostgreSQL real (deuda de la fase 01):
- * {@code ON CONFLICT DO NOTHING} con bloqueo de la PK y {@code FOR UPDATE SKIP LOCKED}.
- */
 class JdbcStoresIT extends IntegrationTestBase {
 
     @Autowired
@@ -32,9 +28,6 @@ class JdbcStoresIT extends IntegrationTestBase {
     OutboxStorePort outbox;
     @Autowired
     AuditLogPort audit;
-
-
-    // ---- idempotency_keys ----
 
     @Test
     void reserveCompleteFindAndDelete() {
@@ -128,8 +121,6 @@ class JdbcStoresIT extends IntegrationTestBase {
         }
     }
 
-    // ---- audit_log (RNF-11) ----
-
     @Test
     void auditRecordsWhoWhatAndWhenInTheSameTransaction() {
         UUID user = UUID.randomUUID();
@@ -167,8 +158,6 @@ class JdbcStoresIT extends IntegrationTestBase {
 
         assertThat(count("SELECT count(*) FROM audit_log")).isZero();
     }
-
-    // ---- outbox ----
 
     private OutboxMessage message(int n) {
         return new OutboxMessage(UUID.randomUUID(), "Batch", "agg-" + n, "BatchRegistered", "production.batch",

@@ -13,11 +13,6 @@ import java.time.Clock;
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * Aplica los eventos de empresa a la proyección. Los cambios de una misma empresa se serializan con el bloqueo de su fila. El
- * estado lo manda siempre el {@code CompanyStatusChanged} más reciente: un {@code CompanyRegistered} sobre una empresa que ya
- * se conocía no lo pisa.
- */
 @Service
 @Transactional
 class CompanyProjectionService implements SyncCompanyProjectionUseCase {

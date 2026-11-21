@@ -20,10 +20,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Comando interno de Quality (ADR-009) por HTTP: contrato, códigos (409 solo para el rechazo de negocio), repetición idempotente,
- * empresa inactiva (solo {@code START_EVALUATION} se bloquea) y la reacción a una carrera no resuelta (503, nunca 409).
- */
 class InternalPhaseTransitionApiIT extends ApiTestBase {
 
     @MockitoSpyBean
@@ -44,8 +40,6 @@ class InternalPhaseTransitionApiIT extends ApiTestBase {
     private long eventsOf(UUID batch) {
         return count("SELECT count(*) FROM outbox WHERE event_type = 'BatchPhaseChanged' AND aggregate_id = ?", batch.toString());
     }
-
-    // ---- las cinco operaciones ----
 
     @Test
     void theFiveOperationsMoveThePhaseAndTheHoldAndRespondWithTheResult() throws Exception {
@@ -86,15 +80,11 @@ class InternalPhaseTransitionApiIT extends ApiTestBase {
                 .andExpect(status().isCreated());
     }
 
-    // ---- sin identidad, sin roles, sin Idempotency-Key ----
-
     @Test
     void theRouteNeedsNoIdentityAndIgnoresIdentityAndIdempotencyHeaders() throws Exception {
         UUID batch = idOf(registerBatch(10));
 
-        // sin ninguna cabecera: 200
         ok(internalCommand(batch, phaseCommand("HOLD", "a")));
-        // con cabeceras de identidad absurdas y una Idempotency-Key inválida: se ignoran (no hay 401, 403, 400 ni 422)
         ok(mockMvc.perform(post("/internal/batches/" + batch + "/phase-transitions").contentType("application/json")
                 .header("X-User-Id", "no-es-un-uuid").header("X-User-Role", "ROL_INEXISTENTE").header("Idempotency-Key", "tampoco")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer cualquier-cosa")
@@ -102,8 +92,6 @@ class InternalPhaseTransitionApiIT extends ApiTestBase {
 
         assertThat(count("SELECT count(*) FROM idempotency_keys")).as("no pasa por el IdempotencyFilter").isZero();
     }
-
-    // ---- 404 y 400 ----
 
     @Test
     void aBatchThatDoesNotExistIs404() throws Exception {
@@ -158,8 +146,6 @@ class InternalPhaseTransitionApiIT extends ApiTestBase {
         assertThat(event.path("payload").path("requestId").asString()).isEqualTo("derived-1");
     }
 
-    // ---- 409: solo el rechazo de negocio, con su código ----
-
     @Test
     void aBusinessRejectionIs409WithItsReasonCodeAndLeavesNoTrace() throws Exception {
         UUID inControl = idOf(registerBatch(10));
@@ -183,7 +169,6 @@ class InternalPhaseTransitionApiIT extends ApiTestBase {
         assertThat(phaseOf(inControl)).isEqualTo("IN_QUALITY_CONTROL");
         assertThat(count("SELECT count(*) FROM outbox")).isZero();
         assertThat(count("SELECT count(*) FROM phase_command_log")).as("un rechazo no se guarda").isEqualTo(logRows);
-        // y como no se guardó, repetirlo se vuelve a evaluar: tras liberar el lote, el mismo comando sí prospera
         internalCommand(inControl, phaseCommand("RELEASE", "ctl-1", false, null)).andExpect(status().isOk());
         ok(internalCommand(inControl, phaseCommand("HOLD", "otro-HOLD")));
     }
@@ -194,8 +179,6 @@ class InternalPhaseTransitionApiIT extends ApiTestBase {
         return read(postAs(OPERATOR_OF_A, "/api/transformations/" + transformation + "/complete", obj("outputs", List.of(
                 obj("materialType", "Tela", "quantityKg", 90, "finalProduct", true)))).andExpect(status().isOk())).path("outputs").get(0);
     }
-
-    // ---- repetición idempotente ----
 
     @Test
     void repeatingACommandReturnsTheSameResponseWithoutChangingAnythingOrPublishing() throws Exception {
@@ -219,7 +202,6 @@ class InternalPhaseTransitionApiIT extends ApiTestBase {
         JsonNode first = ok(internalCommand(batch, phaseCommand("START_EVALUATION", "ctl-1")));
         internalCommand(batch, phaseCommand("RELEASE", "ctl-1", false, null)).andExpect(status().isOk());
         internalCommand(batch, phaseCommand("DISCARD", "ctl-1")).andExpect(status().isOk());
-        // y la empresa se inactiva: START_EVALUATION ya no se aceptaría
         jdbc.sql("UPDATE company_projection SET status = 'INACTIVE' WHERE company_id = :c").param("c", COMPANY_A).update();
         long events = eventsOf(batch);
 
@@ -250,7 +232,7 @@ class InternalPhaseTransitionApiIT extends ApiTestBase {
 
         JsonNode second = ok(internalCommand(batch, phaseCommand("HOLD", "f-2")));
         JsonNode unheld = ok(internalCommand(batch, phaseCommand("RELEASE_HOLD", "f-1")));
-        ok(internalCommand(batch, phaseCommand("RELEASE_HOLD", "f-3")));          // ya estaba libre: sin cambio
+        ok(internalCommand(batch, phaseCommand("RELEASE_HOLD", "f-3")));
         JsonNode replayOfFirstHold = ok(internalCommand(batch, phaseCommand("HOLD", "f-1")));
 
         assertThat(second.path("qualityHold").asBoolean()).isTrue();
@@ -259,8 +241,6 @@ class InternalPhaseTransitionApiIT extends ApiTestBase {
         assertThat(eventsOf(batch)).as("solo el HOLD inicial y el RELEASE_HOLD que sí cambió").isEqualTo(events + 1);
         assertThat(count("SELECT count(*) FROM phase_command_log WHERE batch_id = ?", batch)).isEqualTo(4);
     }
-
-    // ---- empresa inactiva (RF-003): solo START_EVALUATION se bloquea ----
 
     @Test
     void anInactiveCompanyIsBlockedOnlyForStartEvaluation() throws Exception {
@@ -274,7 +254,7 @@ class InternalPhaseTransitionApiIT extends ApiTestBase {
                 .isEqualTo("COMPANY_INACTIVE");
         assertThat(phaseOf(available)).isEqualTo("AVAILABLE");
 
-        ok(internalCommand(inControl, phaseCommand("RELEASE", "ctl-1", true, null)));        // el lote no queda atrapado
+        ok(internalCommand(inControl, phaseCommand("RELEASE", "ctl-1", true, null)));
         ok(internalCommand(inControl, phaseCommand("RELEASE_HOLD", "fail-1")));
         ok(internalCommand(available, phaseCommand("HOLD", "derived-1")));
         ok(internalCommand(toDiscard, phaseCommand("DISCARD", "ctl-3")));
@@ -294,15 +274,12 @@ class InternalPhaseTransitionApiIT extends ApiTestBase {
         ok(internalCommand(batch, phaseCommand("DISCARD", "ctl-2")));
     }
 
-    // ---- carrera no resuelta: 503, nunca 409 ----
-
     @Test
     void aVersionConflictWithAnotherOperationIsAbsorbedByTheInternalRetry() throws Exception {
         UUID batch = idOf(registerBatch(10));
         AtomicInteger saves = new AtomicInteger();
         doAnswer(invocation -> {
             if (saves.getAndIncrement() == 0) {
-                // otra operación modifica el lote y confirma entre la lectura y el guardado de este comando
                 CompletableFuture.runAsync(() -> jdbc.sql("UPDATE batches SET version = version + 1 WHERE id = :id").param("id", batch).update()).join();
             }
             return invocation.callRealMethod();

@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Ejecuta {@code infra/scripts/generate-jwt-keys.sh} contra una copia temporal de {@code .env.example} (nunca toca el .env real). */
 class GenerateJwtKeysScriptTest {
 
     private static final Path SCRIPT = Path.of("..", "infra", "scripts", "generate-jwt-keys.sh").toAbsolutePath().normalize();
@@ -183,7 +182,7 @@ class GenerateJwtKeysScriptTest {
         Path env = freshEnv();
 
         assertThat(exitCodeWithTmpdir(env, scratch)).isZero();
-        assertThat(exitCodeWithTmpdir(env, scratch)).isNotZero();   // el segundo se niega: el par ya existe
+        assertThat(exitCodeWithTmpdir(env, scratch)).isNotZero();
 
         try (var entries = Files.list(scratch)) {
             assertThat(entries.toList()).as("el directorio temporal con las claves debe borrarse").isEmpty();

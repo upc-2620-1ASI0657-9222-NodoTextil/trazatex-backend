@@ -18,7 +18,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-/** (a) Un tópico que existe pero está vacío (sistema recién instalado) deja al Gateway listo sin esperar ningún mensaje. */
 @Import(RevocationLogCapture.class)
 class UserRevocationEmptyTopicIT extends RevocationItSupport {
 

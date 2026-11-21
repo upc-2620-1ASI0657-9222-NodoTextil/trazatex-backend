@@ -26,20 +26,12 @@ import java.util.function.IntFunction;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * El grafo final es el mismo en cualquier orden de llegada y con eventos repetidos (docs/domain/traceability.md, "Orden de
- * llegada"). Kafka solo conserva el orden de una clave dentro de un tópico, así que cada (tópico, clave) es un flujo ordenado y
- * los flujos se mezclan sin orden entre sí: se recorren <b>todas</b> las mezclas del caso pequeño y una muestra de semilla fija
- * del grande, con reentregas intercaladas, y cada resultado se compara con el grafo escrito a mano.
- */
 class LineageOrderIT extends IntegrationTestBase {
 
-    /** Semilla fija: cualquier fallo se reproduce. */
     private static final long SEED = 20261021L;
     private static final int WORKERS = 4;
     private static final int LARGE_SAMPLES = Integer.getInteger("trazatex.order.large-samples", 1500);
     private static final int FREE_SAMPLES = Integer.getInteger("trazatex.order.free-samples", 2000);
-    /** Para medir sin esperar toda la corrida: 0 = todas las mezclas. */
     private static final int EXHAUSTIVE_LIMIT = Integer.getInteger("trazatex.order.exhaustive-limit", 0);
 
     @Autowired
@@ -66,12 +58,9 @@ class LineageOrderIT extends IntegrationTestBase {
         beans = new OrderScenario.Beans(handler, register, split, transformation, phase, transfer, quality, privacy);
     }
 
-    // ---- una corrida ----
-
     private record Failure(int run, String order, String problem) {
     }
 
-    /** Aplica los eventos en ese orden y compara el grafo con el esperado; limpia sus nodos al terminar. Nunca lanza. */
     private Failure runOnce(int run, OrderScenario.Instance instance, int[] order) {
         try {
             for (int index : order) {
@@ -105,7 +94,6 @@ class LineageOrderIT extends IntegrationTestBase {
                 .bind(instance.eventIds().stream().map(Object::toString).toList()).to("ids").run();
     }
 
-    /** Ejecuta las corridas en paralelo (cada una con ids propios) y falla mostrando las primeras que no den el grafo esperado. */
     private void runAll(String title, int runs, IntFunction<OrderScenario.Instance> scenario, IntFunction<int[]> orderOf) throws Exception {
         long start = System.nanoTime();
         Queue<Failure> failures = new ConcurrentLinkedQueue<>();
@@ -137,8 +125,6 @@ class LineageOrderIT extends IntegrationTestBase {
                 .extracting(failure -> "corrida " + failure.run() + ": " + failure.order() + "\n  " + failure.problem()).isEmpty();
     }
 
-    // ---- el caso pequeño: TODAS las mezclas ----
-
     @Test
     void everyInterleavingOfTheSmallCaseGivesTheSameGraphEvenWithRepeatedDeliveries() throws Exception {
         OrderScenario.Instance sample = OrderScenario.small(0, beans);
@@ -154,13 +140,10 @@ class LineageOrderIT extends IntegrationTestBase {
     void theSmallCaseHasTheNumberOfInterleavingsTheFlowsImply() {
         OrderScenario.Instance sample = OrderScenario.small(0, beans);
 
-        // 8! / (3! 2! 1! 1! 1!) = 3360
         assertThat(sample.streamNames()).containsExactly("batch/L1", "batch/H1", "batch/H2", "transformation/T1", "transfer/TR1");
         assertThat(sample.streamLengths()).containsExactly(3, 2, 1, 1, 1);
         assertThat(Interleavings.all(sample.streamLengths())).hasSize(3360).doesNotHaveDuplicates();
     }
-
-    // ---- el caso grande: muestra de semilla fija ----
 
     @Test
     void randomInterleavingsOfTheLargeCaseGiveTheSameGraphEvenWithRepeatedDeliveries() throws Exception {
@@ -171,8 +154,6 @@ class LineageOrderIT extends IntegrationTestBase {
             return Interleavings.withDuplicates(Interleavings.random(sample.streamLengths(), random), 4, random);
         });
     }
-
-    // ---- adicional: sin respetar ni el orden de cada flujo ----
 
     @Test
     void evenFreePermutationsThatBreakTheOrderOfEachStreamGiveTheSameGraphOfTheSmallCase() throws Exception {
@@ -193,7 +174,6 @@ class LineageOrderIT extends IntegrationTestBase {
             int[] order = Interleavings.freePermutation(n, Interleavings.seeded(SEED * 17, run));
             distinct.add(java.util.Arrays.toString(order));
             List<Integer> positions = java.util.Arrays.stream(order).boxed().toList();
-            // eventos 3 y 4 = los dos cambios de fase de H1: v1 y v2
             if (positions.indexOf(4) < positions.indexOf(3)) {
                 newerBeforeOlder++;
             }
@@ -202,8 +182,6 @@ class LineageOrderIT extends IntegrationTestBase {
         assertThat(newerBeforeOlder).as("la versión nueva antes que la vieja debe ocurrir en cerca de la mitad de las corridas")
                 .isBetween(140, 260);
     }
-
-    // ---- órdenes con nombre: los casos difíciles, legibles ----
 
     private void assertOrder(String... eventNames) {
         OrderScenario.Instance instance = OrderScenario.small(900_000 + Math.abs(String.join("|", eventNames).hashCode() % 90_000), beans);

@@ -4,7 +4,6 @@ import com.nodotextil.trazatex.sharedkernel.exception.ForbiddenException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;
 
-/** Quién llama, según las cabeceras que inyecta el Gateway. Sin ellas, o inválidas, es {@code 401 AUTHENTICATION_REQUIRED}. */
 public record RequestActor(UUID userId, UUID companyId, String role) {
     public static RequestActor from(HttpServletRequest request) {
         try {

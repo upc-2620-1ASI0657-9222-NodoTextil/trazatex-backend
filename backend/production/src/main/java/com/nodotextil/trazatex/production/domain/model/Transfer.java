@@ -13,12 +13,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * Transferencia de lotes completos a otra empresa (US21, US22). La inicia un operario de la empresa de origen
- * (lotes → {@code IN_TRANSFER}, transferencia {@code PENDING}); la resuelve un administrador de la empresa destino:
- * al aceptar, los lotes pasan a ella {@code AVAILABLE} con los mismos Traceability ID y QR; al rechazar (con motivo),
- * vuelven {@code AVAILABLE} a la de origen.
- */
 public final class Transfer {
 
     private final UUID id;
@@ -46,19 +40,11 @@ public final class Transfer {
         this.resolvedBy = resolvedBy;
     }
 
-    /**
-     * Inicia la transferencia (US21). Los lotes (uno o más, completos por naturaleza: no hay cantidad parcial) deben ser
-     * de la empresa de origen y estar habilitados; el destino, otra empresa {@code ACTIVE}.
-     */
     public static Transfer initiate(UUID id, UUID originCompanyId, CompanyProjection target, List<Batch> batches,
                                     UUID initiatedBy, Instant now) {
         return initiate(id, originCompanyId, target, batches, Map.of(), initiatedBy, now);
     }
 
-    /**
-     * @param requestedQuantities lo que el usuario dijo que quería transferir de cada lote (puede estar vacío): si alguna difiere de
-     *                            la cantidad del lote, es una transferencia parcial y se rechaza (400) antes de cambiar nada
-     */
     public static Transfer initiate(UUID id, UUID originCompanyId, CompanyProjection target, List<Batch> batches,
                                     Map<UUID, Quantity> requestedQuantities, UUID initiatedBy, Instant now) {
         if (batches == null || batches.isEmpty()) {
@@ -101,7 +87,6 @@ public final class Transfer {
                 rejectionReason, initiatedBy, resolvedBy);
     }
 
-    /** US22 esc. 1: registra la recepción y pasa la responsabilidad de los lotes a la empresa destino. */
     public void accept(UUID actingCompanyId, List<Batch> batches, UUID resolvedBy, Instant now) {
         ensureResolvable(actingCompanyId, batches);
         batches.forEach(batch -> batch.acceptTransfer(targetCompanyId));
@@ -110,7 +95,6 @@ public final class Transfer {
         this.resolvedBy = resolvedBy;
     }
 
-    /** US22 esc. 2: el motivo es obligatorio; los lotes vuelven {@code AVAILABLE} a la empresa de origen. */
     public void reject(UUID actingCompanyId, List<Batch> batches, String reason, UUID resolvedBy, Instant now) {
         ensureResolvable(actingCompanyId, batches);
         if (reason == null || reason.isBlank()) {
@@ -163,12 +147,10 @@ public final class Transfer {
         return departureTime;
     }
 
-    /** Momento de la resolución (aceptación o rechazo); {@code null} mientras esté pendiente. */
     public Instant resolvedAt() {
         return resolvedAt;
     }
 
-    /** Fecha y hora de recepción: solo si fue aceptada. */
     public Instant receptionTime() {
         return status == TransferStatus.ACCEPTED ? resolvedAt : null;
     }

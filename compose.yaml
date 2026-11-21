@@ -231,8 +231,6 @@ services:
     build: { context: ., dockerfile: backend/infra/platform/backend.Dockerfile, args: { MODULE: api-gateway } }
     environment:
       <<: *management
-      # M8: el gateway solo es alcanzable por el Nginx de `web` (no se publica en el host), así que la IP de conexión es siempre la de Nginx:
-      # sin esto todos los clientes comparten un solo cubo. Nginx fija X-Forwarded-For con la IP real (web.nginx.conf) y es el único salto.
       TRAZATEX_RATE_LIMIT_TRUST_FORWARDED_FOR: ${TRAZATEX_RATE_LIMIT_TRUST_FORWARDED_FOR:-true}
       TRAZATEX_RATE_LIMIT_TRUSTED_HOPS: ${TRAZATEX_RATE_LIMIT_TRUSTED_HOPS:-1}
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
@@ -270,7 +268,6 @@ services:
   landing:
     container_name: "${TRAZATEX_CONTAINER_PREFIX:-trazatex}-landing-1"
     restart: unless-stopped
-    # El enlace «Ir al login» sale de VITE_APP_URL en la compilación: la misma variable que el CORS del gateway (TRAZATEX_FRONTEND_URL).
     build:
       context: .
       dockerfile: backend/infra/platform/landing.Dockerfile

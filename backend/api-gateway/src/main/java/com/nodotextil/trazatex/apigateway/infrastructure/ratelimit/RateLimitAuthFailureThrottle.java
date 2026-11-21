@@ -10,15 +10,6 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 
 import java.util.Optional;
 
-/**
- * Cubo por IP de las peticiones sin credencial válida. Solo cuentan {@code MISSING_TOKEN} e {@code INVALID_TOKEN}: ahí no hay
- * ninguna identidad genuina detrás (sin token, o uno que no firmó organization-access). {@code TOKEN_EXPIRED} y
- * {@code USER_INACTIVE} traen una firma válida: son usuarios reales con la sesión vencida o la cuenta inactivada, y al terminar
- * un turno puede haber decenas detrás de la misma IP de la planta; no son un ataque ni deben agotar este cubo.
- *
- * <p>Una petición con token válido nunca pasa por aquí: un tercero que inunde de basura desde la IP de la planta no bloquea a sus
- * operarios.
- */
 public class RateLimitAuthFailureThrottle implements AuthFailureThrottle {
 
     private final RateLimitUseCase rateLimit;

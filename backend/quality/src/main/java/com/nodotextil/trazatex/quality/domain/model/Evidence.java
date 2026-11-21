@@ -5,11 +5,6 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * Una foto adjunta a un control o a una falla de calidad (US43). Nace {@code UPLOADED} (ya está en Cloudinary) o {@code PENDING} (sus
- * bytes esperan en la cola local). Los intentos de subida de un job solo suman cuando el servicio respondió mal; un circuito abierto
- * o una configuración ausente no consumen intentos.
- */
 public final class Evidence {
 
     private final UUID id;
@@ -48,14 +43,12 @@ public final class Evidence {
         this.lastError = lastError;
     }
 
-    /** Ya subida a Cloudinary durante la petición. */
     public static Evidence uploaded(UUID id, EvidenceOwnerType ownerType, UUID ownerId, UUID companyId, String originalFilename,
                                     ImageFormat format, long sizeBytes, UUID uploadedBy, String url, Instant now) {
         return new Evidence(id, ownerType, ownerId, companyId, EvidenceStatus.UPLOADED, Objects.requireNonNull(url, "url"),
                 originalFilename, format.contentType(), sizeBytes, uploadedBy, now, now, 0, null, null);
     }
 
-    /** Cloudinary no respondió: queda en la cola para que un job la suba. {@code lastError} explica por qué no se subió ya. */
     public static Evidence pending(UUID id, EvidenceOwnerType ownerType, UUID ownerId, UUID companyId, String originalFilename,
                                    ImageFormat format, long sizeBytes, UUID uploadedBy, Instant now, Duration firstDelay,
                                    String lastError) {
@@ -70,7 +63,6 @@ public final class Evidence {
                 createdAt, uploadedAt, attempts, nextAttemptAt, lastError);
     }
 
-    /** La subida terminó (Cloudinary respondió 2xx con la URL): ya no necesita la cola. */
     public void markUploaded(String url, Instant now) {
         this.status = EvidenceStatus.UPLOADED;
         this.url = Objects.requireNonNull(url, "url");
@@ -79,7 +71,6 @@ public final class Evidence {
         this.lastError = null;
     }
 
-    /** Cloudinary respondió mal (timeout, 5xx...): suma un intento y reprograma, o pasa a {@code FAILED} al agotar los intentos. */
     public void recordTransientFailure(String error, Instant now, EvidenceRetryPolicy policy) {
         this.attempts++;
         this.lastError = error;
@@ -91,7 +82,6 @@ public final class Evidence {
         }
     }
 
-    /** Cloudinary rechazó el archivo (no es una imagen válida): reintentar no lo arregla. Los bytes se conservan. */
     public void recordPermanentFailure(String error) {
         this.attempts++;
         this.status = EvidenceStatus.FAILED;
@@ -99,7 +89,6 @@ public final class Evidence {
         this.nextAttemptAt = null;
     }
 
-    /** No se llegó a intentar (circuito abierto o Cloudinary sin configurar): no suma intentos. */
     public void deferWithoutAttempt(String reason, Instant until) {
         this.lastError = reason;
         this.nextAttemptAt = until;

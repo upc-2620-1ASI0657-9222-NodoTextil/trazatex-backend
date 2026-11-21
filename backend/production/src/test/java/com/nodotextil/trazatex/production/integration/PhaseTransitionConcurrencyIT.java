@@ -24,13 +24,6 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Concurrencia real (hilos contra PostgreSQL) del comando interno de Quality con <b>bloqueo optimista</b>. Un 409 es solo un rechazo
- * de negocio —Quality cancela el control cuando lo recibe—, así que ninguna carrera puede terminar en 409
- * {@code CONCURRENT_MODIFICATION}: la transacción se reintenta dentro y, si la carrera persiste, la respuesta es 503
- * ({@code TEMPORARILY_UNAVAILABLE}), que Quality reintenta con el mismo {@code requestId}. Los perdedores de una carrera de
- * negocio reciben el conflicto del dominio ({@code INVALID_PHASE_TRANSITION}).
- */
 class PhaseTransitionConcurrencyIT extends ApiTestBase {
 
     @Autowired
@@ -90,8 +83,6 @@ class PhaseTransitionConcurrencyIT extends ApiTestBase {
         return count("SELECT count(*) FROM phase_command_log WHERE batch_id = ?", batch);
     }
 
-    // ---- comandos idénticos simultáneos ----
-
     @RepeatedTest(6)
     void eightIdenticalStartEvaluationsApplyOnceAndAnswerTheSameToAll() throws Exception {
         UUID batch = idOf(registerBatch(10));
@@ -120,7 +111,6 @@ class PhaseTransitionConcurrencyIT extends ApiTestBase {
         assertThat(phaseEvents(batch)).isEqualTo(1);
     }
 
-    /** Sin cambio no hay escritura del lote ni conflicto de versión: la barrera es la clave primaria de phase_command_log. */
     @RepeatedTest(6)
     void eightIdenticalHoldsThatChangeNothingAreAllAnsweredAndRecordedOnce() throws Exception {
         UUID batch = idOf(registerBatch(10));
@@ -149,8 +139,6 @@ class PhaseTransitionConcurrencyIT extends ApiTestBase {
         assertThat(phaseEvents(batch)).as("solo uno cambió la retención").isEqualTo(1);
         assertThat(logRows(batch)).as("pero los ocho comandos quedan registrados").isEqualTo(8);
     }
-
-    // ---- carreras de negocio: el perdedor recibe el conflicto del dominio ----
 
     @RepeatedTest(6)
     void startEvaluationAndHoldRacingAreAlwaysConsistent() throws Exception {
@@ -213,13 +201,6 @@ class PhaseTransitionConcurrencyIT extends ApiTestBase {
         assertThat(phaseEvents(batch)).isEqualTo(1);
     }
 
-    // ---- contra QualityStatusChanged (que lee sin bloqueo y guarda con @Version) ----
-
-    /**
-     * Presión máxima sobre una sola fila: 12 comandos que SÍ cambian el lote más un flujo de 40 actualizaciones de calidad. Un
-     * comando puede perder todas las rondas y recibir 503 (nunca 409 ni 500): entonces Quality repite el comando con el mismo
-     * requestId, y aquí se hace igual. Lo que no puede pasar es una respuesta que no sea 200 o 503, ni un evento que no sea un cambio real.
-     */
     @Test
     void commandsRacingWithQualityStatusUpdatesEndInAnswersQualityCanActOnAndEveryEventIsARealChange() throws Exception {
         UUID batch = idOf(registerBatch(10));
@@ -235,7 +216,6 @@ class PhaseTransitionConcurrencyIT extends ApiTestBase {
                         qualityStatus.apply(batch, COMPANY_A, statuses[i % statuses.length], UUID.randomUUID());
                         break;
                     } catch (org.springframework.dao.OptimisticLockingFailureException conflict) {
-                        // el consumidor real reintenta con espera creciente
                     }
                 }
             }
@@ -246,7 +226,6 @@ class PhaseTransitionConcurrencyIT extends ApiTestBase {
             String requestId = "k-" + i;
             Object body = phaseCommand(i % 2 == 0 ? "HOLD" : "RELEASE_HOLD", requestId);
             tasks.add(() -> {
-                // Quality: con 503 repite el mismo comando (mismo requestId)
                 MvcResult result = internalCommand(batch, body).andReturn();
                 for (int retry = 0; retry < 20 && result.getResponse().getStatus() == 503; retry++) {
                     assertThat(result.getResponse().getHeader("Retry-After")).isEqualTo("1");
@@ -272,8 +251,6 @@ class PhaseTransitionConcurrencyIT extends ApiTestBase {
         assertThat(finalHold).as("el estado final es el del último cambio real").isEqualTo(!holds.isEmpty() && holds.get(holds.size() - 1));
         assertThat(logRows(batch)).as("los 12 comandos quedan registrados, cada uno una vez").isEqualTo(12);
     }
-
-    // ---- una operación del usuario con el lote en FOR UPDATE ----
 
     @Test
     void aLockHeldByAUserOperationMakesTheCommandAnswer503BeforeQualityGivesUpAndTheSameRequestIdWorksAfterwards() throws Exception {

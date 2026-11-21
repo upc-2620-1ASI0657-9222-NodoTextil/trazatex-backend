@@ -9,13 +9,6 @@ import org.springframework.stereotype.Component;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * RF-003: una empresa {@code INACTIVE} no inicia nuevas operaciones productivas (409 {@code COMPANY_INACTIVE}). Se exige
- * en las que inician trabajo o incorporan material (registrar, dividir, iniciar transformación o transferencia, aceptar
- * una transferencia entrante) y <b>no</b> en las que cierran trabajo ya iniciado (finalizar una transformación, rechazar
- * una transferencia entrante), para que ningún lote quede atascado. Una empresa que aún no está en la proyección
- * (evento sin consumir) se trata como desconocida: 409 {@code COMPANY_UNKNOWN}.
- */
 @Component
 class CompanyGuard {
 

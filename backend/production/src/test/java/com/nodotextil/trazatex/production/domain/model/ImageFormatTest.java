@@ -33,11 +33,11 @@ class ImageFormatTest {
                 "<svg xmlns=\"http://www.w3.org/2000/svg\"/>".getBytes(StandardCharsets.UTF_8),
                 "GIF89a....".getBytes(StandardCharsets.UTF_8),
                 "%PDF-1.7".getBytes(StandardCharsets.UTF_8),
-                new byte[]{0x42, 0x4D, 0, 0, 0, 0},                                   // BMP
-                new byte[]{(byte) 0xFF, (byte) 0xD8},                                   // JPEG truncado antes del tercer byte
-                new byte[]{(byte) 0x89, 'P', 'N', 'G'},                                 // PNG sin la firma completa
-                new byte[]{'R', 'I', 'F', 'F', 0, 0, 0, 0, 'W', 'A', 'V', 'E'},         // RIFF, pero un WAV
-                new byte[]{'R', 'I', 'F', 'F', 0, 0, 0, 0, 'W', 'E', 'B'},              // WebP truncado
+                new byte[]{0x42, 0x4D, 0, 0, 0, 0},
+                new byte[]{(byte) 0xFF, (byte) 0xD8},
+                new byte[]{(byte) 0x89, 'P', 'N', 'G'},
+                new byte[]{'R', 'I', 'F', 'F', 0, 0, 0, 0, 'W', 'A', 'V', 'E'},
+                new byte[]{'R', 'I', 'F', 'F', 0, 0, 0, 0, 'W', 'E', 'B'},
                 new byte[0]);
     }
 

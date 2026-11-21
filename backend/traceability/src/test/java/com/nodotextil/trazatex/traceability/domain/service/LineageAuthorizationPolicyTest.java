@@ -35,17 +35,12 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * La política de privacidad B2B (ADR-006, RNF-07): lo de la propia empresa sale completo; de otra empresa, solo lo siempre compartido y
- * lo que esa empresa marcó {@code SHARED}; {@code qualityHold} solo para la dueña; las aristas y el historial de transferencias siempre.
- */
 class LineageAuthorizationPolicyTest {
 
     private static final UUID MINE = UUID.fromString("00000000-0000-0000-0000-0000000000a1");
     private static final UUID OTHER = UUID.fromString("00000000-0000-0000-0000-0000000000b2");
     private static final Instant T0 = Instant.parse("2026-10-21T10:00:00Z");
 
-    /** Un lote con todos sus datos; su nombre libre ({@code name}) es {@code "Lote <name>"}. */
     private static BatchData batch(String name, UUID company, boolean hold) {
         return new BatchData(UUID.nameUUIDFromBytes(name.getBytes()), "TT-" + name, "QR-" + name, company, "Algodón", BatchPhase.AVAILABLE, QualityStatus.CONFORMING,
                 hold, false, T0, "Textiles del Norte", "Piura", new BigDecimal("12.500"), List.of(new CompositionComponent("Algodón", new BigDecimal("100"))),
@@ -75,8 +70,6 @@ class LineageAuthorizationPolicyTest {
     private static VisibleBatch only(VisibleLineage view) {
         return (VisibleBatch) view.nodes().get(0);
     }
-
-    // ---- lotes ----
 
     @Test
     void qualityValuesAndFailureCauseRespectTheirSeparatePrivacySettings() {
@@ -140,7 +133,6 @@ class LineageAuthorizationPolicyTest {
         assertThat(seen.name()).as("name es texto libre: solo la dueña").isNull();
     }
 
-    /** Cada campo configurable destapa exactamente sus datos y ningún otro. */
     @ParameterizedTest
     @EnumSource(ConfigurableField.class)
     void eachConfigurableFieldRevealsExactlyItsOwnDataOfAnotherCompanysBatchAndTransformation(ConfigurableField field) {
@@ -169,7 +161,7 @@ class LineageAuthorizationPolicyTest {
             case QUANTITY -> Set.of("quantityKg");
             case COMPOSITION -> Set.of("composition");
             case RECEPTION_CHARACTERISTICS -> Set.of("receptionCharacteristics");
-            default -> Set.of(); // MACHINERY, SHRINKAGE, WASTE, WASTE_REASON, FAILURE_CAUSE y QUALITY_TEST_VALUES no son del lote
+            default -> Set.of();
         }).as("ningún campo configurable destapa name").doesNotContain("name");
         assertThat(revealedInTransformation).isEqualTo(switch (field) {
             case MACHINERY -> Set.of("machineName", "machineType");
@@ -201,14 +193,11 @@ class LineageAuthorizationPolicyTest {
         assertThat(seen.name()).as("compartir todo tampoco destapa name").isNull();
     }
 
-    // ---- name: el nombre libre del lote, solo para la empresa dueña (OWN) ----
-
     private static VisibleBatch node(VisibleLineage view, BatchData batch) {
         return view.nodes().stream().filter(VisibleBatch.class::isInstance).map(VisibleBatch.class::cast)
                 .filter(b -> b.id().equals(batch.batchId())).findFirst().orElseThrow();
     }
 
-    /** Vista hacia atrás, hacia adelante y completa: OWN lo ve; SHARED no, ni sin configuración (privado) ni compartiendo todos los configurables. */
     @ParameterizedTest
     @EnumSource(LineageDirection.class)
     void theBatchNameIsVisibleOnlyToItsOwnerInEveryDirection(LineageDirection direction) {
@@ -248,8 +237,6 @@ class LineageAuthorizationPolicyTest {
         assertThat(seen.supplierName()).isNotNull();
         assertThat(seen.qualityHold()).isFalse();
     }
-
-    // ---- transformaciones, aristas e historial ----
 
     @Test
     void aTransformationOfAnotherCompanyKeepsItsTypeAndDatesButHidesTheMachineAndTheLosses() {
@@ -318,8 +305,6 @@ class LineageAuthorizationPolicyTest {
         assertThat(view.maxLevels()).isEqualTo(10);
         assertThat(view.nodes().stream().map(n -> n.level()).collect(Collectors.toList())).containsExactly(0);
     }
-
-    // ---- resúmenes de búsqueda ----
 
     @Test
     void aSearchResultHasTheSharedFieldsAndTheAccessAndNeverTheConfigurableOnesOrTheHold() {

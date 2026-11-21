@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Objects;
 
-/** Un componente de la composición de un lote (material y porcentaje, a 2 decimales como en Production). */
 public record CompositionComponent(String name, BigDecimal percentage) {
 
     public CompositionComponent {

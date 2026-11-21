@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { DomSanitizer } from '@angular/platform-browser';
 import { inject } from '@angular/core';
 
-                                                                            
 const PATHS: Record<string, string> = {
   trace: '<path d="M12 8A3 3 0 1 1 12 2A3 3 0 0 1 12 8V12H5V16A3 3 0 1 0 5 22A3 3 0 0 0 5 16V12H19V16A3 3 0 1 1 19 22A3 3 0 0 1 19 16"/>',
   lot: '<path d="M5 5Q3 5 3 7V18Q3 20 5 20H19Q21 20 21 18V7Q21 5 19 5H5V9H16Q18 9 18 11Q18 13 16 13H8Q6 13 6 15Q6 17 8 17H19V20"/>',
@@ -32,6 +31,7 @@ const PATHS: Record<string, string> = {
   lock: '<path d="M8 11V7A4 4 0 0 1 16 7V11H18Q20 11 20 13V19Q20 21 18 21H6Q4 21 4 19V13Q4 11 6 11H8H12V16A1.5 1.5 0 1 1 12 19V16"/>',
   camera: '<path d="M8 7L10 4H14L16 7H20Q22 7 22 9V19Q22 21 20 21H4Q2 21 2 19V9Q2 7 4 7H8L12 9A4 4 0 1 1 8 13A4 4 0 0 1 12 9"/>',
   check: '<path d="M4 12L8 16Q9 17 10 16L20 6"/>',
+  copy: '<path d="M8 8V5Q8 3 10 3H19Q21 3 21 5V14Q21 16 19 16H16M5 8H14Q16 8 16 10V19Q16 21 14 21H5Q3 21 3 19V10Q3 8 5 8"/>',
   filter: '<path d="M3 4H21L14 13V19L10 21V13L3 4"/>',
   menu: '<path d="M3 6H21Q23 6 23 9Q23 12 21 12H3Q1 12 1 15Q1 18 3 18H21"/>',
   download: '<path d="M12 3V15L7 10L12 15L17 10L12 15V20H4V17V20H20V17"/>',

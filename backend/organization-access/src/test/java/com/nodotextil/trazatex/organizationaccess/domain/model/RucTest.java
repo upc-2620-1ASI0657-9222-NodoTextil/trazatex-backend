@@ -15,7 +15,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class RucTest {
 
-    /** Semilla fija: los casos son aleatorios pero idénticos en cada corrida, así que cualquier fallo se reproduce. */
     private static final long SEED = 20261019L;
     private static final int CASES = 1000;
 
@@ -74,7 +73,6 @@ class RucTest {
         assertThat(Ruc.isValid(prefix + Ruc.checkDigitFor(prefix))).isTrue();
     }
 
-    /** Los 10 primeros dígitos de un RUC con prefijo válido: los extremos más {@value #CASES} cuerpos al azar con semilla fija. */
     static Stream<String> randomTenDigitPrefixes() {
         Random random = new Random(SEED);
         String[] prefixes = Ruc.VALID_PREFIXES.stream().sorted().toArray(String[]::new);

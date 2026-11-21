@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Las empresas activas a las que se puede transferir, paginadas. Solo llama al caso de uso (regla 5 de CLAUDE.md). */
 @RestController
 class TransferRecipientController {
 

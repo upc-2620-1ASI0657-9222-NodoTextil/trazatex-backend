@@ -18,14 +18,8 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * US30, US31 y US32 — consultar genealogías (RF-054 a RF-056). El grafo se arma como en US29: los pasos hacen de Production y de Organization &amp; Access y
- * publican sus eventos en los tópicos de Kafka (con el sobre y el payload del catálogo) y esperan a que traceability los procese. La consulta es la de un
- * usuario de verdad: una petición a la API con las cabeceras de identidad que inyecta el Gateway. Lo que se comprueba es la respuesta JSON.
- */
 public class QuerySteps {
 
-    /** Lo que solo ve la empresa dueña del lote (o la que lo compartió): nunca debe estar en un nodo de otra empresa. */
     private static final List<String> PRIVATE_BATCH_FIELDS = List.of("supplierName", "origin", "quantityKg", "composition", "receptionCharacteristics", "qualityHold",
             "transferHistory");
     private static final List<String> PRIVATE_TRANSFORMATION_FIELDS = List.of("machineName", "machineType", "shrinkageKg", "wasteKg", "wasteReason");
@@ -39,8 +33,6 @@ public class QuerySteps {
         this.platform = platform;
         this.api = api;
     }
-
-    // ---- el grafo, por eventos ----
 
     private UUID id(String name) {
         return world.ids.computeIfAbsent(name, key -> UUID.randomUUID());
@@ -79,8 +71,6 @@ public class QuerySteps {
 
     private static final String ROOT = "/api/traceability";
 
-    // ---- lo que dice la respuesta ----
-
     private JsonNode body() {
         assertThat(world.reply.status()).as("la API respondió %s: %s", world.reply.status(), world.reply.body()).isEqualTo(200);
         return world.reply.body();
@@ -117,7 +107,6 @@ public class QuerySteps {
         throw new AssertionError("«" + name + "» no está en la respuesta: " + body().get("nodes"));
     }
 
-    /** Las relaciones de la respuesta como {@code TIPO origen>destino} (por nombre), ordenadas. */
     private Set<String> edges() {
         Map<UUID, String> names = new TreeMap<>();
         world.ids.forEach((name, uuid) -> names.put(uuid, name));
@@ -133,11 +122,8 @@ public class QuerySteps {
         expected.forEach((name, level) -> assertThat(node(name).get("level").asInt()).as("nivel de %s", name).isEqualTo(level));
     }
 
-    // ==== US30 — Buscar genealogías ====
-
     @Dado("^que existen genealogías registradas$")
     public void genealogiesAreRegistered() {
-        // la de la empresa A: un lote dividido en dos; otro lote suyo sin relación con ese prefijo; y un lote de la empresa B que comparte el prefijo
         register("7A0001", world.companyA, "Textiles del Norte", "Piura");
         split("7A0001", world.companyA, "Textiles del Norte", "Piura", "7A0002", "7A0003");
         register("9B0001", world.companyA, "Textiles del Norte", "Piura");
@@ -146,7 +132,6 @@ public class QuerySteps {
 
     @Cuando("^el usuario realiza una búsqueda$")
     public void theUserSearches() {
-        // un operario de la empresa A teclea el prefijo a mano, en minúsculas
         world.reply = api.get(ROOT + "/lineages?traceabilityId=tt-7a00", world.companyA);
     }
 
@@ -178,7 +163,6 @@ public class QuerySteps {
             assertThat(start.get("id").asString()).isEqualTo(item.get("batchId").asString());
             assertThat(start.get("access").asString()).isEqualTo("OWN");
         }
-        // y también la de otra empresa, que se encuentra por su QR: se abre, pero solo muestra lo siempre compartido
         Api.Reply foreignSearch = api.get(ROOT + "/lineages?qrCode=" + qr("7A00F1"), world.companyA);
         assertThat(foreignSearch.body().get("items")).hasSize(1);
         assertThat(foreignSearch.body().get("items").get(0).get("access").asString()).isEqualTo("SHARED");
@@ -190,11 +174,8 @@ public class QuerySteps {
         assertThat(foreignOpened.body().toString()).doesNotContain("Proveedor secreto de B", "Origen secreto de B");
     }
 
-    // ==== US31 — Consultar trazabilidad hacia atrás ====
-
     @Dado("^que existe un lote con antecedentes registrados$")
     public void aBatchWithAntecedentsIsRegistered() {
-        // La empresa B hila dos lotes en uno (B3), que transfiere a la empresa A; A lo mezcla con un lote suyo y obtiene Z
         register("B1", world.companyB, "Proveedor secreto de B", "Origen secreto de B");
         register("B2", world.companyB, "Proveedor secreto de B", "Origen secreto de B");
         transform("TB", world.companyB, "Cardadora secreta de B", List.of("B1", "B2"), "B3", "Proveedor secreto de B");
@@ -223,7 +204,6 @@ public class QuerySteps {
 
     @Y("^respeta las reglas de privacidad de las empresas involucradas\\.$")
     public void thePrivacyRulesOfTheCompaniesInvolvedAreRespected() {
-        // Z, A1 y TA son de A; B3 se transfirió a A y también es de A: los ve completos. B1, B2 y TB siguen siendo de B: solo lo siempre compartido
         for (String own : List.of("Z", "A1", "B3")) {
             JsonNode node = node(own);
             assertThat(node.get("access").asString()).as("%s es de la empresa que consulta", own).isEqualTo("OWN");
@@ -252,11 +232,8 @@ public class QuerySteps {
         assertThat(world.reply.cacheControl()).as("la respuesta depende de quien consulta").isEqualTo("no-store");
     }
 
-    // ==== US32 — Consultar trazabilidad hacia adelante ====
-
     @Dado("^que existe un lote con descendientes registrados$")
     public void aBatchWithDescendantsIsRegistered() {
-        // R se divide en S1 y S2; S1 se mezcla con X (otro lote, que no deriva de R) y da U; S2 se divide en V1 y V2
         register("R", world.companyA, "Textiles del Norte", "Piura");
         register("X", world.companyA, "Textiles del Norte", "Piura");
         split("R", world.companyA, "Textiles del Norte", "Piura", "S1", "S2");

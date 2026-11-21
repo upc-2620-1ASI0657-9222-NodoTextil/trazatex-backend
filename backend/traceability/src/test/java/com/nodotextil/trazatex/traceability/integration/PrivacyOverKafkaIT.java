@@ -24,11 +24,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
-/**
- * De punta a punta con Kafka real (US36): Organization &amp; Access publica {@code CompanyPrivacyUpdated}, traceability lo consume y lo que ve otra empresa
- * cambia por la API. La empresa B marca un campo {@code SHARED} → la empresa A, que consulta, lo ve (también en los lotes que B registró <b>antes</b>);
- * B lo vuelve a {@code PRIVATE} → A deja de verlo. Una tercera empresa que consulta ve lo mismo que A, y B siempre ve lo suyo.
- */
 @SpringBootTest(properties = {"trazatex.messaging.enabled=true", "trazatex.messaging.consumer.topic-check-interval=PT0.5S"})
 @AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
@@ -99,13 +94,11 @@ class PrivacyOverKafkaIT extends IntegrationTestBase {
                         "QR-AOLD", "Tela teñida", 90, false, 5, "Orillo", 5, GraphBuilder.T0, GraphBuilder.T0.plusSeconds(3600))};
         publishAndAwait(setup);
 
-        // 1. B no configuró nada: A ve el lote de B solo con lo siempre compartido
         JsonNode before = lineageOf(OUT_OLD, A);
         assertThat(node(before, OLD_BATCH).get("access").asString()).isEqualTo("SHARED");
         assertThat(node(before, OLD_BATCH).get("traceabilityId").asString()).isEqualTo("TT-B001");
         assertThat(node(before, OLD_BATCH).has("supplierName")).as("sin configuración, privado").isFalse();
 
-        // 2. B marca SUPPLIER como SHARED: A lo ve, también en el lote que B registró ANTES; lo demás sigue oculto
         publishAndAwait(EventMessages.companyPrivacyUpdated(UUID.randomUUID(), B, privacy("SUPPLIER", "SHARED")));
         JsonNode shared = lineageOf(OUT_OLD, A);
         assertThat(node(shared, OLD_BATCH).get("supplierName").asString()).as("el lote antiguo de B ahora muestra el proveedor").isEqualTo("Proveedor de B");
@@ -113,14 +106,12 @@ class PrivacyOverKafkaIT extends IntegrationTestBase {
         assertThat(node(shared, OLD_BATCH).has("quantityKg")).isFalse();
         assertThat(lineageOf(OUT_OLD, C).get("nodes").toString()).as("una tercera empresa ve lo mismo que A").contains("Proveedor de B");
 
-        // y un lote que B registra DESPUÉS, también
         publishAndAwait(EventMessages.batchRegistered(UUID.randomUUID(), NEW_BATCH, "TT-B002", "QR-B002", B, "Algodón", 100, "Piura", "Otro proveedor de B", "Fibra limpia",
                         GraphBuilder.T0.plusSeconds(10)),
                 EventMessages.transformationCompleted(UUID.randomUUID(), UUID.randomUUID(), "DYEING", A, "Teñidora de A", "Teñido", List.of(NEW_BATCH), OUT_NEW, "TT-ANEW",
                         "QR-ANEW", "Tela teñida", 90, false, 5, "Orillo", 5, GraphBuilder.T0, GraphBuilder.T0.plusSeconds(3600)));
         assertThat(node(lineageOf(OUT_NEW, A), NEW_BATCH).get("supplierName").asString()).isEqualTo("Otro proveedor de B");
 
-        // 3. B vuelve a marcar SUPPLIER como PRIVATE: A deja de verlo, en los lotes de antes y en los de después
         publishAndAwait(EventMessages.companyPrivacyUpdated(UUID.randomUUID(), B, privacy("SUPPLIER", "PRIVATE")));
         JsonNode hidden = lineageOf(OUT_OLD, A);
         assertThat(node(hidden, OLD_BATCH).has("supplierName")).as("otra vez privado").isFalse();
@@ -128,10 +119,8 @@ class PrivacyOverKafkaIT extends IntegrationTestBase {
         assertThat(node(lineageOf(OUT_NEW, A), NEW_BATCH).has("supplierName")).isFalse();
         assertThat(lineageOf(OUT_OLD, C).toString()).doesNotContain("Proveedor de B");
 
-        // B, la dueña, siempre ve lo suyo, comparta o no
         assertThat(node(lineageOf(OUT_OLD, B), OLD_BATCH).get("supplierName").asString()).isEqualTo("Proveedor de B");
 
-        // nada de esto fue a la DLT
         List<ConsumerRecord<String, String>> dlt = KafkaTestSupport.readAll(KAFKA.getBootstrapServers(), "orgaccess.company.DLT", Duration.ofSeconds(1));
         assertThat(dlt).isEmpty();
     }

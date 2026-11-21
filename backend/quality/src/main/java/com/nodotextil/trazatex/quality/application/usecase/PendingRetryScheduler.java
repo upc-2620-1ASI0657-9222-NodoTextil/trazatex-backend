@@ -8,18 +8,11 @@ import org.springframework.stereotype.Component;
 import java.time.Clock;
 import java.time.Instant;
 
-/**
- * Qué hacer cuando Production no responde a un comando (503, otro 5xx, timeout, sin conexión o circuito abierto): <b>no se sabe si lo aplicó</b>,
- * así que nada cambia de estado y se reprograma con el mismo {@code requestId}. Espera creciente (15 s × 2 hasta 5 min), <b>sin tope de
- * intentos</b>, y desde {@code errorAfterAttempts} cada fallo se registra como ERROR. Con el circuito abierto ni siquiera se llamó: se
- * reprograma sin contar un intento.
- */
 @Component
 class PendingRetryScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(PendingRetryScheduler.class);
 
-    /** Dónde se anota el reintento de un comando pendiente (cada fuente guarda sus columnas). */
     interface Target {
 
         void recordFailedAttempt(int attempts, Instant nextAttemptAt, String error);
@@ -27,7 +20,6 @@ class PendingRetryScheduler {
         void reschedule(Instant nextAttemptAt);
     }
 
-    /** Qué está pendiente, para los mensajes: «El {@code what} {@code id} del lote {@code batchId} sigue en {@code state} tras N intentos...». */
     record Subject(String what, String id, String batchId, String state, String procedure) {
     }
 
@@ -51,7 +43,6 @@ class PendingRetryScheduler {
         report(subject, attempts, unavailable.cause());
     }
 
-    /** Un fallo que sí fue una respuesta de Production pero que se reintenta con espera creciente (un 409 al {@code HOLD}: la proyección va atrasada). */
     void retryLater(Target target, Subject subject, int attemptsSoFar, String error) {
         int attempts = attemptsSoFar + 1;
         target.recordFailedAttempt(attempts, clock.instant().plus(settings.delayAfter(attempts)), error);

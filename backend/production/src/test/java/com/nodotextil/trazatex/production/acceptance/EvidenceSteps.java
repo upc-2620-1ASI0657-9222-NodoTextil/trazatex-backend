@@ -14,7 +14,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** US42: fotografías de un lote o de una transformación. Cloudinary es WireMock; el resto, el servicio real. */
 public class EvidenceSteps extends StepSupport {
 
     public EvidenceSteps(World world, ProductionApi api, Outbox outbox, JdbcClient jdbc, ObjectMapper json) {
@@ -57,17 +56,14 @@ public class EvidenceSteps extends StepSupport {
             assertThat(item.path("url").asString()).startsWith("https://res.cloudinary.com/").endsWith(item.path("id").asString() + ".jpg");
             assertThat(item.path("uploadedBy").asString()).isEqualTo(world.operatorA.userId().toString());
         }
-        // las conserva: el listado de su dueño las devuelve, y la base las tiene asociadas a él
         Reply listed = api.get(world.operatorA, evidencePath());
         assertThat(listed.status()).isEqualTo(200);
         List<String> listedIds = new ArrayList<>();
         listed.field("items").forEach(item -> listedIds.add(item.path("id").asString()));
         assertThat(listedIds).containsExactlyElementsOf(ids);
         assertThat(count("SELECT count(*) FROM evidence WHERE owner_type = ? AND owner_id = ?", ownerType, id(owner))).isEqualTo(2);
-        // y llegaron a Cloudinary con su id como public_id (así reintentar no duplica)
         assertThat(CloudinaryStub.uploads()).extracting(request -> request.getParts().stream().filter(part -> part.getName().equals("public_id"))
                 .findFirst().orElseThrow().getBody().asString()).containsExactlyElementsOf(ids);
-        // cada empresa ve solo las suyas
         assertThat(api.get(world.operatorB, evidencePath()).status()).isEqualTo(404);
     }
 
@@ -85,7 +81,6 @@ public class EvidenceSteps extends StepSupport {
     public void theFileIsNotAValidImage() {
         world.batch = registerLot(25);
         world.notes.put("evidencePath", "/api/batches/" + id(world.batch) + "/evidence");
-        // se llama como una foto y se declara como una imagen, pero sus bytes son de un texto
         world.pending = () -> api.multipart(world.operatorA, evidencePath(), List.of(
                 new ProductionApi.Part("files", "foto.jpg", "image/jpeg", "esto es un texto, no una fotografía".getBytes(StandardCharsets.UTF_8))));
     }

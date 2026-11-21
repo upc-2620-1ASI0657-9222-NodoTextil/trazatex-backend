@@ -11,10 +11,6 @@ public final class ExternalHttpClients {
     private ExternalHttpClients() {
     }
 
-    /**
-     * {@code RestClient} con el mismo timeout de conexión y de lectura. El cliente JDK no sigue redirecciones por defecto:
-     * el {@code Authorization} nunca viaja a otro host.
-     */
     public static RestClient restClient(String baseUrl, Duration timeout) {
         JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(HttpClient.newBuilder().connectTimeout(timeout).build());
         factory.setReadTimeout(timeout);

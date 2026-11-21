@@ -13,10 +13,6 @@ public interface CompanyRepositoryPort {
 
     Optional<Company> findById(UUID id);
 
-    /**
-     * Bloquea la fila de la empresa hasta el fin de la transacción: serializa todo lo que consume o libera cupos de usuario
-     * de esa empresa (invitar, aprobar solicitud, reactivar), de modo que dos operaciones no ocupen el mismo último cupo.
-     */
     Optional<Company> findByIdForUpdate(UUID id);
 
     boolean existsByRuc(Ruc ruc);

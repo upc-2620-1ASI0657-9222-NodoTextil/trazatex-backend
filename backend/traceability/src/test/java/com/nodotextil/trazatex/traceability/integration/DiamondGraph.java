@@ -5,12 +5,6 @@ import org.springframework.data.neo4j.core.Neo4jClient;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * El grafo en forma de diamante de RNF-04: 11 capas de 30 lotes (330) unidas por 170 transformaciones con 2 entradas y 2 salidas (10 capas × 17) y por
- * divisiones: 500 nodos y muchísimos caminos (cada lote tiene varios padres y varios hijos). Con dos empresas, los lotes pares son de la A y los impares de la B. Los
- * ids son UUID derivados de (capa, posición): {@code 00000000-0000-0000-<capa>-<posición>}. Se carga con Cypher (no por los casos de uso: serían
- * ~700 transacciones) con todos los campos que lee una consulta.
- */
 final class DiamondGraph {
 
     static final int LAYERS = 11;
@@ -27,15 +21,10 @@ final class DiamondGraph {
         return "'00000000-0000-0000-' + right('0000' + toString(" + layer + "), 4) + '-' + right('000000000000' + toString(" + position + "), 12)";
     }
 
-    /** Carga el grafo; {@code companyA} es dueña de los lotes en posición par y {@code companyB} de los impares. */
     static void load(Neo4jClient neo4j, UUID companyA, UUID companyB) {
         load(neo4j, List.of(companyA, companyB));
     }
 
-    /**
-     * Carga el grafo con varias empresas: el lote en la posición {@code i} es de {@code owners[i % owners.size()]}; todas las transformaciones, de la primera
-     * ({@code owners[0]}, la que consulta en las mediciones).
-     */
     static void load(Neo4jClient neo4j, List<UUID> owners) {
         neo4j.query("""
                 UNWIND range(0, 10) AS layer
@@ -62,7 +51,6 @@ final class DiamondGraph {
                 CREATE (a)-[:SPLIT_INTO]->(b)""".formatted(id("layer", "i"), id("layer + 1", "i + 1"))).run();
     }
 
-    /** Los nodos del grafo (lotes y transformaciones): deben ser 500. */
     static long nodeCount(Neo4jClient neo4j) {
         return (Long) neo4j.query("MATCH (n) WHERE n:Batch OR n:Transformation RETURN count(n) AS n").fetch().one().orElseThrow().get("n");
     }

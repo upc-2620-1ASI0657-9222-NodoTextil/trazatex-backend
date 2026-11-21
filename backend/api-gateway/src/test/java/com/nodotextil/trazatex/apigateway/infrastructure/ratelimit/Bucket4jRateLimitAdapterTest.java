@@ -16,7 +16,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Bucket4j y Caffeine de verdad, con un reloj de mentira compartido: el paso del tiempo se prueba sin esperar. */
 class Bucket4jRateLimitAdapterTest {
 
     private static final RateLimit TEN_PER_MINUTE = new RateLimit(10, Duration.ofMinutes(1));
@@ -56,7 +55,6 @@ class Bucket4jRateLimitAdapterTest {
 
         RateLimitDecision rejected = adapter.tryConsume(RateLimitScope.USER, "u1", TEN_PER_MINUTE);
         assertThat(rejected.allowed()).isFalse();
-        // reposición continua: 10 permisos por minuto = uno cada 6 s
         assertThat(rejected.retryAfter()).isBetween(Duration.ofMillis(5_900), Duration.ofSeconds(6));
     }
 
@@ -68,10 +66,10 @@ class Bucket4jRateLimitAdapterTest {
         assertThat(adapter.tryConsume(RateLimitScope.USER, "u1", TEN_PER_MINUTE).allowed()).isTrue();
         assertThat(adapter.tryConsume(RateLimitScope.USER, "u1", TEN_PER_MINUTE).allowed()).isFalse();
 
-        advance(Duration.ofSeconds(30));   // 5 permisos más
+        advance(Duration.ofSeconds(30));
         assertThat(consumeUntilRejected(RateLimitScope.USER, "u1", TEN_PER_MINUTE, 20)).isEqualTo(5);
 
-        advance(Duration.ofMinutes(5));   // pasada mucha ventana: lleno de nuevo, nunca por encima de la capacidad
+        advance(Duration.ofMinutes(5));
         assertThat(consumeUntilRejected(RateLimitScope.USER, "u1", TEN_PER_MINUTE, 50)).isEqualTo(10);
     }
 
@@ -107,8 +105,6 @@ class Bucket4jRateLimitAdapterTest {
         assertThat(adapter.size(RateLimitScope.USER)).isZero();
     }
 
-    // ---- la memoria no crece sin límite ----
-
     @Test
     void anIdleBucketExpiresAfterTheInactivityTimeAndTheNextOneStartsFull() {
         adapter.tryConsume(RateLimitScope.USER, "u1", TEN_PER_MINUTE);
@@ -125,7 +121,7 @@ class Bucket4jRateLimitAdapterTest {
         adapter.tryConsume(RateLimitScope.USER, "u1", TEN_PER_MINUTE);
 
         for (int i = 0; i < 5; i++) {
-            advance(Duration.ofMinutes(9));   // cada vez menos de 10 min desde el último uso
+            advance(Duration.ofMinutes(9));
             adapter.tryConsume(RateLimitScope.USER, "u1", TEN_PER_MINUTE);
         }
 
@@ -134,10 +130,9 @@ class Bucket4jRateLimitAdapterTest {
 
     @Test
     void expiringAnIdleBucketNeverGrantsMorePermitsThanTheLimitAllows() {
-        // El cubo se agota; el límite (10/min) es menor que la inactividad (10 min): cuando expira ya estaría lleno de todos modos
         consumeUntilRejected(RateLimitScope.USER, "u1", TEN_PER_MINUTE, 10);
         advance(Duration.ofSeconds(30));
-        assertThat(adapter.tryConsume(RateLimitScope.USER, "u1", TEN_PER_MINUTE).allowed()).isTrue();   // sigue siendo el mismo cubo (vacío casi)
+        assertThat(adapter.tryConsume(RateLimitScope.USER, "u1", TEN_PER_MINUTE).allowed()).isTrue();
         assertThat(adapter.size(RateLimitScope.USER)).isEqualTo(1);
 
         advance(IDLE.plusSeconds(1));
@@ -155,8 +150,6 @@ class Bucket4jRateLimitAdapterTest {
         assertThat(small.size(RateLimitScope.LOGIN_IP)).isLessThanOrEqualTo(100);
         assertThat(small.size(RateLimitScope.USER)).as("los otros ámbitos no se tocan").isZero();
     }
-
-    // ---- atomicidad ----
 
     @Test
     void concurrentRequestsNeverGoAboveTheLimit() throws Exception {

@@ -8,7 +8,6 @@ import com.tngtech.archunit.lang.ArchRule;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
-/** Reglas de dependencia hexagonal (docs/conventions.md). */
 @AnalyzeClasses(packages = "com.nodotextil.trazatex.organizationaccess", importOptions = ImportOption.DoNotIncludeTests.class)
 class ArchitectureTest {
 
@@ -39,11 +38,10 @@ class ArchitectureTest {
                     ROOT + ".infrastructure.persistence..", ROOT + ".application.port.out..", ROOT + ".application.usecase..")
             .allowEmptyShould(true);
 
-    /** I11: ni un controlador ni un caso de uso tocan la base; el SQL vive en los adaptadores de {@code infrastructure.persistence}. */
     @ArchTest
     static final ArchRule neitherControllersNorUseCasesUseJdbc = noClasses()
             .that().resideInAnyPackage(ROOT + ".infrastructure.web..", ROOT + ".application..")
             .should().dependOnClassesThat().resideInAPackage("org.springframework.jdbc..")
-            .because("regla 5 de CLAUDE.md: el acceso a datos es un adaptador detrás de un puerto de salida")
+            .because("convención hexagonal: el acceso a datos es un adaptador detrás de un puerto de salida")
             .allowEmptyShould(true);
 }

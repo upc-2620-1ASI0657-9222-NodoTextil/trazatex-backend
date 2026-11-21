@@ -10,7 +10,6 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** US01, US02, US03. */
 class CompanyApiIT extends IntegrationTestBase {
 
     private static String createBody(String ruc, String name, String adminEmail) {

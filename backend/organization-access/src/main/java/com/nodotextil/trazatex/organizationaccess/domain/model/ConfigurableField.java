@@ -3,7 +3,6 @@ package com.nodotextil.trazatex.organizationaccess.domain.model;
 import java.util.Arrays;
 import java.util.Optional;
 
-/** Campos cuya visibilidad B2B puede cambiar el administrador de la empresa; todos nacen {@link Visibility#PRIVATE}. */
 public enum ConfigurableField {
     SUPPLIER,
     ORIGIN,

@@ -6,7 +6,6 @@ import { errorMessage } from '../core/api.service';
 import { DialogComponent } from './ui';
 import { RejectedQrMemory } from './qr-dedupe';
 
-/** Lector de QR; se inyecta para poder sustituir la cámara en las pruebas. */
 export type QrReader = Pick<BrowserQRCodeReader, 'decodeFromVideoDevice'>;
 export const QR_READER = new InjectionToken<() => QrReader>('QR_READER', { providedIn: 'root', factory: () => () => new BrowserQRCodeReader() });
 
@@ -26,7 +25,6 @@ export class QrScannerComponent {
   readonly closed = output<void>();
   readonly error = signal('');
   readonly busy = signal(false);
-  /** Hay un QR rechazado en pausa: se ofrece volver a leerlo sin esperar. */
   readonly canRetry = signal(false);
   private readonly rejected = new RejectedQrMemory();
   private readonly createReader = inject(QR_READER);
@@ -65,7 +63,6 @@ export class QrScannerComponent {
     }
     finally { this.busy.set(false); }
   }
-  /** Reinicia el lector: el mismo QR vuelve a aceptarse de inmediato. */
   restart() { this.rejected.reset(); this.canRetry.set(false); this.error.set(''); }
   ngOnDestroy() { this.destroyed = true; this.controls?.stop(); }
 }

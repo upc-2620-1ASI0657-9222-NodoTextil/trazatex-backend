@@ -18,7 +18,6 @@ import java.util.function.Consumer;
 
 import static com.nodotextil.trazatex.traceability.infrastructure.messaging.EventPayloads.parts;
 
-/** {@code production.transformation}: {@code TransformationCompleted}. */
 @Component
 @ConditionalOnProperty(name = "trazatex.messaging.enabled", havingValue = "true", matchIfMissing = true)
 class TransformationEventsListener extends AbstractEventListener {

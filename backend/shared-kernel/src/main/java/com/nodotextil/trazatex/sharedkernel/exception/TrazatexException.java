@@ -2,10 +2,6 @@ package com.nodotextil.trazatex.sharedkernel.exception;
 
 import java.util.List;
 
-/**
- * Base de las excepciones de negocio. Lleva un {@code code} estable que termina en {@code ApiError.code};
- * el mapeo a HTTP lo hace el {@code @ControllerAdvice} de cada servicio.
- */
 public class TrazatexException extends RuntimeException {
 
     private final String code;

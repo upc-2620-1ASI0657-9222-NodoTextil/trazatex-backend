@@ -38,12 +38,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
-/**
- * Base de las pruebas de integración: Spring completo + PostgreSQL real (Testcontainers, una sola instancia para toda la
- * corrida), reloj controlable y dobles de Chequea.pe y HIBP. Cada prueba parte de una base vacía con una licencia
- * (3 empresas, 3 usuarios por empresa) y un Dueño activo.
- */
-/** Sin broker por defecto: el relay y los tópicos se apagan; {@code KafkaPublicationIT} los enciende. */
 @SpringBootTest(properties = "trazatex.messaging.enabled=false")
 @AutoConfigureMockMvc
 @Import(IntegrationTestBase.TestBeans.class)
@@ -57,7 +51,6 @@ abstract class IntegrationTestBase {
             new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
     static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16.15");
 
-    /** Chequea.pe y HIBP simulados: las pruebas nunca llaman a las APIs reales. */
     static final WireMockServer WIREMOCK = new WireMockServer(com.github.tomakehurst.wiremock.core.WireMockConfiguration.options().dynamicPort());
 
     static {
@@ -145,13 +138,10 @@ abstract class IntegrationTestBase {
         ownerId = insertUser(null, "OWNER", OWNER_EMAIL, "LICENSE_OWNER", "ACTIVE");
     }
 
-    /** La prueba usa los adaptadores reales de Chequea.pe y HIBP, contra WireMock, en lugar de los dobles. */
     protected void useRealExternalServices() {
         rucValidator.delegate = chequeaAdapter;
         breachChecker.delegate = hibpAdapter;
     }
-
-    // ---- Datos de partida (directo en la base) ----
 
     protected void setClock(Instant instant) {
         clock.advance(java.time.Duration.between(clock.instant(), instant));
@@ -182,7 +172,6 @@ abstract class IntegrationTestBase {
         return id;
     }
 
-    /** Usuario cuya contraseña es {@link #PASSWORD} (hash BCrypt real), para probar el login. */
     protected UUID insertUserWithPassword(UUID companyId, String email, String role, String status) {
         UUID id = insertUser(companyId, "Ana", email, role, status);
         jdbc.sql("UPDATE users SET password_hash = :hash WHERE id = :id").param("hash", ENCODER.encode(PASSWORD)).param("id", id).update();
@@ -221,8 +210,6 @@ abstract class IntegrationTestBase {
     protected static OffsetDateTime utc(Instant instant) {
         return OffsetDateTime.ofInstant(instant, ZoneOffset.UTC);
     }
-
-    // ---- Peticiones ----
 
     protected static final String VALID_RUC = "20100070970";
     protected static final String OTHER_RUC = "20131312955";

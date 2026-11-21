@@ -26,7 +26,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
-/** Lo común de las pruebas de flujo (control, falla, falla derivada) contra PostgreSQL real y un Production simulado. */
 abstract class FlowTestBase extends IntegrationTestBase {
 
     static final UUID COMPANY_A = UUID.fromString("00000000-0000-0000-0000-0000000000c1");
@@ -63,8 +62,6 @@ abstract class FlowTestBase extends IntegrationTestBase {
         productionBreaker.reset();
     }
 
-    // ---- datos ----
-
     UUID seed(BatchPhase phase, QualityStatus status, boolean hold, boolean everControlled) {
         BatchProjection batch = BatchProjection.restore(UUID.randomUUID(), COMPANY_A, phase, hold, status, everControlled, 1, START);
         projections.insert(batch);
@@ -78,8 +75,6 @@ abstract class FlowTestBase extends IntegrationTestBase {
     BatchProjection projection(UUID batch) {
         return projections.findById(batch).orElseThrow();
     }
-
-    // ---- peticiones ----
 
     static MockHttpServletRequestBuilder as(MockHttpServletRequestBuilder request, Caller caller) {
         MockHttpServletRequestBuilder builder = request.header("X-User-Id", caller.userId().toString()).header("X-User-Role", caller.role());
@@ -106,7 +101,6 @@ abstract class FlowTestBase extends IntegrationTestBase {
         return json.readTree(result.andReturn().getResponse().getContentAsString());
     }
 
-    /** Inicia un control sobre el lote con Production confirmando, y devuelve su id. */
     UUID startControl(UUID batch) throws Exception {
         productionBreaker.reset();
         ProductionStub.reset();
@@ -120,8 +114,6 @@ abstract class FlowTestBase extends IntegrationTestBase {
         postAs(ADMIN_OF_A, "/api/quality/controls/" + control + "/tests", Map.of("criterionName", "Humedad", "expectedValue", "8", "obtainedValue", "7",
                 "unit", "%", "testResult", result)).andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isCreated());
     }
-
-    // ---- base de datos ----
 
     <T> T control(UUID id, String column, Class<T> type) {
         return jdbc.sql("SELECT " + column + " FROM quality_control WHERE id = :id").param("id", id).query((rs, n) -> rs.getObject(1, type)).list().get(0);
@@ -148,7 +140,6 @@ abstract class FlowTestBase extends IntegrationTestBase {
         return audit().stream().map(row -> (String) row.get("action")).toList();
     }
 
-    /** Los eventos del outbox: tipo, tópico, clave y payload (sin el sobre). */
     record Outboxed(String type, String topic, String key, JsonNode payload) {
     }
 
@@ -164,8 +155,6 @@ abstract class FlowTestBase extends IntegrationTestBase {
     UUID failureOfBatch(UUID batch) {
         return jdbc.sql("SELECT id FROM quality_failure WHERE batch_id = :b ORDER BY created_at DESC LIMIT 1").param("b", batch).query(UUID.class).single();
     }
-
-    // ---- Production simulado ----
 
     List<LoggedRequest> sent(UUID batch) {
         return ProductionStub.requestsFor(batch);

@@ -11,7 +11,6 @@ import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
-/** Petición cuyo cuerpo ya se leyó (para calcular el hash) y se puede volver a leer en el resto de la cadena. */
 class CachedBodyHttpServletRequest extends HttpServletRequestWrapper {
 
     private final byte[] body;

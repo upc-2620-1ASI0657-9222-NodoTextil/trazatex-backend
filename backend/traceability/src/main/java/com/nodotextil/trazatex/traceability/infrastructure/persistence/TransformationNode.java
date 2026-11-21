@@ -9,12 +9,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * {@code (:Transformation)}. Nodo plano, para leer (ver {@link BatchNode}). {@code companyId} se agrega a las propiedades
- * de {@code traceability.md}: el filtro B2B decide por la empresa de cada nodo y la transformación pertenece a una.
- * Configurables: {@code machineName} y {@code machineType} (campo {@code MACHINERY}, foto del momento; el
- * {@code machineId} no se guarda: otra empresa no puede consultarlo), {@code shrinkageKg}, {@code wasteKg}, {@code wasteReason}.
- */
 @Node("Transformation")
 public class TransformationNode {
 

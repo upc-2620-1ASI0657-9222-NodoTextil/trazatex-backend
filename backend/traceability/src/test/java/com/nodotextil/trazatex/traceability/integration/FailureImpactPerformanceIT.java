@@ -25,12 +25,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Cuánto cuesta el análisis de impacto (US33) sobre el diamante de 500 nodos de RNF-04 (con Neo4j de la memoria del compose): tiempo y consultas a Neo4j de una
- * falla confirmada en lotes de distintas capas (de 0 a 10 niveles de antecesores y de descendientes), con fases y estados de calidad repartidos al azar (semilla fija) para que
- * lo marcado no sea todo ni nada. <b>Y que el análisis dé lo correcto</b>: cada resultado se compara con el de una implementación ingenua independiente (un recorrido por
- * punto de partida sobre las aristas leídas aparte con Cypher); sin esa comparación una prueba de tiempo pasaría con un análisis que no hiciera nada.
- */
 @Import(QueryCounting.Config.class)
 class FailureImpactPerformanceIT extends IntegrationTestBase {
 
@@ -38,7 +32,6 @@ class FailureImpactPerformanceIT extends IntegrationTestBase {
     static final UUID B = UUID.fromString("00000000-0000-0000-0000-0000000000b2");
     static final int WARMUP = 5;
     static final int REPETITIONS = 20;
-    /** Por dirección 2 consultas por nivel × (10 niveles + 1 sonda), más buscar el lote fallado. */
     static final long QUERY_CAP = 2L * 2 * 11 + 1;
 
     @Autowired
@@ -77,7 +70,6 @@ class FailureImpactPerformanceIT extends IntegrationTestBase {
         }
         neo4j.query("UNWIND range(0, size($ids) - 1) AS i MATCH (b:Batch {batchId: $ids[i]}) SET b.phase = $phases[i], b.qualityStatus = $qualities[i]")
                 .bind(ids).to("ids").bind(phases).to("phases").bind(qualities).to("qualities").run();
-        // las aristas, leídas aparte con Cypher: lo que usa el oráculo
         neo4j.query("""
                 MATCH (a:Batch)-[:SPLIT_INTO]->(b:Batch) RETURN a.batchId AS from, b.batchId AS to
                 UNION
@@ -107,7 +99,6 @@ class FailureImpactPerformanceIT extends IntegrationTestBase {
         return distance;
     }
 
-    /** El oráculo: lo que hay que marcar y su antecesor común, con un recorrido por punto de partida y sin atajos. {@code startsOut[0]} = cuántos puntos de partida hubo. */
     private Map<UUID, UUID> oracle(UUID failed, int[] startsOut) {
         Map<UUID, Integer> backward = distances(parents, failed, 10);
         startsOut[0] = backward.size();

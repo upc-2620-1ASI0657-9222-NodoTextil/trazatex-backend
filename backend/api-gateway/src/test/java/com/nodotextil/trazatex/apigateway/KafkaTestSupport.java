@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/** Un Kafka real (Testcontainers) para toda la JVM de pruebas; cada prueba usa su propio tópico. */
 public final class KafkaTestSupport {
 
     private static final KafkaContainer KAFKA = new TrazatexKafkaContainer();
@@ -35,7 +34,6 @@ public final class KafkaTestSupport {
         return "orgaccess.user." + UUID.randomUUID().toString().substring(0, 8);
     }
 
-    /** Como lo declara organization-access: {@code cleanup.policy=compact}. */
     public static void createCompactedTopic(String name, int partitions) {
         try (AdminClient admin = AdminClient.create(Map.<String, Object>of("bootstrap.servers", bootstrap()))) {
             admin.createTopics(List.of(new NewTopic(name, partitions, (short) 1).configs(Map.of("cleanup.policy", "compact")))).all().get();

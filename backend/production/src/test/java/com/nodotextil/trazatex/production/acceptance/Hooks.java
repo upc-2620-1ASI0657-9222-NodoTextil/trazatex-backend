@@ -7,7 +7,6 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
-/** Cada escenario empieza con la base vacía, las empresas A y B activas (como las dejaría el consumo de eventos de 04d) y Cloudinary respondiendo bien. */
 public class Hooks {
 
     private final JdbcClient jdbc;

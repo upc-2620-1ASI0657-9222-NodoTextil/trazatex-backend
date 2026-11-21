@@ -22,7 +22,6 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** El Kafka de las pruebas se comporta como el del compose: no crea tópicos solos. Requiere Docker. */
 class TrazatexKafkaContainerTest {
 
     static final TrazatexKafkaContainer KAFKA = new TrazatexKafkaContainer();

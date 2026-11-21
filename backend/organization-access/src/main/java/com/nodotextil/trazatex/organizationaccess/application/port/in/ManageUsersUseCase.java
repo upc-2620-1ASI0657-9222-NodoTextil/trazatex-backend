@@ -11,6 +11,5 @@ public interface ManageUsersUseCase {
 
     List<UserResult> list(Actor actor);
 
-    /** US09. */
     UserResult changeStatus(UUID userId, UserStatus status, Actor actor);
 }

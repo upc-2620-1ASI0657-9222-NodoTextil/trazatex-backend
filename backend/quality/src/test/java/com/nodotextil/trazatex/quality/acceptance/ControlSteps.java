@@ -16,7 +16,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** US23 (iniciar), US24 (pruebas), US25 (finalizar), US28 (reevaluación) y US34 (falla derivada): el control y su resultado. */
 public class ControlSteps extends StepSupport {
 
     public ControlSteps(World world, QualityApi api, JdbcClient jdbc, ObjectMapper json) {
@@ -31,8 +30,6 @@ public class ControlSteps extends StepSupport {
     private void assertWithinTheRequest(Instant moment) {
         assertThat(moment).isBetween(world.sentAt.minus(Duration.ofSeconds(2)), world.answeredAt.plus(Duration.ofSeconds(2)));
     }
-
-    // ---- US23: iniciar un control ----
 
     @Dado("^que el lote tiene calidad No revisado$")
     public void theBatchIsNotReviewed() {
@@ -87,7 +84,6 @@ public class ControlSteps extends StepSupport {
 
     @Y("^cambia la fase a En control de calidad\\.$")
     public void changesThePhaseToInQualityControl() {
-        // La fase la gobierna Production: Quality le manda START_EVALUATION con el id del control, y Production confirmó
         assertThat(commandOf(world.batch, "START_EVALUATION").path("requestId").asString()).isEqualTo(world.control.toString());
         assertThat(count("SELECT count(*) FROM quality_control WHERE id = ? AND status = 'IN_PROGRESS'", world.control)).isEqualTo(1);
     }
@@ -99,8 +95,6 @@ public class ControlSteps extends StepSupport {
         assertThat(count("SELECT count(*) FROM quality_control WHERE batch_id = ?", world.batch)).isEqualTo(1);
         assertThat(commandsFor(world.batch)).as("no se manda otro comando a Production").hasSize(1);
     }
-
-    // ---- US24: registrar pruebas ----
 
     @Dado("^que existe un control activo$")
     public void anActiveControlExists() {
@@ -138,11 +132,8 @@ public class ControlSteps extends StepSupport {
         assertThat(control.field("tests").get(0).path("id").asString()).isEqualTo(test.toString());
     }
 
-    // ---- US25: finalizar ----
-
     @Dado("^que todas las pruebas son Conformes$")
     public void allTheTestsAreConforming() {
-        // US25 evalúa un lote nuevo; US28 reevalúa uno con falla enviado a reevaluación
         UUID batch;
         if ("us28".equals(world.story)) {
             batch = failedBatchWithOpenFailure();
@@ -175,7 +166,6 @@ public class ControlSteps extends StepSupport {
 
     @Entonces("^devuelve la fase del lote a Disponible$")
     public void returnsThePhaseToAvailable() {
-        // La fase la gobierna Production: Quality le manda RELEASE con el id del control, y Production confirmó (200 del finalizar)
         assertThat(world.last.status()).as("finalizar el control: %s", world.last.raw()).isEqualTo(200);
         assertThat(commandOf(world.batch, "RELEASE").path("requestId").asString()).isEqualTo(world.control.toString());
     }
@@ -206,13 +196,10 @@ public class ControlSteps extends StepSupport {
     @Y("^mantiene el lote bloqueado\\.$")
     public void keepsTheBatchBlocked() {
         assertThat(projection(world.batch)).containsEntry("quality_hold", true);
-        // Si el escenario finalizó un control, Production recibió RELEASE con la retención; si solo inició la revisión, el lote conserva la suya
         commandsFor(world.batch).stream().filter(c -> "RELEASE".equals(c.path("operation").asString()))
                 .forEach(release -> assertThat(release.path("qualityHold").asBoolean()).as("la retención que viaja en RELEASE").isTrue());
         assertThat(commandsFor(world.batch)).noneMatch(c -> "RELEASE_HOLD".equals(c.path("operation").asString()));
     }
-
-    // ---- US28: reevaluación ----
 
     @Entonces("^el lote cambia a Conforme y queda desbloqueado$")
     public void theBatchIsConformingAndUnblocked() {
@@ -243,14 +230,11 @@ public class ControlSteps extends StepSupport {
 
     @Y("^queda pendiente de una nueva decisión administrativa\\.$")
     public void awaitsANewAdministrativeDecision() {
-        // Se reutiliza la misma falla, abierta, apuntando al último control; las pruebas del control anterior se conservan
         assertThat(failureRow(world.failure)).containsEntry("status", "OPEN").containsEntry("control_id", world.control);
         assertThat(count("SELECT count(*) FROM quality_failure WHERE batch_id = ?", world.batch)).isEqualTo(1);
         assertThat(count("SELECT count(*) FROM quality_test WHERE control_id <> ? AND control_id IN (SELECT id FROM quality_control WHERE batch_id = ?)", world.control,
                 world.batch)).isGreaterThanOrEqualTo(1);
     }
-
-    // ---- US34: revisar una posible falla derivada ----
 
     @Dado("^que el lote tiene calidad Posible falla derivada y nunca fue controlado$")
     public void derivedFailureNeverControlled() {

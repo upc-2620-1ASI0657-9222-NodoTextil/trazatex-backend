@@ -13,18 +13,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * Transformación textil (US16–US19, ADR-003). Se inicia con uno o más lotes habilitados y una maquinaria activa
- * (más de un lote es una mezcla) y se finaliza con su balance de masa:
- *
- * <pre>merma = entrada total − salida total − desperdicio  (nunca se ingresa; si es negativa, 400)</pre>
- *
- * <p><b>La invariante vive en {@link #finalize}</b> y se comprueba antes de consultar a la
- * {@link TransformationStrategy} del tipo, que solo puede agregar restricciones. Nada cambia si algo falla: primero
- * se valida todo y recién después se modifican los lotes.
- *
- * <p>Se crea con {@code TransformationFactory} (que elige la estrategia del tipo); la estrategia no se persiste.
- */
 public final class Transformation {
 
     private final UUID id;
@@ -66,10 +54,6 @@ public final class Transformation {
         }
     }
 
-    /**
-     * Inicia una transformación (US16). Los lotes deben ser de la empresa, estar habilitados y no repetirse; la
-     * maquinaria, de la empresa y {@code ACTIVE}. Registra la hora de inicio y pasa los lotes a {@code IN_TRANSFORMATION}.
-     */
     public static Transformation start(UUID id, TransformationStrategy strategy, UUID companyId, Machine machine,
                                        UUID operatorId, List<Batch> batches, Instant now) {
         if (batches == null || batches.isEmpty()) {
@@ -101,12 +85,6 @@ public final class Transformation {
         return new Transformation(strategy, snapshot);
     }
 
-    /**
-     * Finaliza la transformación (US18, US19, US17). {@code inputBatches} son los lotes de entrada que se iniciaron.
-     *
-     * @return los lotes de salida nuevos ({@code AVAILABLE}, {@code NOT_REVIEWED}, con Traceability ID y QR nuevos);
-     * los de entrada quedan {@code PROCESSED}
-     */
     public List<Batch> finalize(List<Batch> inputBatches, List<BatchFactory.OutputSpec> outputSpecs, Quantity waste,
                                 String wasteReason, BatchFactory factory, UUID completedBy, Instant now) {
         if (status != TransformationStatus.IN_PROGRESS) {
@@ -136,7 +114,6 @@ public final class Transformation {
             output = output.plus(spec.quantity());
         }
 
-        // Invariante de balance (ADR-003): merma = entrada − salida − desperdicio ≥ 0. Ninguna estrategia la relaja.
         BigDecimal shrinkageKg = input.minus(output).subtract(declaredWaste.kg());
         if (shrinkageKg.signum() < 0) {
             throw new ValidationException(ErrorCodes.INVALID_QUANTITIES,
@@ -146,7 +123,6 @@ public final class Transformation {
         Quantity computedShrinkage = Quantity.nonNegative(shrinkageKg);
         strategy.validate(new BalanceSummary(input, output, declaredWaste, computedShrinkage, inputs.size(), outputSpecs.size()));
 
-        // Composición (US17): la misma si hay una entrada; promedio ponderado por kg si hay varias (mezcla)
         List<Composition.Contribution> contributions = new ArrayList<>();
         for (Batch batch : inputBatches) {
             contributions.add(new Composition.Contribution(batch.composition(), batch.quantity()));
@@ -158,7 +134,6 @@ public final class Transformation {
             outputs.add(factory.output(spec, composition, companyId, completedBy, now));
         }
 
-        // Todo validado: recién ahora se modifica
         for (Batch batch : inputBatches) {
             batch.finishTransformation();
         }
@@ -173,7 +148,6 @@ public final class Transformation {
         return List.copyOf(outputs);
     }
 
-    /** Una entrada con más de una fuente es una mezcla (glosario): no es una operación aparte. */
     public boolean isMix() {
         return inputs.size() > 1;
     }
@@ -226,22 +200,18 @@ public final class Transformation {
         return inputs;
     }
 
-    /** Vacía hasta que se finaliza. */
     public List<UUID> outputBatchIds() {
         return outputBatchIds;
     }
 
-    /** Entrada total; se conoce desde el inicio. */
     public Quantity totalInput() {
         return totalInput != null ? totalInput : inputs.stream().map(TransformationInput::quantity).reduce(Quantity.ZERO, Quantity::plus);
     }
 
-    /** {@code null} hasta que se finaliza. */
     public Quantity totalOutput() {
         return totalOutput;
     }
 
-    /** {@code null} hasta que se finaliza. */
     public Quantity waste() {
         return waste;
     }
@@ -250,7 +220,6 @@ public final class Transformation {
         return wasteReason;
     }
 
-    /** {@code null} hasta que se finaliza. */
     public Quantity shrinkage() {
         return shrinkage;
     }
@@ -259,7 +228,6 @@ public final class Transformation {
         return startTime;
     }
 
-    /** {@code null} hasta que se finaliza. */
     public Instant endTime() {
         return endTime;
     }

@@ -12,7 +12,6 @@ import static com.nodotextil.trazatex.production.domain.SampleImages.jpeg;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-/** El job programado de verdad (no invocado a mano): sube lo pendiente en cuanto llega su hora, sin que nadie lo llame. */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {"trazatex.messaging.enabled=false",
         "trazatex.evidence.upload.enabled=true", "trazatex.evidence.upload.job-delay=PT0.2S", "trazatex.evidence.upload.job-initial-delay=PT0S"})
 class EvidenceScheduledJobIT extends EvidenceItBase {
@@ -28,7 +27,7 @@ class EvidenceScheduledJobIT extends EvidenceItBase {
         stubUploadOk();
         circuitBreakers.circuitBreaker("cloudinary").reset();
 
-        Thread.sleep(800);          // el job corre varias veces, pero aún no es la hora del primer reintento
+        Thread.sleep(800);
         assertThat(jdbc.sql("SELECT status FROM evidence WHERE id = :id").param("id", id).query(String.class).single()).isEqualTo("PENDING");
         clock.advance(Duration.ofMinutes(1));
 

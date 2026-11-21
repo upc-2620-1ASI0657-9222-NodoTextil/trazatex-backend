@@ -13,12 +13,6 @@ import tools.jackson.databind.ObjectMapper;
 import java.util.Map;
 import java.util.function.Consumer;
 
-/**
- * Lo común de los cinco listeners: leer el sobre, <b>filtrar por {@code type} antes</b> del consumo idempotente (lo que
- * traceability ignora —otros eventos del mismo tópico, tipos nuevos— no da error, no va a la DLT y no deja filas
- * {@code :ProcessedEvent}) y aplicar el efecto dentro de la transacción idempotente, repitiéndolo si Neo4j aborta la transacción
- * por un interbloqueo. Un sobre o un payload ilegible es {@link MalformedEventException}: a la DLT sin reintentos.
- */
 abstract class AbstractEventListener {
 
     private static final Logger log = LoggerFactory.getLogger(AbstractEventListener.class);
@@ -33,7 +27,6 @@ abstract class AbstractEventListener {
         this.objectMapper = objectMapper;
     }
 
-    /** Efecto de cada tipo de evento que este listener atiende. */
     abstract Map<String, Consumer<BaseDomainEvent>> effects();
 
     final void consume(ConsumerRecord<String, String> record) {
@@ -47,7 +40,6 @@ abstract class AbstractEventListener {
             try {
                 effect.accept(e);
             } catch (TrazatexException | IllegalArgumentException invalid) {
-                // le falta un dato obligatorio o trae uno imposible: reintentar no lo arregla
                 throw new MalformedEventException("El payload de " + e.type() + " (" + e.eventId() + ") no es válido: " + invalid.getMessage(), invalid);
             }
         }));

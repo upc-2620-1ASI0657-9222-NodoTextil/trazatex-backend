@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/** {@code batch_projection}: el bloqueo de fila ({@code FOR UPDATE}) serializa los cambios de un mismo lote. */
 @Component
 class JdbcBatchProjectionAdapter implements BatchProjectionRepositoryPort {
 

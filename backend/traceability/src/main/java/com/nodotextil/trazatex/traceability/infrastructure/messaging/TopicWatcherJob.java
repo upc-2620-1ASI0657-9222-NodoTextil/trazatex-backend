@@ -5,10 +5,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-/**
- * Programa el vigilante de {@code shared-messaging} sobre {@link ConsumedTopics#ALL}: ningún contenedor arranca solo y cada pasada
- * ({@code trazatex.messaging.consumer.topic-check-interval}, 15 s) arranca los de los tópicos ajenos que ya existen.
- */
 @Component
 @ConditionalOnProperty(name = "trazatex.messaging.enabled", havingValue = "true", matchIfMissing = true)
 class TopicWatcherJob {

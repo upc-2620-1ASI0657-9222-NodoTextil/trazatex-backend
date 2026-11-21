@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-/** La proyección en memoria: devuelve y guarda copias, como una base real (el servicio no puede depender de compartir instancias). */
 public class InMemoryBatchProjections implements BatchProjectionRepositoryPort {
 
     private final Map<UUID, BatchProjection> rows = new HashMap<>();

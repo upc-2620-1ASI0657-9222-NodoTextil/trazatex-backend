@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 
-/** Las claves de idempotencia caducan a las 24 h (ADR-010). */
 @Component
 class IdempotencyKeyCleanupJob {
 

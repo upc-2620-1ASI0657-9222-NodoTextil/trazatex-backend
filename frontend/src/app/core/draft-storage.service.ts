@@ -1,9 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 
-/** Vigencia de una solicitud pendiente en el cliente: 1 h menos que las claves de idempotencia del servidor (24 h). */
 export const OPERATION_TTL_MS = 23 * 3600000;
 
-/** Una solicitud pendiente caducó: pudo haberse registrado y hay que revisarlo antes de repetirla. */
 export class StaleOperationError extends Error {
   constructor() {
     super('La operación anterior se envió hace más de 23 horas y pudo haberse registrado. Revisa el listado o el historial antes de repetirla; si la repites, se enviará como una operación nueva.');
@@ -72,11 +70,6 @@ export class DraftStorage {
       tx.onerror = () => reject(new Error('No se pudo cerrar el borrador guardado.'));
     });
   }
-  /**
-   * FE-M5: al cerrar sesión o expirar, borra los borradores de formularios (con sus fotos) y las confirmaciones guardadas, para que no
-   * queden en el disco de un equipo compartido. Se CONSERVAN los registros `operation/*`: son solo una clave de idempotencia y una huella
-   * (sin datos ni archivos) y evitan duplicar una operación cuyo resultado se desconoce si la persona vuelve a entrar y reintenta.
-   */
   async clearDrafts(): Promise<void> {
     this.forms.clear();
     this.notice.set('');
@@ -94,7 +87,6 @@ export class DraftStorage {
       tx.onerror = () => reject(new Error('No se pudieron borrar los borradores guardados.'));
     });
   }
-  /** Borra los registros `operation/*` caducados de esta huella o de este contexto. Devuelve si borró alguno. */
   private async purgeExpired(fingerprint: string, context?: string): Promise<boolean> {
     const db = await this.open();
     let purged = false;
@@ -126,9 +118,6 @@ export class DraftStorage {
     const bytes = new TextEncoder().encode(JSON.stringify([userId, context, method, path, payload]));
     const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map(n => n.toString(16).padStart(2, '0')).join('');
     const fingerprint = 'operation/' + hash;
-    // Las claves del servidor caducan a las 24 h (ADR-010): un registro de más de 23 h ya no se puede reutilizar.
-    // Se descarta (el suyo y los de la misma pantalla que bloquearían esta acción) y se avisa; el siguiente intento
-    // parte de cero con una clave nueva, una vez que el usuario ha podido revisar si la operación anterior se registró.
     if (await this.purgeExpired(fingerprint, context)) throw new StaleOperationError();
     const previous = await this.read<{ id: string; createdAt: number; context?: string }>(fingerprint);
     const entries = context ? await this.transaction('readonly', store => store.getAll()) : [];

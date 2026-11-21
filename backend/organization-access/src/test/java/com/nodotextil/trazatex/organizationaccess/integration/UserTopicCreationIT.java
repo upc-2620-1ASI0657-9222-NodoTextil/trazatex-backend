@@ -14,10 +14,6 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Caso de Azure Event Hubs: el tópico se crea <b>con</b> compactación desde el principio y el servicio no depende de modificar
- * configuraciones de tópicos existentes ({@code modify-topic-configs=false}).
- */
 @SpringBootTest(properties = {"trazatex.messaging.enabled=true", "trazatex.messaging.modify-topic-configs=false"})
 class UserTopicCreationIT extends IntegrationTestBase {
 

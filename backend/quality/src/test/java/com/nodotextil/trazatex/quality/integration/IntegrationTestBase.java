@@ -17,11 +17,6 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import java.time.Duration;
 import java.time.Instant;
 
-/**
- * Base de las pruebas de integración: Spring completo + PostgreSQL real (Testcontainers, una sola instancia para toda la corrida) y
- * reloj controlable. Cada prueba parte de una base vacía. Sin broker por defecto ({@code trazatex.messaging.enabled=false}); las
- * pruebas con Kafka real lo encienden.
- */
 @SpringBootTest(properties = {"trazatex.messaging.enabled=false", "trazatex.quality.start.job-enabled=false"})
 @AutoConfigureMockMvc
 @Import(IntegrationTestBase.TestBeans.class)
@@ -48,7 +43,6 @@ abstract class IntegrationTestBase {
             return new MutableClock(START);
         }
 
-        /** Cuenta los SELECT que llegan a la base: las pruebas de paginación comprueban que no hay una consulta por fila (N+1). */
         @Bean
         static StatementCounter statementCounter() {
             return new StatementCounter();

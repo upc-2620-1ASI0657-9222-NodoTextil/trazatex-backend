@@ -4,7 +4,6 @@ import {credentialsFile,isolatedProject} from './paths';
 
 interface Account {key:string;email:string;password:string;role:string;companyId:string|null;}
 interface Notice {id:string;read:boolean;title:string;type:string;}
-// Notification I5: GET /api/notifications devuelve una página, no un arreglo (20 por omisión, máximo 100).
 interface NoticePage {items:Notice[];page:number;size:number;totalElements:number;totalPages:number;}
 interface Control {id:string;status:string;}
 const accounts:Account[]=JSON.parse(readFileSync(credentialsFile(),'utf8')).accounts;
@@ -35,7 +34,6 @@ test('arquitectura: las 16 cuentas autentican y su contador coincide con la band
  test.setTimeout(90000);expect(accounts).toHaveLength(16);
  for(const a of accounts){
   const headers=await session(request,a);
-  // La bandeja completa ya no cabe en una página: el contador se compara con el total de no leídas que informa el servidor.
   const list=await request.get('/api/notifications?unread=true&size=1',{headers});expect(list.status()).toBe(200);
   const page:NoticePage=await list.json();
   expect(Array.isArray(page.items),'el contrato es paginado, no un arreglo').toBe(true);
@@ -73,7 +71,6 @@ test('arquitectura: Angular consulta Quality y Analytics y descarga un PDF real 
  await expect(page.getByText('Merma acumulada',{exact:true})).toBeVisible();
  await expect(page.locator('.notice[role="alert"]')).toHaveCount(0);
  await page.goto('/notificaciones');
- // La primera fila de la pantalla (6 por página) es items[0] de ?page=0&size=6.
  const notes=await request.get('/api/notifications?page=0&size=6',{headers});const first:NoticePage=await notes.json();
  expect(first.items.length).toBeGreaterThan(0);
  await expect(page.locator('.inbox li').first()).toBeVisible();
@@ -96,7 +93,6 @@ test('arquitectura: JWT alterado, identidad falsificada y recursos B2B se rechaz
  expect((await request.get('/api/license',{headers:{Authorization:'Bearer '+parts.join('.')}})).status()).toBe(401);
  expect((await request.get('/api/internal/batches/'+batch.id+'/phase-transitions',{headers:operator})).status()).toBe(404);
 });
-
 
 test('arquitectura aislada: inactivar revoca el token y reactivar restablece el acceso mediante Kafka',async({request})=>{
  test.skip(!isolatedProject(),'Solo se modifica la instalación aislada.');

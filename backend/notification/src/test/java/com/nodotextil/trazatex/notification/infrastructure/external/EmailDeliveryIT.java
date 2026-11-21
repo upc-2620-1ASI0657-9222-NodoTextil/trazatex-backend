@@ -19,7 +19,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** La entrega completa —servicio, adaptador JDBC, SendGrid contra un servidor local— sobre PostgreSQL real. */
 class EmailDeliveryIT {
     private static final String SECRET = "https://app.trazatex.example/invitations/token-de-un-solo-uso";
 
@@ -55,7 +54,6 @@ class EmailDeliveryIT {
                 assertThat(payload.get()).contains("TrazaTex", "destinatario@correo.controlado");
                 assertThat(count(jdbc, "status='SENT' AND accepted_at IS NOT NULL AND body=''")).isEqualTo(1);
 
-                // 503: sigue PENDING con su cuerpo, un intento y el motivo; no se vuelve a enviar antes de su espera
                 response.set(503);
                 enqueue(jdbc, "pendiente@correo.controlado");
                 delivery.deliver();
@@ -65,7 +63,6 @@ class EmailDeliveryIT {
                 delivery.deliver();
                 assertThat(requests.get()).isEqualTo(2);
 
-                // 401: permanente, FAILED al primer intento, sin cuerpo y sin reintentos
                 response.set(401);
                 enqueue(jdbc, "rechazado@correo.controlado");
                 delivery.deliver();
@@ -74,7 +71,6 @@ class EmailDeliveryIT {
                 delivery.deliver();
                 assertThat(requests.get()).isEqualTo(3);
 
-                // el reintento está acotado: con 3 intentos máximos, el tercero fallido pasa a FAILED
                 response.set(503);
                 for (int attempt = 2; attempt <= 3; attempt++) {
                     jdbc.sql("UPDATE deferred_email SET next_attempt_at=now() WHERE recipient='pendiente@correo.controlado'").update();
@@ -82,7 +78,6 @@ class EmailDeliveryIT {
                 }
                 assertThat(jdbc.sql("SELECT status='FAILED' AND attempts=3 AND last_error LIKE 'REINTENTOS_AGOTADOS: SENDGRID_HTTP_503' AND body='' FROM deferred_email WHERE recipient='pendiente@correo.controlado'").query(Boolean.class).single()).isTrue();
 
-                // una invitación vencida pasa a EXPIRED sin enviarse y sin conservar su token
                 jdbc.sql("INSERT INTO deferred_email(id,event_id,recipient,subject,body,expires_at) VALUES(gen_random_uuid(),gen_random_uuid(),'vencida@correo.controlado','Invitación a TrazaTex',:body,now() - interval '1 minute')")
                         .param("body", SECRET).update();
                 int before = requests.get();
@@ -90,7 +85,6 @@ class EmailDeliveryIT {
                 assertThat(requests.get()).isEqualTo(before);
                 assertThat(jdbc.sql("SELECT status='EXPIRED' AND body='' FROM deferred_email WHERE recipient='vencida@correo.controlado'").query(Boolean.class).single()).isTrue();
 
-                // ningún correo terminado guarda el secreto
                 assertThat(jdbc.sql("SELECT count(*) FROM deferred_email WHERE status<>'PENDING' AND body<>''").query(Long.class).single()).isZero();
             } finally {
                 server.stop(0);
@@ -130,10 +124,6 @@ class EmailDeliveryIT {
         }
     }
 
-    /**
-     * SendGrid caído y de vuelta (I19): el correo queda PENDING con su cuerpo y su espera; cuando el proveedor se recupera y vence la espera, el
-     * siguiente ciclo lo envía <b>una sola vez</b>, borra el cuerpo y no lo vuelve a mandar. Ningún log lleva el secreto del cuerpo ni la clave.
-     */
     @Test
     void anEmailLeftPendingByAnOutageIsSentOnceWhenTheProviderIsBackAndNoSecretReachesTheLogs() throws Exception {
         try (var database = new PostgreSQLContainer("postgres:16.15").withPassword(UUID.randomUUID().toString());
@@ -157,11 +147,11 @@ class EmailDeliveryIT {
                 var delivery = new EmailDeliveryService(new JdbcDeferredEmailStoreAdapter(jdbc), sender, new RecipientPolicy(""), Clock.systemUTC(), 5);
                 enqueue(jdbc, "caida@correo.controlado");
 
-                delivery.deliver();                                              // el proveedor está caído
+                delivery.deliver();
                 assertThat(row(jdbc, "caida@correo.controlado", "status")).isEqualTo("PENDING");
                 assertThat(requests.get()).isEqualTo(1);
 
-                response.set(202);                                               // el proveedor se recupera
+                response.set(202);
                 delivery.deliver();
                 assertThat(requests.get()).as("aún no vence la espera: no se llama").isEqualTo(1);
                 jdbc.sql("UPDATE deferred_email SET next_attempt_at=now() WHERE recipient='caida@correo.controlado'").update();

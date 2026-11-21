@@ -1,6 +1,5 @@
 package com.nodotextil.trazatex.production.domain.model;
 
-/** Fase operativa del lote (glosario): solo Production la gobierna. Los estados históricos son finales. */
 public enum BatchPhase {
 
     AVAILABLE("Disponible", false),
@@ -19,12 +18,10 @@ public enum BatchPhase {
         this.historical = historical;
     }
 
-    /** Nombre para mensajes al usuario. */
     public String label() {
         return label;
     }
 
-    /** Lote histórico: solo sirve para reconstruir la genealogía. */
     public boolean isHistorical() {
         return historical;
     }

@@ -24,12 +24,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * ADR-007 con Cloudinary simulado: timeout, 5xx y circuito abierto dejan la evidencia PENDING (la petición termina bien, 201), y el
- * job la sube cuando el servicio vuelve, con espera creciente, sin duplicar y sin consumir intentos cuando no se llegó a intentar.
- * Además, una subida lenta no retiene el lote ni la transformación: una división, una transferencia o una finalización simultáneas
- * no esperan a Cloudinary.
- */
 class EvidenceResilienceIT extends EvidenceItBase {
 
     @Autowired
@@ -64,11 +58,9 @@ class EvidenceResilienceIT extends EvidenceItBase {
         return count("SELECT count(*) FROM evidence_upload_queue WHERE evidence_id = ?", id);
     }
 
-    // ---- la petición termina bien aunque Cloudinary falle ----
-
     @Test
     void aCloudinaryTimeoutLeavesTheEvidencePendingWithItsBytesInTheDatabaseAndTheRequestStillSucceeds() throws Exception {
-        stubUploadDelayed(6_000);                       // el timeout de lectura de las pruebas es de 2 s
+        stubUploadDelayed(6_000);
         UUID batch = idOf(registerBatch(10));
         byte[] bytes = jpeg();
 
@@ -140,8 +132,6 @@ class EvidenceResilienceIT extends EvidenceItBase {
         assertThat(circuitBreakers.circuitBreaker("cloudinary").getMetrics().getNumberOfFailedCalls()).as("un archivo malo no es una falla del servicio").isZero();
     }
 
-    // ---- borrar también pasa por el circuito (M5) ----
-
     @Autowired
     com.nodotextil.trazatex.production.application.port.out.EvidenceStoragePort storage;
 
@@ -152,7 +142,7 @@ class EvidenceResilienceIT extends EvidenceItBase {
                 com.github.tomakehurst.wiremock.client.WireMock.aResponse().withStatus(503).withBody("{}")));
         String publicId = UUID.randomUUID().toString();
 
-        for (int i = 0; i < 2; i++) {                      // minimum-calls = 2, 100 % de fallos → abre
+        for (int i = 0; i < 2; i++) {
             org.assertj.core.api.Assertions.assertThatThrownBy(() -> storage.delete(publicId))
                     .isInstanceOf(com.nodotextil.trazatex.production.application.exception.StorageTransientException.class);
         }
@@ -165,14 +155,12 @@ class EvidenceResilienceIT extends EvidenceItBase {
                 .as("con el circuito abierto no se llama a Cloudinary").isEqualTo(before);
     }
 
-    // ---- el circuito ----
-
     @Test
     void theCircuitOpensAfterRepeatedFailuresThenRequestsStopReachingCloudinaryAndTheyQueueInstantly() throws Exception {
         stubUploadStatus(503, "{}");
         UUID batch = idOf(registerBatch(10));
         attach(batch, null, photo());
-        attach(batch, null, photo());          // minimum-calls = 2, 100 % de fallos → abre
+        attach(batch, null, photo());
         CircuitBreaker breaker = circuitBreakers.circuitBreaker("cloudinary");
         assertThat(breaker.getState()).isEqualTo(CircuitBreaker.State.OPEN);
         int callsBefore = uploadRequests().size();
@@ -197,7 +185,7 @@ class EvidenceResilienceIT extends EvidenceItBase {
         assertThat(breaker.getState()).isEqualTo(CircuitBreaker.State.OPEN);
         clearStubs();
         stubUploadOk();
-        Thread.sleep(3_200);        // wait-in-open-state de las pruebas: 3 s; la siguiente llamada pasa a HALF_OPEN y prueba
+        Thread.sleep(3_200);
 
         HttpResponse<String> probe1 = attach(batch, null, photo());
         HttpResponse<String> probe2 = attach(batch, null, photo());
@@ -206,8 +194,6 @@ class EvidenceResilienceIT extends EvidenceItBase {
         assertThat(items(probe2).get(0).path("status").asString()).isEqualTo("UPLOADED");
         assertThat(breaker.getState()).isEqualTo(CircuitBreaker.State.CLOSED);
     }
-
-    // ---- el job ----
 
     @Test
     void theJobUploadsWhatWasPendingOnceCloudinaryIsBackAndFreesTheBytes() throws Exception {
@@ -245,7 +231,6 @@ class EvidenceResilienceIT extends EvidenceItBase {
         UUID batch = idOf(registerBatch(10));
         UUID id = idOfItem(items(attach(batch, null, photo())).get(0));
         circuitBreakers.circuitBreaker("cloudinary").reset();
-        // intento 1 → +30 s, intento 2 → +60 s
         long[] expectedWaits = {30, 60};
         Object previous = timestamp(id, "next_attempt_at");
         for (int attempt = 1; attempt <= 2; attempt++) {
@@ -269,7 +254,7 @@ class EvidenceResilienceIT extends EvidenceItBase {
     void afterTheMaximumAttemptsItFailsKeepingItsBytesAndAManualRequeueUploadsIt() throws Exception {
         stubUploadStatus(500, "{}");
         UUID batch = idOf(registerBatch(10));
-        UUID id = idOfItem(items(attach(batch, null, photo())).get(0));           // max-attempts de las pruebas = 3
+        UUID id = idOfItem(items(attach(batch, null, photo())).get(0));
         for (int attempt = 1; attempt <= 3; attempt++) {
             clock.advance(Duration.ofHours(1));
             circuitBreakers.circuitBreaker("cloudinary").reset();
@@ -285,7 +270,6 @@ class EvidenceResilienceIT extends EvidenceItBase {
         clock.advance(Duration.ofDays(1));
         assertThat(pendingUploads.uploadDue()).as("una FAILED no se vuelve a intentar sola").isZero();
 
-        // El reencolado manual documentado en docs/progress.md
         clearStubs();
         stubUploadOk();
         jdbc.sql("UPDATE evidence SET status = 'PENDING', attempts = 0, next_attempt_at = :requeuedAt, last_error = NULL WHERE id = :id AND status = 'FAILED'")
@@ -320,7 +304,7 @@ class EvidenceResilienceIT extends EvidenceItBase {
         stubUploadStatus(503, "{}");
         UUID batch = idOf(registerBatch(10));
         UUID id = idOfItem(items(attach(batch, null, photo())).get(0));
-        attach(batch, null, photo());                       // abre el circuito
+        attach(batch, null, photo());
         assertThat(circuitBreakers.circuitBreaker("cloudinary").getState()).isEqualTo(CircuitBreaker.State.OPEN);
         int callsBefore = uploadRequests().size();
 
@@ -334,17 +318,13 @@ class EvidenceResilienceIT extends EvidenceItBase {
         assertThat(column(id, "status")).isEqualTo("PENDING");
     }
 
-    // ---- sin duplicar ----
-
     @Test
     void aLostResponseIsRetriedWithTheSamePublicIdAndNeverOverwritesOrDuplicates() throws Exception {
-        // Cloudinary SÍ guardó la imagen, pero la respuesta tardó más que el timeout: el cliente la da por perdida
         stubUploadDelayed(6_000);
         UUID batch = idOf(registerBatch(10));
         UUID id = idOfItem(items(attach(batch, null, photo())).get(0));
         assertThat(column(id, "status")).isEqualTo("PENDING");
         clearStubs();
-        // En el reintento Cloudinary (overwrite=false) devuelve la imagen que ya tenía
         stubUploadStatus(200, "{\"public_id\":\"" + id + "\",\"existing\":true,\"secure_url\":\"https://res.cloudinary.com/demo/image/upload/v1/" + id + ".jpg\"}");
         circuitBreakers.circuitBreaker("cloudinary").reset();
         clock.advance(Duration.ofMinutes(1));
@@ -365,7 +345,7 @@ class EvidenceResilienceIT extends EvidenceItBase {
         UUID batch = idOf(registerBatch(10));
         UUID id = idOfItem(items(attach(batch, null, photo())).get(0));
         clearStubs();
-        stubUploadDelayed(1_000);                           // la subida tarda: el segundo job llega mientras el primero sube
+        stubUploadDelayed(1_000);
         circuitBreakers.circuitBreaker("cloudinary").reset();
         clock.advance(Duration.ofMinutes(1));
         ExecutorService pool = Executors.newFixedThreadPool(2);
@@ -388,10 +368,7 @@ class EvidenceResilienceIT extends EvidenceItBase {
         assertThat(column(id, "status")).isEqualTo("UPLOADED");
     }
 
-    // ---- una subida lenta no retiene el lote ni la transformación ----
-
     private void assertNobodyHoldsTheRowLocks(String table, UUID id) {
-        // si la subida tuviera el lote/transformación bloqueado, FOR UPDATE NOWAIT fallaría
         inTx(() -> jdbc.sql("SELECT id FROM " + table + " WHERE id = :id FOR UPDATE NOWAIT").param("id", id).query(UUID.class).single());
     }
 
@@ -401,7 +378,7 @@ class EvidenceResilienceIT extends EvidenceItBase {
 
     @Test
     void aSlowUploadDoesNotMakeASplitWait() throws Exception {
-        for (String key : new String[]{null, UUID.randomUUID().toString()}) {          // sin y con Idempotency-Key (el filtro abre una transacción)
+        for (String key : new String[]{null, UUID.randomUUID().toString()}) {
             CLOUDINARY.resetAll();
             stubUploadDelayed(1_500);
             UUID batch = idOf(registerBatch(10));

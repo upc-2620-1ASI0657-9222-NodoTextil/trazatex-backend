@@ -30,7 +30,7 @@ class JdbcAuditLogAdapter implements AuditLogPort {
                         VALUES (:id, :userId, :companyId, :action, :entityType, :entityId, cast(:changes AS jsonb), :occurredAt)
                         """)
                 .param("id", UUID.randomUUID())
-                .param("userId", userId, Types.OTHER)       // nulo = acción del sistema (V4)
+                .param("userId", userId, Types.OTHER)
                 .param("companyId", companyId, Types.OTHER)
                 .param("action", action)
                 .param("entityType", entityType)

@@ -3,7 +3,6 @@ package com.nodotextil.trazatex.production.domain;
 import java.util.Arrays;
 import java.util.Random;
 
-/** Bytes que empiezan como un JPEG, un PNG o un WebP (lo único que mira la validación), seguidos de relleno. */
 public final class SampleImages {
 
     private SampleImages() {
@@ -21,7 +20,6 @@ public final class SampleImages {
         return withTail(new byte[]{'R', 'I', 'F', 'F', 0x10, 0, 0, 0, 'W', 'E', 'B', 'P'}, 32);
     }
 
-    /** Un JPEG de exactamente {@code size} bytes. */
     public static byte[] jpegOfSize(int size) {
         byte[] head = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0};
         byte[] bytes = new byte[size];

@@ -1,15 +1,14 @@
 import { test, expect, Page, APIRequestContext } from './base';
 import { readFileSync } from 'node:fs';
 import { credentialsFile, localFile } from './paths';
+import { chooseLoginRole } from './support';
 test.use({trace:'off'});
 const accounts=JSON.parse(readFileSync(credentialsFile(),'utf8')).accounts;
 const state=()=>JSON.parse(readFileSync(localFile('state.json'),'utf8'));
-// FE-C1: el `name` del lote solo lo ve la empresa dueña. El grafo (API) lo trae solo en los nodos propios; en los ajenos la pantalla muestra «—».
 async function expectedName(request:APIRequestContext,role:string,traceabilityId:string):Promise<string>{
  const user=accounts.find((a:{role:string})=>a.role===role);
  const token=(await (await request.post('/api/auth/login',{data:{email:user.email,password:user.password}})).json()).token as string;
  const headers={Authorization:'Bearer '+token};
- // el Gateway limita las lecturas por IP (429 + Retry-After): se espera y se repite en vez de fallar por el ritmo de la prueba
  const read=async(path:string)=>{for(let attempt=0;attempt<6;attempt++){const response=await request.get(path,{headers});if(response.status()!==429)return response.json();await new Promise(r=>setTimeout(r,((Number(response.headers()['retry-after'])||2)+1)*1000));}throw new Error('429 persistente en '+path);};
  const found=await read('/api/traceability/lineages?traceabilityId='+encodeURIComponent(traceabilityId));
  const graph=await read('/api/traceability/batches/'+found.items[0].batchId+'/lineage');
@@ -18,7 +17,7 @@ async function expectedName(request:APIRequestContext,role:string,traceabilityId
 }
 async function enter(page:Page,role:string){
  const user=accounts.find((a:{role:string})=>a.role===role);
- await page.goto('/login'); await page.getByLabel('Correo',{exact:true}).fill(user.email); await page.getByLabel('Contraseña',{exact:true}).fill(user.password);
+ await page.goto('/login'); await chooseLoginRole(page,role); await page.getByLabel('Correo',{exact:true}).fill(user.email); await page.getByLabel('Contraseña',{exact:true}).fill(user.password);
  await page.getByRole('button',{name:'Ingresar',exact:true}).click(); await expect(page.locator('app-shell')).toBeVisible();
  await expect(page.locator('main.content')).toHaveAttribute('aria-busy','false',{timeout:60000});
 }
@@ -49,7 +48,7 @@ test('login conserva formulario y reutiliza iconos de navegación',async({page})
 test('detalle de lote y proceso: un encabezado, acciones conservadas y navegación',async({page})=>{
  test.setTimeout(120000);await enter(page,'OPERATOR');const s=state();
  const lot=s.operations['batch/depth/camisas'];const process=s.operations['transformation/depth/camisas/0'];
- for(const [route,back] of [['/lotes/'+lot.traceabilityId,'Lotes'],['/procesos/'+process.id,'Procesos']]){
+ for(const [route,back] of [['/lotes/'+lot.traceabilityId,'Lotes'],['/procesos/'+process.id,'Transformaciones']]){
   await page.goto(route);await expect(page.locator('main.content')).toHaveAttribute('aria-busy','false',{timeout:60000});
   await expect(page.locator('main.content .page-head')).toHaveCount(0);
   const button=page.locator('.topbar').getByRole('link',{name:'Ver en genealogía',exact:true});await expect(button).toBeVisible();

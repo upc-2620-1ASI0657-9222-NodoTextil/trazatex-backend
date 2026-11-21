@@ -13,11 +13,6 @@ import tools.jackson.databind.ObjectMapper;
 import java.util.Map;
 import java.util.function.Consumer;
 
-/**
- * {@code quality.control}: {@code QualityStatusChanged} (clave {@code batchId}: el orden de un lote se conserva). El tópico es de
- * Quality (siguiente sprint) y puede no existir todavía: este consumidor no lo crea y empieza a leerlo cuando aparezca
- * ({@link TopicWatcherJob}). {@code QualityControlCompleted}, que va a analytics, se ignora.
- */
 @Component
 @ConditionalOnProperty(name = "trazatex.messaging.enabled", havingValue = "true", matchIfMissing = true)
 class QualityEventsListener extends AbstractEventListener {

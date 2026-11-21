@@ -13,11 +13,6 @@ import org.springframework.core.Ordered;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-/**
- * Después de autenticar (necesita saber quién es): rutas públicas por IP (login e invitaciones, cada una con su cubo) y rutas
- * autenticadas por usuario y empresa a la vez. Si se agota un cubo la petición no llega al servicio: 429 con {@code Retry-After}
- * (lo arma {@code GatewayErrorHandler}). Una petición que no pasó la autenticación (401/503) no tiene identidad y no gasta cubos.
- */
 public class RateLimitGatewayFilter implements GlobalFilter, Ordered {
 
     public static final int ORDER = AuthenticationGatewayFilter.ORDER + 100;

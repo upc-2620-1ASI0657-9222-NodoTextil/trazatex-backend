@@ -8,7 +8,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** La proporción entre la espera más larga de los reintentos y {@code max.poll.interval.ms}: una espera es una quinta parte, y romper la mitad impide arrancar. */
 class MessagingConfigTest {
 
     @Test

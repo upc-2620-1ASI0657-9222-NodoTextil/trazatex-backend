@@ -15,7 +15,6 @@ import static com.nodotextil.trazatex.quality.domain.SampleImages.png;
 import static com.nodotextil.trazatex.quality.domain.SampleImages.webp;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** US43: adjuntar y listar fotos de un control o de una falla; validación, permisos y privacidad entre empresas. */
 class EvidenceApiIT extends EvidenceItBase {
 
     private JsonNode items(HttpResponse<String> response) {
@@ -27,8 +26,6 @@ class EvidenceApiIT extends EvidenceItBase {
         parts.addAll(List.of(files));
         return postMultipart(EVIDENCE, caller, newBoundary(), key, parts);
     }
-
-    // ---- escenarios 1 y 2 de US43: en control y en falla ----
 
     @Test
     void photosAttachedToAControlAreUploadedToCloudinaryAndListed() throws Exception {
@@ -57,7 +54,6 @@ class EvidenceApiIT extends EvidenceItBase {
         assertThat(created.get(1).path("contentType").asString()).isEqualTo("image/png");
         assertThat(created.get(1).path("sizeBytes").asLong()).isEqualTo(second.length);
 
-        // lo que viajó a Cloudinary: public_id = id de la evidencia, sin sobrescribir, firmado, y el secreto no viaja
         List<LoggedRequest> sent = uploadRequests();
         assertThat(sent).hasSize(2);
         for (int i = 0; i < 2; i++) {
@@ -121,8 +117,6 @@ class EvidenceApiIT extends EvidenceItBase {
         }
     }
 
-    // ---- formato: por los primeros bytes ----
-
     @Test
     void theFormatComesFromTheFirstBytesNotFromTheExtensionNorTheDeclaredType() throws Exception {
         stubUploadOk();
@@ -169,8 +163,6 @@ class EvidenceApiIT extends EvidenceItBase {
             assertThat(body(response).path("code").asString()).isEqualTo("UNSUPPORTED_FILE_FORMAT");
         }
     }
-
-    // ---- cantidad y tamaño ----
 
     @Test
     void upToFiveFilesPerRequestAreAcceptedAndMoreAreRejected() throws Exception {
@@ -227,7 +219,6 @@ class EvidenceApiIT extends EvidenceItBase {
         assertThat(count("SELECT count(*) FROM evidence")).isEqualTo(1);
     }
 
-    /** Un archivo muy por encima del límite (40 MB): el cliente debe recibir el ApiError y no un corte de conexión (server.tomcat.max-swallow-size). */
     @Test
     void aFarLargerFileStillGetsTheApiErrorAndNotAConnectionReset() throws Exception {
         UUID control = inProgressControl();
@@ -254,8 +245,6 @@ class EvidenceApiIT extends EvidenceItBase {
                 .as("la misma clave sirve después de corregir el archivo").isEqualTo(201);
     }
 
-    // ---- a qué se adjunta ----
-
     @Test
     void exactlyOneOfControlIdOrFailureIdIsRequired() throws Exception {
         stubUploadOk();
@@ -273,8 +262,6 @@ class EvidenceApiIT extends EvidenceItBase {
         assertThat(notAUuid.statusCode()).isEqualTo(400);
         assertThat(uploadRequests()).isEmpty();
     }
-
-    // ---- permisos y privacidad ----
 
     @Test
     void onlyTheCompanyAdminOfTheOwningCompanyAttachesAndLists_AnOperatorGets403_US43Scenario3Literal() throws Exception {
@@ -324,7 +311,6 @@ class EvidenceApiIT extends EvidenceItBase {
         stubUploadOk();
         UUID control = inProgressControl();
         attachToControl(control, ADMIN_OF_A, null, FilePart.files("a.jpg", "image/jpeg", jpeg()), FilePart.files("b.png", "image/png", png()));
-        // una evidencia que subió otra empresa sobre el mismo control no se lista
         jdbc.sql("""
                 INSERT INTO evidence (id, owner_type, owner_id, company_id, status, url, original_filename, content_type, size_bytes, uploaded_by, created_at, uploaded_at)
                 VALUES (:id, 'CONTROL', :control, :other, 'UPLOADED', 'https://res.cloudinary.com/demo/ajena.jpg', 'ajena.jpg', 'image/jpeg', 10, :user, :at, :at)
@@ -335,8 +321,6 @@ class EvidenceApiIT extends EvidenceItBase {
 
         assertThat(listed).extracting(i -> i.path("originalFilename").asString()).containsExactly("a.jpg", "b.png");
     }
-
-    // ---- idempotencia ----
 
     @Test
     void aRetryWithTheSameKeyAndFilesButAnotherBoundaryReturnsTheSameResponseAndStoresNothingNew() throws Exception {

@@ -12,15 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Outbox de Traceability: nodos {@code (:OutboxEvent)} con las mismas propiedades que la tabla {@code outbox}
- * ({@code docs/architecture/data.md}), escritos en la misma transacción de Neo4j que el cambio del grafo.
- *
- * <p>Neo4j no tiene {@code FOR UPDATE SKIP LOCKED}. {@link #findPending} toma el lock de escritura de las filas candidatas
- * (por orden de {@code createdAt}, así dos relays no se interbloquean) y <b>después</b> vuelve a leerlas filtrando por estado:
- * el segundo relay espera a que el primero termine y entonces ya no las ve pendientes, en vez de republicarlas. Costo
- * frente a PostgreSQL: el segundo relay espera en lugar de saltarse las filas. Con una sola instancia no tiene efecto.
- */
 @Component
 class Neo4jOutboxStoreAdapter implements OutboxStorePort {
 

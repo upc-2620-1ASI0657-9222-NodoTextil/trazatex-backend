@@ -27,7 +27,6 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 import java.util.List;
 
-/** Todo error HTTP sale como {@code ApiError { code, message, details, timestamp }}. */
 @RestControllerAdvice
 class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
@@ -38,7 +37,6 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return respond(statusOf(e), ApiError.of(e.code(), e.getMessage(), e.details()));
     }
 
-    /** El generador del reporte falló (US44 esc. 2): se comunica el error y se puede reintentar, sin estado que limpiar. */
     @ExceptionHandler(PdfGenerationException.class)
     ResponseEntity<ApiError> handlePdf(PdfGenerationException e) {
         log.error("No se pudo generar el reporte", e);
@@ -52,14 +50,12 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
                 "El valor del parámetro '" + e.getName() + "' no es válido.", List.of(e.getName())));
     }
 
-    /** Red de seguridad: las restricciones de la base ganan a la carrera de dos peticiones. */
     @ExceptionHandler(DataIntegrityViolationException.class)
     ResponseEntity<ApiError> handleIntegrity(DataIntegrityViolationException e) {
         log.warn("Violación de integridad: {}", e.getMostSpecificCause().getMessage());
         return respond(HttpStatus.CONFLICT, ApiError.of("CONFLICT", "La operación choca con datos existentes."));
     }
 
-    /** Un archivo (o la petición) supera el máximo del contenedor: 413 como {@code ApiError}, no una página de error genérica. */
     @Override
     protected ResponseEntity<Object> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException ex, HttpHeaders headers,
                                                                           HttpStatusCode status, WebRequest request) {
@@ -67,21 +63,18 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
                 "Cada fotografía puede pesar como máximo 10 MB (y una petición, 5 fotografías)."), headers, HttpStatus.PAYLOAD_TOO_LARGE);
     }
 
-    /** US43: la petición no trae el campo {@code files}. */
     @Override
     protected ResponseEntity<Object> handleMissingServletRequestPart(MissingServletRequestPartException ex, HttpHeaders headers,
                                                                      HttpStatusCode status, WebRequest request) {
         return new ResponseEntity<>(ApiError.of(ErrorCodes.NO_FILES, "Adjunte al menos una fotografía (campo \"files\")."), headers, status);
     }
 
-    /** Un defecto de Quality (p. ej. Production rechazó un comando mal formado): el detalle va al log, el usuario ve un 500 genérico. */
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiError> handleUnexpected(Exception e) {
         log.error("Error no controlado", e);
         return respond(HttpStatus.INTERNAL_SERVER_ERROR, ApiError.of("INTERNAL_ERROR", "Ocurrió un error inesperado."));
     }
 
-    /** Errores estándar de Spring MVC (JSON mal formado, método no permitido, ruta inexistente...) con el mismo cuerpo. */
     @Override
     protected ResponseEntity<Object> handleExceptionInternal(Exception ex, Object body, HttpHeaders headers, HttpStatusCode statusCode,
                                                              WebRequest request) {

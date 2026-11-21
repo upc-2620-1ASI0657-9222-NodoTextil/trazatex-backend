@@ -235,7 +235,6 @@ class EvidenceServiceTest {
         service.attach(EvidenceOwnerType.CONTROL, batch.id(), List.of(file("a.jpg", jpeg()), file("b.png", png())), ADMIN);
 
         assertThat(service.list(EvidenceOwnerType.CONTROL, batch.id(), ADMIN).items()).hasSize(2);
-        // una evidencia que subió otra empresa (p. ej. antes de una transferencia) no se lista
         saved.add(new NewEvidence(Evidence.uploaded(UUID.randomUUID(), EvidenceOwnerType.CONTROL, batch.id(), OTHER_COMPANY, "ajena.jpg",
                 com.nodotextil.trazatex.quality.domain.model.ImageFormat.JPEG, 10, UUID.randomUUID(), "https://res.cloudinary.com/demo/ajena.jpg", START), null));
         assertThat(service.list(EvidenceOwnerType.CONTROL, batch.id(), ADMIN).items()).extracting(i -> i.originalFilename()).containsExactly("a.jpg", "b.png");

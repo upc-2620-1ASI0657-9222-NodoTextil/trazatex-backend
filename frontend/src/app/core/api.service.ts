@@ -30,14 +30,9 @@ export interface LoginResult {
   expiresAt: string;
   user: ApiUser;
 }
-/** El `code` del `ApiError` del servidor (`{code, message, ...}`), o `null` si el error no vino de una respuesta con cuerpo. */
 export function errorCode(error: unknown): string | null {
   return error instanceof HttpErrorResponse && typeof error.error?.code === 'string' ? error.error.code : null;
 }
-/**
- * Nombre de archivo de un `Content-Disposition` (`filename*=UTF-8''…` o `filename="…"`), sin rutas ni caracteres de control, o `fallback`
- * si no hay ninguno utilizable (FE-M8).
- */
 export function filenameFromDisposition(header: string | null | undefined, fallback: string): string {
   const extended = /filename\*\s*=\s*(?:UTF-8|utf-8)''([^;]+)/.exec(header ?? '');
   const plain = /filename\s*=\s*(?:"([^"]*)"|([^;]+))/.exec(header ?? '');
@@ -46,7 +41,6 @@ export function filenameFromDisposition(header: string | null | undefined, fallb
   name = name.trim().split(/[\\/]/).pop()!.replace(/[\u0000-\u001f\u007f<>:"|?*]/g, '').replace(/^\.+/, '');
   return name || fallback;
 }
-/** Qué decirle a la persona cuando el Gateway terminó su sesión (401), según el `code` (FE-M7). */
 export function sessionEndMessage(error: unknown): string {
   switch (errorCode(error)) {
     case A.API_ERROR.TOKEN_EXPIRED: return 'Tu sesión venció. Inicia sesión de nuevo.';
@@ -68,7 +62,6 @@ export function errorMessage(error: unknown): string {
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private readonly http = inject(HttpClient);
-  /** Plazo según el tipo de operación (`timeouts.ts`). Al agotarse equivale a «sin respuesta» (status 0). */
   private readonly deadline = (ms: number) => <T>(source: import('rxjs').Observable<T>) => source.pipe(
     timeout({ first: ms }),
     catchError(error => throwError(() => error instanceof TimeoutError
@@ -97,10 +90,6 @@ export class ApiService {
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
-  /**
-   * `onProgress` (solo con `FormData`) recibe el porcentaje enviado (0–100). El plazo sigue siendo el de toda la operación: los eventos de
-   * progreso no lo reinician, porque solo cuenta la respuesta final (FE-I2).
-   */
   async request<T>(method: string, path: string, body?: unknown, idempotencyKey?: string, onProgress?: (percent: number) => void): Promise<T> {
     const requestId = idempotencyKey ?? (['GET', 'HEAD'].includes(method) ? undefined : crypto.randomUUID());
     const { ms } = timeoutFor(method, path, body);

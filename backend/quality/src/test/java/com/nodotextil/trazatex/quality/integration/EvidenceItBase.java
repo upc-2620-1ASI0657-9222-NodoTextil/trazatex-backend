@@ -32,11 +32,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 
-/**
- * Evidencias contra un servidor real (Tomcat con su multipart, el filtro de idempotencia y el manejo de errores) y un WireMock en el
- * lugar de Cloudinary (ADR-007). Las peticiones multipart se arman a mano para poder elegir el separador. Reintentos cortos y circuito
- * pequeño para que las pruebas sean rápidas; la cola la recorre cada prueba invocando el caso de uso (el job programado está apagado).
- */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "trazatex.messaging.enabled=false", "trazatex.quality.start.job-enabled=false", "trazatex.evidence.upload.enabled=false"})
 abstract class EvidenceItBase extends FlowTestBase {
@@ -80,9 +75,6 @@ abstract class EvidenceItBase extends FlowTestBase {
         circuitBreakers.circuitBreaker("production").reset();
     }
 
-    // ---- Cloudinary simulado ----
-
-    /** 200 con la URL de la imagen, que lleva el public_id recibido (plantilla de WireMock). */
     static void stubUploadOk() {
         CLOUDINARY.stubFor(post(urlPathEqualTo(UPLOAD_PATH)).atPriority(10).willReturn(okJson(
                 "{\"public_id\":\"{{request.parts.public_id.body}}\",\"secure_url\":\"https://res.cloudinary.com/demo/image/upload/v1/{{request.parts.public_id.body}}.jpg\"}")
@@ -121,7 +113,6 @@ abstract class EvidenceItBase extends FlowTestBase {
         return request.getParts() != null && request.getParts().stream().map(Request.Part::getName).anyMatch(name::equals);
     }
 
-    /** La firma que Cloudinary esperaría: SHA-1 de los parámetros firmados, en orden, más el secreto. */
     static String expectedSignature(String publicId, String timestamp) {
         try {
             String toSign = "allowed_formats=jpg,png,webp&overwrite=false&public_id=" + publicId + "&timestamp=" + timestamp + API_SECRET;
@@ -131,9 +122,6 @@ abstract class EvidenceItBase extends FlowTestBase {
         }
     }
 
-    // ---- HTTP multipart a mano ----
-
-    /** Una parte del formulario: un archivo (con nombre) o un campo de texto (sin nombre de archivo). */
     record FilePart(String field, String filename, String contentType, byte[] content) {
         static FilePart files(String filename, String contentType, byte[] content) {
             return new FilePart("files", filename, contentType, content);
@@ -237,12 +225,10 @@ abstract class EvidenceItBase extends FlowTestBase {
         return jdbc.sql(sql.replace("?", ":p")).param("p", args.length == 0 ? null : args[0]).query(Long.class).single();
     }
 
-    /** Un control en curso de la empresa A (Production confirmó el inicio). */
     UUID inProgressControl() throws Exception {
         return startControl(seedAvailable());
     }
 
-    /** Un control finalizado con falla: devuelve el id de la falla (el control es {@code failureControl}). */
     UUID failureOf(UUID control) throws Exception {
         addTest(control, "FAILED");
         ProductionStub.reset();

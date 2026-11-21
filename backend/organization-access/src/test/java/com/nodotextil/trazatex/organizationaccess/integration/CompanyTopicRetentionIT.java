@@ -25,11 +25,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * {@code orgaccess.company} no puede perder sus altas por antigüedad: un Production o un Traceability nuevo las lee desde el
- * inicio. Caso de tu Kafka local: el tópico <b>ya existe</b> con la retención por defecto (7 días) y con datos; al arrancar el
- * servicio queda sin borrado por tiempo, sin perder mensajes ni cambiar las particiones.
- */
 @SpringBootTest(properties = "trazatex.messaging.enabled=true")
 class CompanyTopicRetentionIT extends IntegrationTestBase {
 

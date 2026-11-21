@@ -13,12 +13,6 @@ import tools.jackson.databind.ObjectMapper;
 import java.util.Map;
 import java.util.function.Consumer;
 
-/**
- * {@code quality.failure}: {@code FailureConfirmed} (clave {@code failureId}) dispara el análisis de impacto (US33). El tópico es de Quality (siguiente sprint) y puede
- * no existir todavía: este consumidor no lo crea y empieza a leerlo cuando aparezca ({@link TopicWatcherJob}). Si la familia del lote fallado aún no está completa, el
- * caso de uso lanza una excepción reintentable y el contenedor reintenta con su espera propia (ver {@code MessagingConfig}); agotada, el mensaje va a
- * {@code quality.failure.DLT} con un aviso (ver {@link ImpactDeadLetterReporter}).
- */
 @Component
 @ConditionalOnProperty(name = "trazatex.messaging.enabled", havingValue = "true", matchIfMissing = true)
 class QualityFailureListener extends AbstractEventListener {

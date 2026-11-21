@@ -50,7 +50,6 @@ class JpaBatchRepositoryAdapter implements BatchRepositoryPort {
         return repository.saveAndFlush(entity).version;
     }
 
-    /** Lo que no cambia nunca después de crear el lote (códigos, cantidad, composición, origen...). */
     private static BatchEntity create(Batch batch) {
         BatchEntity entity = new BatchEntity();
         entity.id = batch.id();

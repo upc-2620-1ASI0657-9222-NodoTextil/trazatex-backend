@@ -19,9 +19,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * ADR-007 con WireMock. SHA-1("password") = 5BAA6 1E4C9B93F3F0682250B6CF8331B7EE68FD8: a HIBP solo viaja el prefijo "5BAA6".
- */
 class HibpPasswordBreachCheckerAdapterTest {
 
     @RegisterExtension

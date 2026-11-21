@@ -55,7 +55,6 @@ class TransformationController {
         return transformations.get(id, actor);
     }
 
-    /** US18/US19. La merma nunca se envía: el servicio la calcula (entrada − salida − desperdicio). */
     @PostMapping("/{id}/complete")
     @RequiresRole(Role.OPERATOR)
     CompleteTransformationResult complete(@PathVariable UUID id, @RequestBody CompleteTransformationCommand request, Actor actor) {

@@ -16,7 +16,6 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** US16 (iniciar), US17 (composición), US18 (finalizar), US19 (desperdicio) y US20 (producto final). */
 public class TransformationSteps extends StepSupport {
 
     public TransformationSteps(World world, ProductionApi api, Outbox outbox, JdbcClient jdbc, ObjectMapper json) {
@@ -45,8 +44,6 @@ public class TransformationSteps extends StepSupport {
         return list;
     }
 
-    // ---- US16 esc. 1 ----
-
     @Dado("^que existen uno o más lotes habilitados$")
     public void oneOrMoreEnabledBatchesExist() {
         world.notes.put("lots", List.of(registerLot(10), registerLot(20)));
@@ -72,8 +69,6 @@ public class TransformationSteps extends StepSupport {
         }
     }
 
-    // ---- US16 esc. 2 ----
-
     @Dado("^que uno de los lotes seleccionados no está habilitado$")
     public void oneOfTheSelectedBatchesIsNotEnabled() {
         JsonNode enabled = registerLot(10);
@@ -94,8 +89,6 @@ public class TransformationSteps extends StepSupport {
         assertThat(api.get(world.operatorA, "/api/transformations").body().path("items")).isEmpty();
         assertThat(outbox.ofType("BatchPhaseChanged", id(enabled).toString())).isEmpty();
     }
-
-    // ---- US17 ----
 
     @Dado("^que la transformación utiliza un solo lote$")
     public void theTransformationUsesASingleBatch() {
@@ -130,7 +123,6 @@ public class TransformationSteps extends StepSupport {
     @Entonces("^calcula la composición resultante mediante promedio ponderado por kg$")
     public void itComputesTheWeightedAverageByKg() {
         assertThat(world.last.status()).as("finalizar: %s", world.last.raw()).isEqualTo(200);
-        // (100 kg × 100 % + 300 kg × 50 %) / 400 kg = 62,5 % de algodón y 37,5 % de poliéster
         assertThat(composition(world.last.field("outputs").get(0))).containsExactly("Algodón=62.50", "Poliéster=37.50");
     }
 
@@ -147,8 +139,6 @@ public class TransformationSteps extends StepSupport {
         batch.path("composition").forEach(c -> parts.add(c.path("name").asString() + "=" + c.path("percentage").decimalValue().setScale(2).toPlainString()));
         return parts;
     }
-
-    // ---- US18 ----
 
     @Dado("^que existe una transformación iniciada$")
     public void aTransformationHasStarted() {
@@ -180,7 +170,6 @@ public class TransformationSteps extends StepSupport {
     public void itFinishesWhenTheShrinkageIsZeroOrMore() {
         assertThat(world.last.field("transformation").path("status").asString()).isEqualTo("COMPLETED");
         assertThat(world.last.field("transformation").path("endTime").isNull()).isFalse();
-        // el límite: merma exactamente cero (salida + desperdicio = entrada) también finaliza
         JsonNode input = registerLot(100);
         JsonNode edge = startTransformation("DYEING", registerMachine(), input);
         Reply zero = completeTransformation(edge, map("outputs", outputs(90), "wasteKg", 10, "wasteReason", "Recortes"));
@@ -199,7 +188,6 @@ public class TransformationSteps extends StepSupport {
         JsonNode stored = lot(world.operatorA, output);
         assertThat(stored.path("phase").asString()).isEqualTo("AVAILABLE");
         assertThat(stored.path("qualityStatus").asString()).isEqualTo("NOT_REVIEWED");
-        // y los demás servicios reciben el balance completo
         List<Outbox.Event> completed = outbox.ofType("TransformationCompleted", world.last.field("transformation").path("id").asString());
         assertThat(completed).hasSize(1);
         assertCatalogKeys(completed.get(0).payload(), "transformationId", "type", "companyId", "machineId", "machineName", "machineType",
@@ -207,7 +195,6 @@ public class TransformationSteps extends StepSupport {
         assertThat(completed.get(0).payload().path("shrinkageKg").decimalValue()).isEqualByComparingTo("10");
         assertThat(completed.get(0).payload().path("inputs").get(0).path("batchId").asString()).isEqualTo(input.path("id").asString());
         assertThat(completed.get(0).payload().path("outputs").get(0).path("batchId").asString()).isEqualTo(output.path("id").asString());
-        // name de la salida (agregado en V2): el que envió el operario y el que guarda el lote de salida
         @SuppressWarnings("unchecked")
         Object requestedName = ((List<Map<String, Object>>) world.body.get("outputs")).get(0).get("name");
         assertThat(completed.get(0).payload().path("outputs").get(0).path("name").asString()).isEqualTo(requestedName).isEqualTo(stored.path("name").asString());
@@ -235,8 +222,6 @@ public class TransformationSteps extends StepSupport {
         assertThat(world.last.code()).isEqualTo("INVALID_QUANTITIES");
         assertThat(world.last.message()).contains("cantidades no son válidas");
     }
-
-    // ---- US19 ----
 
     @Dado("^que una transformación genera desperdicio$")
     public void aTransformationGeneratesWaste() {
@@ -269,8 +254,6 @@ public class TransformationSteps extends StepSupport {
         assertThat(stored.field("shrinkageKg").decimalValue()).as("merma = 100 − 90 − 5").isEqualByComparingTo("5");
     }
 
-    // ---- US20 ----
-
     @Dado("^que se genera un lote de salida$")
     public void anOutputBatchIsGenerated() {
         JsonNode input = registerLot(100);
@@ -302,7 +285,6 @@ public class TransformationSteps extends StepSupport {
         assertThat(stored.path("phase").asString()).isEqualTo("AVAILABLE");
         Reply transformation = api.get(world.operatorA, "/api/transformations/" + id(world.transformation));
         assertThat(transformation.field("outputBatchIds")).extracting(JsonNode::asString).contains(world.batch.path("id").asString());
-        // la arista entrada → salida llega a Traceability en TransformationCompleted, con la salida marcada como producto final
         List<Outbox.Event> completed = outbox.ofType("TransformationCompleted", id(world.transformation).toString());
         assertThat(completed).hasSize(1);
         JsonNode published = completed.get(0).payload();
@@ -334,7 +316,6 @@ public class TransformationSteps extends StepSupport {
         assertThat(own.path("currency").asString()).isEqualTo("USD");
         assertThat(own.path("commercialExitDate").asString()).isEqualTo("2026-11-03");
         assertThat(own.path("commercialReference").asString()).isEqualTo("OC-2026-0457");
-        // Privada: otra empresa no los ve (ni por QR, ni por el detalle) y no viajan en ningún evento
         Reply sharedView = api.get(world.operatorB, "/api/batches/qr/" + world.batch.path("qrCode").asString());
         assertThat(sharedView.text("access")).isEqualTo("SHARED");
         assertThat(sharedView.raw()).doesNotContain("Tiendas Lima").doesNotContain("OC-2026-0457").doesNotContain("commercialData").doesNotContain("salePrice");

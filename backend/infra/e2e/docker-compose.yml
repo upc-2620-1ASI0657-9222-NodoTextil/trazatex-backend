@@ -1,6 +1,3 @@
-# Stack AISLADO para las pruebas de cierre (e2e): Kafka, PostgreSQL y Neo4j propios, con otro nombre de proyecto, otros puertos y sin volúmenes con
-# nombre. NO toca el docker-compose.yml de la raíz ni sus datos. Se levanta y se destruye SIEMPRE con infra/e2e/run.sh (que fija el proyecto
-# `trazatex-e2e` y se niega a borrar volúmenes de cualquier otro). Sin secretos en este archivo: las contraseñas se generan en cada corrida.
 name: trazatex-e2e-final-api
 
 services:
@@ -19,7 +16,6 @@ services:
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:39092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-      # Igual que el compose real: cada servicio declara sus tópicos (docs/conventions.md)
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1

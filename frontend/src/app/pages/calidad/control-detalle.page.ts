@@ -59,7 +59,7 @@ import { PASOS_CONTROL } from './calidad.page';
                   Vista previa: al finalizar, el lote pasará a <b>{{ r ?? '—' }}</b>{{ r === 'Con falla' ? ' y se generará una falla automáticamente' : '' }}.
                 } @else if (r === 'Con falla') {
                   Se generó la falla
-                  @for (f of store.fallasDe(c.loteId); track f.id) {<a class="id" [routerLink]="['/fallas', f.id]">{{ f.id }}</a> }
+                  @for (f of store.fallasDe(c.loteId); track f.id) {<a class="id" [routerLink]="['/fallas', f.id]" [attr.title]="f.id">{{ store.referencia(f.id) }}</a> }
                 } @else {
                   El lote quedó Conforme.
                 }
@@ -179,7 +179,6 @@ import { PASOS_CONTROL } from './calidad.page';
   `,
 })
 export class ControlDetallePage {
-  /** Motivo de cancelación en lenguaje de persona (FE-M7). */
   readonly cancelReason = cancelReasonText;
   readonly criterios = computed(() => [...new Set(this.store.misControles().flatMap(control => control.pruebas.map(test => test.criterio)))].sort());
   readonly unidades = computed(() => [...new Set(this.store.misControles().flatMap(control => control.pruebas.map(test => test.unidad)))].sort());
@@ -233,7 +232,6 @@ export class ControlDetallePage {
     if (r.ok) this.ui.toast('Evidencia registrada. Consulta su estado de subida.');
   }
 
-                                                                           
   readonly pdfError = signal('');
   readonly pdfBusy = signal(false);
   async pdf() {
@@ -244,7 +242,6 @@ export class ControlDetallePage {
       await this.store.descargarReporte(this.id());
       this.ui.toast('Reporte PDF descargado');
     } catch (error) {
-      // FE-M8: el fallo queda a la vista con un botón «Reintentar» (no solo en un aviso que se cierra).
       this.pdfError.set(errorMessage(error));
     } finally {
       this.pdfBusy.set(false);

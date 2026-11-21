@@ -8,10 +8,6 @@ import org.springframework.transaction.support.SmartTransactionObject;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-/**
- * Gestor de transacciones de prueba con la semántica real de Spring (propagación, rollback-only global y
- * {@code UnexpectedRollbackException}) que anota cómo terminó cada transacción física.
- */
 public class RecordingTransactionManager extends AbstractPlatformTransactionManager {
 
     public static final class TxState implements SmartTransactionObject {

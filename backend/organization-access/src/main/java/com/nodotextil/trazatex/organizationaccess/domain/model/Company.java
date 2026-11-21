@@ -10,11 +10,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * Empresa textil de la cadena (US02, US03). Nace {@code ACTIVE}. Inactivarla conserva todo su historial; los efectos
- * sobre las operaciones productivas los aplica Production con su proyección. La validez del RUC ante Chequea.pe
- * (ACTIVO y HABIDO) y la unicidad del RUC se comprueban antes, en la capa de aplicación.
- */
 public final class Company {
 
     private final UUID id;

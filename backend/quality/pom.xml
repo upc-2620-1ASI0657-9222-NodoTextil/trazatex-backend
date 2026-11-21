@@ -15,7 +15,6 @@
     <description>Controles de calidad (patrón State), pruebas, fallas y estado de calidad del lote. Proyección local de lotes alimentada por eventos.</description>
 
     <properties>
-        <!-- No gestionada por el BOM de Spring Boot (ADR-011: PDF generado localmente) -->
         <openhtmltopdf.version>1.0.10</openhtmltopdf.version>
     </properties>
 
@@ -179,12 +178,10 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <!-- El jar ejecutable va aparte (-exec): Failsafe necesita el jar normal con las clases en la raíz -->
                     <classifier>exec</classifier>
                 </configuration>
             </plugin>
             <plugin>
-                <!-- Pruebas de integración (*IT): Spring completo + PostgreSQL y Kafka reales con Testcontainers (requiere Docker) -->
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <executions>

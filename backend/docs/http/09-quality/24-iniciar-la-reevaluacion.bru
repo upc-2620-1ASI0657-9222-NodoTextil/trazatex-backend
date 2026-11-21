@@ -25,9 +25,6 @@ assert {
 }
 
 script:pre-request {
-  // Quality conoce la fase de un lote por Kafka: justo después de finalizar un control, iniciar otro puede responder 409 durante 1-2 s.
-  // Se reintenta cada 1 s, hasta 10 s, SOLO ante esos dos códigos; cualquier otra respuesta falla el paso en el acto. La clave de idempotencia
-  // es la misma en todos los intentos y en la petición del paso: si un intento da 201, la petición del paso lo reproduce (no crea otro control).
   const retryable = ["CONTROL_ALREADY_ACTIVE", "BATCH_NOT_AVAILABLE_FOR_CONTROL"];
   const key = bru.interpolate("{{$guid}}");
   bru.setVar("q1Control2Key", key);
@@ -36,8 +33,6 @@ script:pre-request {
     let status;
     let code;
     try {
-      // validateStatus: null → también entrega las respuestas no 2xx con su cuerpo (el error de sendRequest no lo trae). Content-Type JSON y cuerpo vacío:
-      // sin ellos sendRequest manda un tipo por defecto y Quality responde 415. El hash de idempotencia no incluye cabeceras: la petición del paso reproduce el 201.
       const r = await bru.sendRequest({ method: "POST", url: bru.interpolate("{{baseUrl}}/api/quality/batches/{{q1Id}}/controls"), headers: { "Authorization": "Bearer " + bru.getVar("adminToken"), "Idempotency-Key": key, "Content-Type": "application/json" }, data: "", validateStatus: null });
       status = r.status;
       code = r.data && r.data.code;

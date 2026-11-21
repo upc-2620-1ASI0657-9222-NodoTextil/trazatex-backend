@@ -1,6 +1,5 @@
 import { test, expect, APIRequestContext, Page } from './base';
 import { confirmNext, unfold, saveEvidence } from './support';
-// Los lotes se nombran con una marca por ejecución (máx. 20 caracteres): repetir el spec en el mismo stack ya no choca con un nombre existente (409).
 const RUN_TAG=String(Date.now()).slice(-6);
 const UNIFORM='Alg unif '+RUN_TAG;
 const CROSSED='Alg cruz '+RUN_TAG;
@@ -104,7 +103,6 @@ test('evaluación, falla, reevaluación y PDF desde Angular con permisos reales'
   }).toBe('RESOLVED');
   await page.goto('/calidad/'+controlId);
   await expect(page.getByRole('button',{name:'Informe PDF'})).toBeVisible({timeout:30000});
-  // Tras mucha navegación el Gateway puede responder 429 (cubo de 120/min por usuario); la pantalla ofrece «Reintentar», que es lo que se usa.
   let file=null;
   for(let attempt=0;attempt<5&&!file;attempt++){
     const pending=page.waitForEvent('download',{timeout:10000}).catch(()=>null);
@@ -124,7 +122,6 @@ test('notificaciones persistentes, aislamiento por empresa e indicadores por per
   const otherToken=await session(request,other);
   const opToken=await session(request,operator);
   const headers={Authorization:'Bearer '+token};
-  // Notification I5/I1: página {items,...}; `type` es un código estable y la alerta es una por falla y empresa (data.batchIds).
   const response=await request.get('/api/notifications?type=POTENTIAL_DERIVED_FAILURE&size=100',{headers});
   expect(response.status()).toBe(200);
   const paged=await response.json();
@@ -136,7 +133,6 @@ test('notificaciones persistentes, aislamiento por empresa e indicadores por per
   await request.put('/api/notifications/'+notice.id+'/read?value=false',{headers});
   await login(page);
   await page.getByRole('complementary',{name:'Navegación principal'}).getByRole('link', { name: /^Notificaciones/ }).click();
-  // Ronda 4a (fila 26): el shell tiene el único h1; la página trae su propio h2 con el mismo nombre.
   await expect(page.getByRole('heading',{name:'Notificaciones',exact:true,level:1})).toBeVisible();
   await expect(page.getByRole('heading',{level:1})).toHaveCount(1);
   await expect(page.locator('li.unread').first()).toBeVisible({timeout:30000});
@@ -206,7 +202,6 @@ test('valores de calidad y causa de falla se comparten por separado en B2B',asyn
     expect(shared.qualityTests[0].remarks).toBeUndefined();
     expect(shared.inspectorId).toBeUndefined();
     await patch({FAILURE_CAUSE:'SHARED'});
-    // I15 (progress.md): con la falla RESOLVED (el lote ya se reevaluó y se liberó) la causa del grafo queda vacía aunque se comparta; la causa visible de una falla CONFIRMED se cubre en ronda5c-privacy.spec.ts.
     await expect.poll(async()=>(await node(foreignToken))?.failureCause).toBe('');
   } finally {
     await patch({QUALITY_TEST_VALUES:original.fields.QUALITY_TEST_VALUES,FAILURE_CAUSE:original.fields.FAILURE_CAUSE});
@@ -229,7 +224,6 @@ test('invitación visible, cupo real y cancelación persistente desde Usuarios',
   await dialog.getByLabel('Cargo').fill('Inspección de recepción');
   await dialog.getByRole('button',{name:'Enviar invitación',exact:true}).click();
   await expect(dialog).toHaveCount(0);
-  // la lista se pagina (6 por página) y crece con cada ejecución: se busca la invitación por su correo
   await page.getByRole('tab',{name:/^Invitaciones/}).click();
   await page.getByLabel('Buscar',{exact:true}).fill(email);
   await expect(page.locator('.rc-meta').filter({hasText:email})).toBeVisible();
@@ -289,7 +283,7 @@ test('teclado en modales, horario de Lima y pantallas nuevas en móvil',async({p
 
 test('evidencia de falla desde Angular y rechazo de una imagen inválida',async({page,request})=>{
   test.setTimeout(150000);
-  await page.waitForTimeout(25000); // recarga del cubo de 120/min por usuario del Gateway: las pruebas anteriores usan la misma cuenta; el límite no se toca
+  await page.waitForTimeout(25000);
   const token=await session(request,admin);
   const headers={Authorization:'Bearer '+token};
   const failures=(await (await request.get('/api/quality/failures?size=100',{headers})).json()).items;
@@ -314,7 +308,6 @@ test('evidencia de falla desde Angular y rechazo de una imagen inválida',async(
   expect((await rejected).status()).toBe(400);
   const toast=page.locator('.toast--error');
   await expect(toast).toBeVisible();
-  // Ronda 4a (fila 25, FE-I8): un aviso de error NO se retira solo; se queda hasta pulsar «Cerrar» y es role="alert".
   await expect(toast).toHaveAttribute('role','alert');
   await page.waitForTimeout(8000);
   await expect(toast).toBeVisible();
@@ -322,11 +315,9 @@ test('evidencia de falla desde Angular y rechazo de una imagen inválida',async(
   await expect(toast).toHaveCount(0);
 });
 
-
-
 test('descarte, alerta derivada y revisión preventiva completa desde Angular',async({page,request})=>{
   test.setTimeout(270000);
-  await page.waitForTimeout(25000); // recarga del cubo de 120/min por usuario del Gateway: las pruebas anteriores usan la misma cuenta; el límite no se toca
+  await page.waitForTimeout(25000);
   const operatorToken=await session(request,operator);
   const adminToken=await session(request,admin);
   const headers={Authorization:'Bearer '+operatorToken,'Idempotency-Key':randomUUID()};
@@ -378,7 +369,6 @@ test('descarte, alerta derivada y revisión preventiva completa desde Angular',a
     data:{children:[{name:'Primera mitad',quantityKg:20},{name:'Segunda mitad',quantityKg:20}]}});
   expect(blocked.status()).toBe(409);
   await page.getByRole('complementary',{name:'Navegación principal'}).getByRole('link', { name: /^Notificaciones/ }).click();
-  // El aviso abre el lote que falló (resourceId) y resume «y N más» (data.batchIds); el lote relacionado se comprueba en su propia ficha.
   const notice=page.locator('li').filter({hasText:'Posible falla derivada'}).first();
   await expect(notice).toBeVisible({timeout:45000});
   await notice.locator('button.body').click();

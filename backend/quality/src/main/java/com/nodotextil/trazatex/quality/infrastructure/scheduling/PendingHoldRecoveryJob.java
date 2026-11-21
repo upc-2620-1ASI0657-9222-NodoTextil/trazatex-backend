@@ -7,10 +7,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-/**
- * Cada pasada (5 s) decide de nuevo los avisos de posible falla derivada pendientes y manda el {@code HOLD} de los que ya pueden retenerse: un lote
- * en riesgo no debe esperar el ciclo de 15 s del resto de los comandos (decisión del usuario, 2026-10-23).
- */
 @Component
 @ConditionalOnProperty(name = "trazatex.quality.start.job-enabled", havingValue = "true", matchIfMissing = true)
 class PendingHoldRecoveryJob {

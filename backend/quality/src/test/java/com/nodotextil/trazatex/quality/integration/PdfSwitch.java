@@ -7,11 +7,6 @@ import org.springframework.beans.factory.config.BeanPostProcessor;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/**
- * US44 esc. 2 («el servicio de generación de PDF no responde») sin tocar el servicio: un interruptor alrededor del generador REAL. Encendido
- * (lo normal) delega en él; apagado, responde como un generador que no contesta. Los escenarios lo manejan con {@link #stop()} / {@link #start()}.
- * Vive aquí, y no en {@code acceptance}, porque el puerto es del servicio y los pasos solo hablan con él por HTTP.
- */
 public final class PdfSwitch implements PdfGeneratorPort {
 
     private static final AtomicBoolean RUNNING = new AtomicBoolean(true);
@@ -38,7 +33,6 @@ public final class PdfSwitch implements PdfGeneratorPort {
         return real.render(report);
     }
 
-    /** Envuelve el {@link PdfGeneratorPort} del contexto en el interruptor. */
     public static BeanPostProcessor installer() {
         return new BeanPostProcessor() {
             @Override

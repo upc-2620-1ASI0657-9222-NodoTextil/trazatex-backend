@@ -7,11 +7,6 @@ import com.nodotextil.trazatex.quality.domain.model.TestResult;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * Tópico {@code quality.control}, clave controlId. Lo consumen analytics y traceability. {@code tests} (agregado en V2) son los valores de
- * las pruebas del control (criterionName, expectedValue, obtainedValue, unit, testResult): Traceability los muestra a otra empresa solo
- * si la dueña comparte {@code QUALITY_TEST_VALUES}.
- */
 public record QualityControlCompleted(UUID controlId, UUID batchId, UUID companyId, ControlType controlType, TestResult result,
                                       Instant startedAt, Instant finishedAt, java.util.List<TestValue> tests) implements QualityEvent {
 

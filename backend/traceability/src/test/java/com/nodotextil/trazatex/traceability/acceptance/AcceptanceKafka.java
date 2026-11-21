@@ -11,10 +11,6 @@ import org.testcontainers.kafka.KafkaContainer;
 import java.util.List;
 import java.util.Map;
 
-/**
- * El Kafka de los escenarios: uno por JVM. Los tópicos que traceability consume los crean "los otros servicios" (aquí, esta clase):
- * el broker no los crea solo y traceability tampoco.
- */
 final class AcceptanceKafka {
 
     static final KafkaContainer CONTAINER = new TrazatexKafkaContainer();

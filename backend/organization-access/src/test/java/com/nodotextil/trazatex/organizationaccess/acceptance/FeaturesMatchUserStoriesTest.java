@@ -14,11 +14,6 @@ import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Los escenarios ejecutables (RNF-10) tienen que ser el texto exacto de {@code docs/domain/user-stories.md}: cada paso, en el
- * mismo orden y sin cambios. Si alguien edita un {@code .feature} a mano, o cambia la historia sin regenerar, esta prueba falla.
- * US10 (maquinaria) no está: es de Production.
- */
 class FeaturesMatchUserStoriesTest {
 
     private static final Path DOCS = Path.of("..", "docs", "domain", "user-stories.md");
@@ -28,7 +23,6 @@ class FeaturesMatchUserStoriesTest {
     private static final Pattern SCENARIO_IN_DOCS = Pattern.compile("^Escenario (\\d+): (.+)$");
     private static final Pattern SCENARIO_IN_FEATURE = Pattern.compile("^Escenario: (\\d+): (.+)$");
 
-    /** Por historia: título, descripción ("Como...") y las líneas del bloque gherkin tal como están en la documentación. */
     private record Story(String title, String description, List<String> lines) {
     }
 

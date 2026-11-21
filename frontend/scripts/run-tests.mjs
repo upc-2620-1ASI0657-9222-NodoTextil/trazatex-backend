@@ -1,6 +1,3 @@
-// Lanza `ng test` con --no-experimental-webstorage en NODE_OPTIONS, sin shell y sin dependencias (funciona igual en
-// macOS, Linux y Windows). Node 25+ define un `localStorage` global vacío (sin --localstorage-file) que tapa el de
-// jsdom y rompe los specs que lo usan; en Node 24 el flag no cambia nada. Los argumentos recibidos pasan a `ng test`.
 import { spawn } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';

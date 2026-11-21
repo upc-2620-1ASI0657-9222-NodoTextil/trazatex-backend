@@ -10,7 +10,6 @@ import static org.hamcrest.Matchers.aMapWithSize;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** US11. */
 class PrivacyApiIT extends IntegrationTestBase {
 
     UUID company;

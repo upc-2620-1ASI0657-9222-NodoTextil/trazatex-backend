@@ -7,7 +7,6 @@ import com.nodotextil.trazatex.organizationaccess.domain.model.Role;
 import java.time.Instant;
 import java.util.UUID;
 
-/** Nunca incluye el token. {@code status} es el estado efectivo: una PENDING vencida se informa EXPIRED. */
 public record InvitationResult(
         UUID id,
         String email,

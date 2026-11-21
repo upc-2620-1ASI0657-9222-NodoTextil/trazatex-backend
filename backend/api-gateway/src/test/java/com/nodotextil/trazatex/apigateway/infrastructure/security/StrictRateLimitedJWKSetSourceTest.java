@@ -13,7 +13,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** Tiempo controlado a mano ({@code currentTime}): sin esperas. */
 class StrictRateLimitedJWKSetSourceTest {
 
     private static final long INTERVAL = 30_000;
@@ -44,7 +43,6 @@ class StrictRateLimitedJWKSetSourceTest {
     @Test
     void despuesDeUnaCargaExitosaNoHayOtraAntesDelIntervaloNiSiquieraLaPrimeraRecarga() throws Exception {
         get(0);
-        // a diferencia del limitador de Nimbus (que deja pasar una segunda descarga inmediata)
         assertThatThrownBy(() -> get(1)).isInstanceOf(RateLimitReachedException.class);
         assertThatThrownBy(() -> get(15_000)).isInstanceOf(RateLimitReachedException.class);
         assertThatThrownBy(() -> get(INTERVAL - 1)).isInstanceOf(RateLimitReachedException.class);
@@ -67,7 +65,6 @@ class StrictRateLimitedJWKSetSourceTest {
                 rejected++;
             }
         }
-        // 3000 intentos en 10 intervalos: la descarga inicial + una por intervalo (9 más, la del instante 10*INTERVAL no entra)
         assertThat(calls).hasValue(10);
         assertThat(rejected).isEqualTo(3000 - 9);
     }
@@ -76,7 +73,6 @@ class StrictRateLimitedJWKSetSourceTest {
     void sinCargaPreviaUnFalloSeReintentaALosCincoSegundosYMientrasTantoSigueSiendoElFallo() throws Exception {
         failing = true;
         assertThatThrownBy(() -> get(0)).isInstanceOf(KeySourceException.class).isNotInstanceOf(RateLimitReachedException.class);
-        // dentro del bloqueo se repite el fallo original (503), no un RateLimitReached (que sería un 401 a un token quizá bueno)
         assertThatThrownBy(() -> get(RETRY - 1)).isInstanceOf(KeySourceException.class).isNotInstanceOf(RateLimitReachedException.class)
                 .hasMessage("org-access caído");
         assertThat(calls).hasValue(1);
@@ -84,7 +80,6 @@ class StrictRateLimitedJWKSetSourceTest {
         failing = false;
         get(RETRY);
         assertThat(calls).hasValue(2);
-        // ya cargado: rige el intervalo completo
         assertThatThrownBy(() -> get(RETRY + 1)).isInstanceOf(RateLimitReachedException.class);
     }
 

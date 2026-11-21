@@ -23,13 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * US34 / RF-060 (decisión del usuario, 2026-10-23): el aviso <b>siempre</b> se registra en {@code impacted_batch}, con el {@code lockStatus} que
- * decide {@link DerivedFailurePolicy} desde la proyección. Aquí <b>no se llama a Production</b> (corre dentro de la transacción del consumo
- * idempotente de Kafka): los avisos que piden {@code HOLD} quedan {@code PENDING} y vencidos, y el job de retenciones los manda en segundos
- * ({@link DerivedHoldResolver}). La calidad solo cambia cuando el {@code HOLD} se confirma, porque {@code POTENTIAL_DERIVED_FAILURE} implica
- * {@code qualityHold = true}.
- */
 @Service
 @Transactional
 class DerivedFailureService implements RecordDerivedFailureUseCase {
@@ -56,7 +49,6 @@ class DerivedFailureService implements RecordDerivedFailureUseCase {
     @Override
     public void record(UUID failureId, UUID sourceBatchId, List<AffectedBatch> affected) {
         Instant now = clock.instant();
-        // En orden de lote: dos avisos simultáneos que comparten lotes bloquean las filas en el mismo orden y no se interbloquean
         for (AffectedBatch one : affected.stream().sorted(Comparator.comparing(AffectedBatch::batchId)).toList()) {
             BatchProjection batch = projections.findByIdForUpdate(one.batchId()).orElse(null);
             DerivedFailureDecision decision = DerivedFailurePolicy.decide(batch);

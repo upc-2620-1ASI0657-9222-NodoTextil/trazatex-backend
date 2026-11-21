@@ -13,7 +13,6 @@ describe('rutas', () => {
     const find = (list: Route[]): Route | undefined => { for (const r of list) { if (r.path === 'fallas' && r.redirectTo) return r; const c = r.children && find(r.children); if (c) return c; } return undefined; };
     const redirect = find(routes);
     expect(redirect, 'existe la ruta de redirección /fallas').toBeTruthy();
-    // la ruta real de redirección, con el router real; solo el destino se sustituye por un componente vacío
     TestBed.configureTestingModule({ providers: [provideRouter([redirect!, { path: 'analitica', component: Destino }])] });
     await RouterTestingHarness.create('/fallas');
     const router = TestBed.inject(Router);

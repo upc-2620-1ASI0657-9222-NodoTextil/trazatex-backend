@@ -2,8 +2,6 @@ import { test, expect, APIRequestContext } from './base';
 import { readFileSync } from 'node:fs';
 import { account, ensureAccount, env } from './support';
 import { credentialsFile } from './paths';
-// En una instalación sembrada (TRAZATEX_CREDENTIALS_PATH) las administraciones «a» y «b» ya existen con su empresa: se usan esas
-// empresas en vez de registrar otras con el mismo correo (que el backend rechaza con EMAIL_ALREADY_REGISTERED).
 const seededCompanyOf = (key: string): string | undefined => {
   if (!process.env['TRAZATEX_CREDENTIALS_PATH']) return undefined;
   const alias: Record<string, string> = { a: 'admin/hilanderia', b: 'admin/tejeduria' };
@@ -163,6 +161,5 @@ test('contratos reales: empresas, operarios, lotes, mezclas, transferencias y pr
       { timeout: 45000 },
     )
     .toBe('Proveedor privado');
-  // Ronda 5c: la siembra deja el proveedor de la hilandería en PRIVADO. Se restablece para que otros specs (demo-scenarios) no dependan del orden.
   await call('PUT', '/privacy-settings', a.admin.token, { fields: { SUPPLIER: 'PRIVATE' } });
 });

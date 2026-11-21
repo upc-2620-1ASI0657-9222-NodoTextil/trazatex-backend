@@ -66,7 +66,6 @@ class PhaseTransitionServiceTest {
     private static final UUID BATCH = UUID.fromString("00000000-0000-0000-0000-00000000ba01");
     private static final UUID USER = UUID.fromString("00000000-0000-0000-0000-0000000000a1");
 
-    /** Estado actual del lote en la "base": cada findById devuelve una copia nueva, como cada transacción. */
     private BatchPhase phase = BatchPhase.AVAILABLE;
     private boolean hold = false;
     private boolean finalProduct = false;
@@ -90,7 +89,7 @@ class PhaseTransitionServiceTest {
         @Override
         public void save(UUID batchId, String requestId, PhaseOperation operation, PhaseCommandResult result, Instant at) {
             if (logSavesToFailWithDuplicate-- > 0) {
-                log.put(requestId + "|" + operation, new PhaseCommandResult(BatchPhase.IN_QUALITY_CONTROL, false));   // la ganó otra transacción
+                log.put(requestId + "|" + operation, new PhaseCommandResult(BatchPhase.IN_QUALITY_CONTROL, false));
                 throw new DuplicateKeyException("phase_command_log_pkey");
             }
             log.put(requestId + "|" + operation, result);
@@ -130,7 +129,6 @@ class PhaseTransitionServiceTest {
                 lockWait, new CompanyGuard(companyStore), audit, new MutableClock(START), Duration.ofMillis(1500), 3, Duration.ZERO);
     }
 
-    /** La versión que devuelve la base tras guardar (la que viaja como batchVersion). */
     private static final long SAVED_VERSION = 8L;
 
     @SuppressWarnings("unchecked")
@@ -153,8 +151,6 @@ class PhaseTransitionServiceTest {
         verify(events, org.mockito.Mockito.atLeast(0)).publish(captor.capture());
         return captor.getAllValues();
     }
-
-    // ---- la tabla completa: 5 operaciones × 7 fases × retención × producto final ----
 
     static Stream<Arguments> everyOperationInEveryState() {
         return Stream.of(PhaseOperation.values()).flatMap(op -> Stream.of(BatchPhase.values()).flatMap(phase ->
@@ -195,7 +191,7 @@ class PhaseTransitionServiceTest {
         };
         boolean expectedHold = switch (operation) {
             case START_EVALUATION, DISCARD -> heldBefore;
-            case RELEASE -> false;     // el comando de la prueba trae qualityHold=false
+            case RELEASE -> false;
             case HOLD -> true;
             case RELEASE_HOLD -> false;
         };
@@ -212,14 +208,12 @@ class PhaseTransitionServiceTest {
         }
     }
 
-    // ---- repetición idempotente ----
-
     @Test
     void repeatingACommandReturnsTheStoredResultEvenIfTheBatchChangedAndTheOperationWouldNowBeInvalid() {
         PhaseTransitionResult first = service.execute(BATCH, command(PhaseOperation.START_EVALUATION, "control-1"));
         assertThat(first.phase()).isEqualTo(BatchPhase.IN_QUALITY_CONTROL);
-        phase = BatchPhase.DISCARDED;                                   // el lote cambió después
-        companies.put(COMPANY, CompanyProjection.of(COMPANY, "Hilos SAC", CompanyStatus.INACTIVE, START));   // y la empresa se inactivó
+        phase = BatchPhase.DISCARDED;
+        companies.put(COMPANY, CompanyProjection.of(COMPANY, "Hilos SAC", CompanyStatus.INACTIVE, START));
 
         PhaseTransitionResult again = service.execute(BATCH, command(PhaseOperation.START_EVALUATION, "control-1"));
 
@@ -268,7 +262,7 @@ class PhaseTransitionServiceTest {
     void holdAndReleaseHoldWithoutChangeAreRecordedSoRepeatingThemReturnsTheSame() {
         hold = true;
         PhaseTransitionResult first = service.execute(BATCH, command(PhaseOperation.HOLD, "f-1"));
-        hold = false;       // alguien lo liberó después
+        hold = false;
 
         PhaseTransitionResult again = service.execute(BATCH, command(PhaseOperation.HOLD, "f-1"));
 
@@ -277,8 +271,6 @@ class PhaseTransitionServiceTest {
         assertThat(logSaves).containsExactly("f-1|HOLD");
         verify(events, never()).publish(any());
     }
-
-    // ---- validación (400) ----
 
     private static PhaseTransitionCommand with(PhaseOperation op, String requestId, Boolean qualityHold, UUID requestedBy) {
         return new PhaseTransitionCommand(op, requestId, qualityHold, null, requestedBy);
@@ -346,8 +338,6 @@ class PhaseTransitionServiceTest {
         assertThat(log).isEmpty();
     }
 
-    // ---- empresa inactiva (RF-003): solo START_EVALUATION se bloquea ----
-
     @Test
     void onlyStartEvaluationIsBlockedForAnInactiveCompany() {
         companies.put(COMPANY, CompanyProjection.of(COMPANY, "Hilos SAC", CompanyStatus.INACTIVE, START));
@@ -375,8 +365,6 @@ class PhaseTransitionServiceTest {
         assertThat(service.execute(BATCH, command(PhaseOperation.DISCARD, "c-2")).phase()).isEqualTo(BatchPhase.DISCARDED);
     }
 
-    // ---- razón y auditoría ----
-
     @Test
     void theReasonOfTheCommandIsTheReasonOfTheEventAndFallsBackToTheOperation() {
         service.execute(BATCH, new PhaseTransitionCommand(PhaseOperation.HOLD, "f-1", null, "  Posible falla derivada  ", null));
@@ -397,8 +385,6 @@ class PhaseTransitionServiceTest {
         assertThat(changes.getValue()).containsEntry("operation", "DISCARD").containsEntry("requestId", "c-1")
                 .containsEntry("fromPhase", "AVAILABLE").containsEntry("toPhase", "DISCARDED");
     }
-
-    // ---- concurrencia: reintento de la transacción completa y 503 ----
 
     @Test
     void everyAttemptStartsByLimitingTheLockWait() {

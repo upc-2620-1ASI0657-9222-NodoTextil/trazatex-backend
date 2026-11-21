@@ -11,12 +11,6 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.regex.Pattern;
 
-/**
- * Par RSA con el que organization-access firma los JWT (Identity Provider, ADR-005). Se carga de las variables de entorno
- * {@code JWT_PRIVATE_KEY} y {@code JWT_PUBLIC_KEY} (el PEM completo codificado en Base64, en una sola línea: privada PKCS#8,
- * pública X.509) y {@code JWT_KEY_ID} (el {@code kid}). Si algo falta o no es válido el servicio no arranca, con un mensaje
- * que nombra la variable; los mensajes nunca incluyen el contenido de las claves.
- */
 public final class JwtKeyMaterial {
 
     public static final int MIN_KEY_BITS = 2048;
@@ -74,7 +68,6 @@ public final class JwtKeyMaterial {
         }
     }
 
-    /** Base64 externo → PEM → cuerpo Base64 del PEM → DER. */
     private static byte[] pemBody(String variable, String base64Pem, String expectedLabel, String unsupportedLabel) {
         String pem;
         try {
@@ -112,7 +105,6 @@ public final class JwtKeyMaterial {
         return keyId;
     }
 
-    /** JWK público para {@code /.well-known/jwks.json}: sin ningún componente privado. */
     public RSAKey publicJwk() {
         return new RSAKey.Builder(publicKey)
                 .keyID(keyId)

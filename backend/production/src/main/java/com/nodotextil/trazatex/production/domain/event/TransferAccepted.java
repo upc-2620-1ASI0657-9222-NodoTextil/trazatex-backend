@@ -6,7 +6,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/** Tópico {@code production.transfer}, clave transferId. Lo consumen traceability, quality, notification y analytics. */
 public record TransferAccepted(UUID transferId, List<UUID> batchIds, UUID fromCompanyId, UUID toCompanyId, Instant acceptedAt)
         implements ProductionEvent {
 

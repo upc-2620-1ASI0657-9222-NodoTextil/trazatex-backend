@@ -28,7 +28,6 @@ public final class Fixtures {
         return BatchProjection.restore(id(), COMPANY, phase, hold, status, everControlled, 1, NOW);
     }
 
-    /** Un lote disponible con el estado de calidad dado y la retención que ese estado implica. */
     public static BatchProjection available(QualityStatus status) {
         return batch(BatchPhase.AVAILABLE, status, status.retainsBatch(), status == QualityStatus.CONFORMING);
     }
@@ -39,7 +38,6 @@ public final class Fixtures {
         return control;
     }
 
-    /** Un control en curso al que se le registraron pruebas con los resultados dados y que se finalizó. */
     public static ControlOutcome finished(BatchProjection batch, TestResult... results) {
         QualityControl control = startedControl(batch);
         for (TestResult result : results) {

@@ -15,7 +15,6 @@ class RevocationConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(RevocationConfiguration.class);
 
-    /** También es el {@code RevokedUsersPort} que usa la autenticación. Apagada (solo pruebas) queda "cargada" y vacía. */
     @Bean
     RevokedUsersRegistry revokedUsers(RevocationProperties props) {
         if (!props.enabled()) {
@@ -30,7 +29,6 @@ class RevocationConfiguration {
         return new UserRevocationConsumer(props, UserRevocationConsumer.kafkaConsumers(props), registry, new UserAccountEventParser(json));
     }
 
-    /** Su nombre de contributor es {@code revocation}; el grupo {@code readiness} lo incluye (application.yml). */
     @Bean
     RevocationHealthIndicator revocationHealthIndicator(RevokedUsersRegistry registry) {
         return new RevocationHealthIndicator(registry);

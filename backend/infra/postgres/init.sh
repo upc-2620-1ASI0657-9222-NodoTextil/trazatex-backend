@@ -1,6 +1,4 @@
 #!/bin/bash
-# Lo ejecuta el entrypoint de postgres solo al inicializar el volumen. Pasa las credenciales del entorno
-# (definidas en .env) a init.sql como variables de psql, de modo que ninguna contraseña vive en un archivo del proyecto.
 set -euo pipefail
 
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname postgres \

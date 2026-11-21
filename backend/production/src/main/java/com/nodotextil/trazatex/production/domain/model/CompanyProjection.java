@@ -7,11 +7,6 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * Copia local de una empresa de Organization & Access, alimentada por {@code CompanyRegistered} y
- * {@code CompanyStatusChanged} (nunca por REST). Solo guarda lo que Production necesita: el estado, para RF-003.
- * El nombre puede ser desconocido (nulo) si la empresa se conoció primero por un cambio de estado.
- */
 public final class CompanyProjection {
 
     private final UUID companyId;
@@ -48,7 +43,6 @@ public final class CompanyProjection {
         return status == CompanyStatus.ACTIVE;
     }
 
-    /** RF-003: una empresa inactiva no inicia operaciones productivas (409). */
     public void ensureActive() {
         if (!isActive()) {
             throw new ConflictException(ErrorCodes.COMPANY_INACTIVE,

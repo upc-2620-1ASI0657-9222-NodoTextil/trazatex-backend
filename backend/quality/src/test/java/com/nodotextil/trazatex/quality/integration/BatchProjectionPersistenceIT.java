@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** {@code batch_projection} contra PostgreSQL real: el esquema de Flyway, el ida y vuelta del agregado y la concurrencia por fila. */
 class BatchProjectionPersistenceIT extends IntegrationTestBase {
 
     static final UUID COMPANY = UUID.fromString("00000000-0000-0000-0000-0000000000c1");
@@ -105,7 +104,6 @@ class BatchProjectionPersistenceIT extends IntegrationTestBase {
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
-    /** {@code ever_controlled} llega a la base solo cuando un control terminó; un control iniciado o cancelado no deja huella. */
     @Test
     void everControlledIsStoredAsTrueOnlyAfterAControlFinishes() {
         BatchProjection started = BatchProjection.registered(UUID.randomUUID(), COMPANY, START);

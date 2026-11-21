@@ -10,10 +10,6 @@ import org.springframework.stereotype.Component;
 import java.time.Clock;
 import java.util.UUID;
 
-/**
- * El resultado del análisis de impacto va al outbox de Neo4j (ADR-004), en la misma transacción que el {@code :ProcessedEvent} del {@code FailureConfirmed} que lo
- * originó: o quedan los dos o ninguno. El relay lo publica en {@code traceability.impact} con el {@code failureId} como clave.
- */
 @Component
 class OutboxImpactEventAdapter implements ImpactEventPort {
 

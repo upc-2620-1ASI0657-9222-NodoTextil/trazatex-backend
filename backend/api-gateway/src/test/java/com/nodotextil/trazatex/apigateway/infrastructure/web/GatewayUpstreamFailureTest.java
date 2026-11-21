@@ -8,7 +8,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.any;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 
-/** Servicio lento: pasado el tope, el frontend recibe un {@code ApiError} 504 del Gateway. */
 @TestPropertySource(properties = "spring.cloud.gateway.server.webflux.httpclient.response-timeout=500ms")
 class GatewayUpstreamFailureTest extends GatewayTestSupport {
 

@@ -124,6 +124,9 @@ type Vista = 'todas' | 'entrantes' | 'salientes' | 'pendientes' | 'historial';
                       <span class="num muted" style="margin-left:auto">{{ l.cantidadKg | kg }}</span>
                       @if (d.bloqueado) {<app-icon name="lock" [size]="12" />}
                     </label>
+                    @if (d.bloqueado) {
+                      <small class="lock-why"><app-icon name="lock" [size]="11" /><span><b>{{ d.etiqueta }}.</b> {{ d.motivo }}</span></small>
+                    }
                   </li>
                 }
               </ul>
@@ -186,7 +189,8 @@ type Vista = 'todas' | 'entrantes' | 'salientes' | 'pendientes' | 'historial';
     .pick { list-style: none; margin: 0; padding: 0; max-height: 16rem; overflow-y: auto; border-top: 1px solid var(--hair-2); }
     .pick li { border-bottom: 1px dashed var(--hair); }
     .pick label { display: flex; gap: .55rem; align-items: center; padding: .55rem .25rem; width: 100%; }
-    .pick li.off { opacity: .55; }
+    .pick li.off label { opacity: .55; }
+    .pick .lock-why { display: flex; gap: .35rem; align-items: baseline; padding: 0 .25rem .55rem 1.6rem; font-size: .76rem; color: var(--muted); }
   `,
 })
 export class TransferenciasPage {
@@ -305,7 +309,6 @@ export class TransferenciasPage {
     this.vista.set('salientes');
     this.selId.set(r.id!);
   }
-  /** Lotes de una transferencia por nombre (o código), nunca por UUID, respetando la privacidad del nombre. */
   nombres(t: Transferencia) { return t.lotesIds.map(l => this.store.nombreEnTransferencia(l)).join(', '); }
   async aceptar(t: Transferencia) {
     if (!(await this.ui.confirm('¿Aceptar la transferencia? Los lotes pasarán a estar bajo la responsabilidad de tu empresa.'))) return;
@@ -323,6 +326,3 @@ export class TransferenciasPage {
     this.ui.toast(`Transferencia ${this.store.referencia(t.id)} rechazada / lotes devueltos al origen`);
   }
 }
-
-
-

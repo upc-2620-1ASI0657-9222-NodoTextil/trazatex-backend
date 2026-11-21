@@ -1,6 +1,3 @@
-// Ronda 5c: `test` con un `request` que reintenta las respuestas 429 del Gateway (cubo de 120 solicitudes/min por usuario) respetando Retry-After.
-// El ritmo de la suite (misma cuenta en muchos specs, sondeos con expect.poll) agota ese cubo sin que haya un defecto; el límite no se toca.
-// No lo usan architecture.spec.ts ni zz-rate-limit.spec.ts, que comprueban justamente que el Gateway devuelve 429.
 import { test as base, APIRequestContext, APIResponse } from '@playwright/test';
 
 export * from '@playwright/test';
@@ -25,8 +22,6 @@ function withRetry(request: APIRequestContext): APIRequestContext {
   });
 }
 
-// Pausa antes de cada prueba (TRAZATEX_PACE_MS, 0 por defecto): deja que se rellenen los cubos del Gateway (120/min por usuario) y de login (60/min por IP)
-// entre pruebas que navegan mucho. Las respuestas 429 del NAVEGADOR no se pueden reintentar desde aquí; por eso se espacia el ritmo.
 const PACE_MS = Number(process.env['TRAZATEX_PACE_MS'] ?? 0);
 export const test = base.extend<{ pace: void }>({
   request: async ({ request }, use) => { await use(withRetry(request)); },

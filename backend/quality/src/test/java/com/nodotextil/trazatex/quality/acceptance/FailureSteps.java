@@ -13,14 +13,11 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** US26 (gestionar una falla) y US27 (descartar el lote). */
 public class FailureSteps extends StepSupport {
 
     public FailureSteps(World world, QualityApi api, JdbcClient jdbc, ObjectMapper json) {
         super(world, api, jdbc, json);
     }
-
-    // ---- US26 esc. 1: completar la información ----
 
     @Dado("^que existe una Falla generada por un control$")
     public void aFailureGeneratedByAControlExists() {
@@ -50,13 +47,10 @@ public class FailureSteps extends StepSupport {
         assertThat(api.get(world.adminA, "/api/quality/failures/" + world.failure).text("controlId")).isEqualTo(world.control.toString());
     }
 
-    // ---- US26 esc. 2 y US27: un lote con falla ----
-
     @Dado("^que existe un lote Con falla$")
     public void aFailedBatchExists() {
         failedBatchWithOpenFailure();
         if ("us27".equals(world.story)) {
-            // Descartar exige causa y cantidad afectada (409 FAILURE_INFO_INCOMPLETE si faltan)
             completeFailureInfo();
             world.pending = () -> api.post(world.adminA, "/api/quality/failures/" + world.failure + "/discard", null);
         } else {
@@ -82,8 +76,6 @@ public class FailureSteps extends StepSupport {
         assertThat(commandsFor(world.batch)).as("el bloqueo sigue: no se libera la retención").noneMatch(c -> "RELEASE_HOLD".equals(c.path("operation").asString()));
     }
 
-    // ---- US27: descartar ----
-
     @Cuando("^el administrador decide descartarlo$")
     public void theAdministratorDecidesToDiscardIt() {
         world.submit();
@@ -92,7 +84,6 @@ public class FailureSteps extends StepSupport {
     @Entonces("^el sistema cambia su fase a Descartado$")
     public void theSystemChangesThePhaseToDiscarded() {
         assertThat(world.last.status()).as("descartar el lote: %s", world.last.raw()).isEqualTo(200);
-        // La fase la gobierna Production: Quality le manda DISCARD con el id de la falla, y Production confirmó
         assertThat(commandOf(world.batch, "DISCARD").path("requestId").asString()).isEqualTo(world.failure.toString());
     }
 

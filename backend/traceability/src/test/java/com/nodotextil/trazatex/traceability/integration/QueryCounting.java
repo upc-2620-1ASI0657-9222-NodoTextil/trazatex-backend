@@ -9,13 +9,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Proxy;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Cuenta las consultas que se hacen a Neo4j: envuelve el {@code Neo4jClient} y suma cada llamada a {@code query(...)} (cada una es una consulta). Se activa con
- * {@code @Import(QueryCounting.Config.class)}; la cuenta es global a la JVM, así que se usa en pruebas que hacen una cosa a la vez.
- */
 final class QueryCounting {
 
-    /** Las consultas hechas a Neo4j desde el último {@link #reset()}. */
     static final AtomicLong QUERIES = new AtomicLong();
 
     private QueryCounting() {

@@ -10,7 +10,6 @@ import java.net.ServerSocket;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Servicio caído (puerto cerrado): 503 con {@code ApiError}, sin filtrar host ni puerto al cliente. */
 @TestPropertySource(properties = "trazatex.gateway.services.organization-access-url=http://localhost:${closed.port}")
 class GatewayUpstreamDownTest extends GatewayTestSupport {
 

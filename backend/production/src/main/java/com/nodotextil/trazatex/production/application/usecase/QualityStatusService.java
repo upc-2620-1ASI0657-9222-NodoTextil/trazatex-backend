@@ -13,13 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
-/**
- * Copia de {@code qualityStatus} para mostrar. La fase y la retención no cambian aquí (las fija el comando interno), así que
- * no se publica {@code BatchPhaseChanged}; igual se guarda por {@link BatchChanges}, que lo comprueba. El lote se lee <b>sin</b>
- * bloqueo de fila: si una operación del usuario lo modifica entre la lectura y el guardado, el bloqueo optimista
- * ({@code @Version}) lanza un conflicto, la transacción se revierte (también el registro en {@code processed_events}) y el
- * consumidor lo reintenta con espera creciente.
- */
 @Service
 @Transactional
 class QualityStatusService implements ApplyQualityStatusUseCase {

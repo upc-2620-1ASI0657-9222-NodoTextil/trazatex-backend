@@ -4,20 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-/**
- * Cómo pueden llegar los eventos. Kafka conserva el orden de una misma clave dentro de un tópico (un "flujo"); entre flujos
- * distintos no hay orden. Un orden es un arreglo de índices de evento (planos: los flujos uno tras otro).
- */
 final class Interleavings {
 
     private Interleavings() {
     }
 
-    /**
-     * Un generador por corrida, reproducible. Con {@code new Random(semilla + corrida)} las semillas consecutivas dan
-     * secuencias casi iguales (medido: en 400 corridas el evento 4 nunca caía antes que el 3), y el muestreo quedaba sesgado;
-     * por eso la semilla se mezcla (SplitMix64) antes de usarla.
-     */
     static Random seeded(long seed, long run) {
         long z = seed + run * 0x9E3779B97F4A7C15L;
         z = (z ^ (z >>> 30)) * 0xBF58476D1CE4E5B9L;
@@ -25,7 +16,6 @@ final class Interleavings {
         return new Random(z ^ (z >>> 31));
     }
 
-    /** Todas las mezclas de los flujos que respetan el orden interno de cada uno: n! / (l1! l2! ...). */
     static List<int[]> all(int[] streamLengths) {
         int[] offsets = offsets(streamLengths);
         List<int[]> result = new ArrayList<>();
@@ -48,7 +38,6 @@ final class Interleavings {
         }
     }
 
-    /** Una mezcla al azar, uniforme entre las posibles: se elige el siguiente flujo con probabilidad proporcional a lo que le queda. */
     static int[] random(int[] streamLengths, Random random) {
         int[] offsets = offsets(streamLengths);
         int[] taken = new int[streamLengths.length];
@@ -69,7 +58,6 @@ final class Interleavings {
         return order;
     }
 
-    /** Una permutación cualquiera, sin respetar el orden de los flujos (peor que lo que hace Kafka). */
     static int[] freePermutation(int events, Random random) {
         int[] order = new int[events];
         for (int i = 0; i < events; i++) {
@@ -84,7 +72,6 @@ final class Interleavings {
         return order;
     }
 
-    /** Reentregas (at-least-once): {@code copies} eventos se repiten en una posición posterior a su primera entrega. */
     static int[] withDuplicates(int[] order, int copies, Random random) {
         List<Integer> sequence = new ArrayList<>();
         for (int event : order) {

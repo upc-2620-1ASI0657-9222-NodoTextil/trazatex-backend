@@ -32,11 +32,6 @@ import static com.nodotextil.trazatex.traceability.integration.GraphBuilder.id;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * El análisis de impacto (US33) sobre Neo4j real: el resultado queda en el outbox <b>en la misma transacción</b> que el {@code :ProcessedEvent} del
- * {@code FailureConfirmed}, una sola vez por falla, con el payload exacto del catálogo y los lotes de todas las empresas; una familia incompleta no deja nada; y el
- * costo en consultas depende de los niveles (2 por nivel, 10 + 1 por dirección) y no de los nodos.
- */
 @Import(QueryCounting.Config.class)
 class FailureImpactIT extends IntegrationTestBase {
 
@@ -71,7 +66,6 @@ class FailureImpactIT extends IntegrationTestBase {
         graph = new GraphBuilder(register, split, transformation, phase, transfer, company, privacy);
     }
 
-    /** F (de A) se dividió en F1 y F2; F1 se mezcló con X (de B) y dio U (de B); F1 quedó procesado. Afectados: F2 (de A) y U (de B), ambos hijos de F. */
     private void aFamilyOfTwoCompanies() {
         graph.batch("F", A).split("F", A, "F1", "F2").batch("X", B).transform("T", B, List.of("F1", "X"), "U");
         graph.phase("F1", A, BatchPhase.PROCESSED, false, 2);
@@ -91,8 +85,6 @@ class FailureImpactIT extends IntegrationTestBase {
     private long count(String label) {
         return (Long) neo4j.query("MATCH (n:" + label + ") RETURN count(n) AS n").fetch().one().orElseThrow().get("n");
     }
-
-    // ---- el resultado en el outbox ----
 
     @Test
     void theResultIsInTheOutboxWithTheExactPayloadOfTheCatalogAndTheBatchesOfEveryCompany() {
@@ -133,10 +125,6 @@ class FailureImpactIT extends IntegrationTestBase {
         assertThat(json.readTree((String) outbox().getFirst().get("payload")).get("payload").get("affected").toString()).contains(id("U").toString(), B.toString());
     }
 
-    /**
-     * {@code name} solo lo ve la empresa dueña en las consultas; el evento de impacto va a todas las empresas afectadas, así que no lleva el nombre de ningún lote:
-     * ni de la empresa del lote fallado (A, la que sería OWN), ni de la otra (B), privada o compartiendo todos los configurables.
-     */
     @ParameterizedTest(name = "configuración: {0}")
     @ValueSource(strings = {"privado", "compartido"})
     void theImpactEventNeverCarriesTheNameOfAnyBatch(String privacy) {
@@ -182,11 +170,9 @@ class FailureImpactIT extends IntegrationTestBase {
         assertThat(outbox()).isEmpty();
     }
 
-    // ---- incompleto: nada ----
-
     @Test
     void anIncompleteFamilyThrowsTheRetryableExceptionAndLeavesNothing() {
-        graph.transform("T", A, List.of("GHOST"), "S"); // GHOST solo existe como entrada provisional: es antecesor de S
+        graph.transform("T", A, List.of("GHOST"), "S");
 
         assertThatThrownBy(() -> impact.apply(command(UUID.randomUUID(), "S"))).isInstanceOf(ImpactAnalysisIncompleteException.class)
                 .satisfies(e -> assertThat(((ImpactAnalysisIncompleteException) e).missingNodes()).containsExactly(id("GHOST")));
@@ -214,8 +200,6 @@ class FailureImpactIT extends IntegrationTestBase {
                 .containsExactly(id("S2").toString());
     }
 
-    // ---- la transacción: el procesado y el outbox van juntos ----
-
     private BaseDomainEvent failureConfirmed(UUID eventId, UUID failure, String batch) {
         return new BaseDomainEvent(eventId, "FailureConfirmed", failure.toString(), 1, Instant.now(), Map.of("failureId", failure, "batchId", id(batch)));
     }
@@ -230,7 +214,6 @@ class FailureImpactIT extends IntegrationTestBase {
 
         assertThat(count("ProcessedEvent")).isEqualTo(1);
         assertThat(outbox()).hasSize(1);
-        // la misma entrega otra vez: el handler la reconoce y no hace nada
         handler.handle(failureConfirmed(eventId, failure, "F"), e -> impact.apply(new AnalyzeFailureImpactCommand(e.eventId(), failure, id("F"))));
         assertThat(count("ProcessedEvent")).isEqualTo(1);
         assertThat(outbox()).hasSize(1);
@@ -263,8 +246,6 @@ class FailureImpactIT extends IntegrationTestBase {
         assertThat(outbox()).isEmpty();
     }
 
-    // ---- costo ----
-
     @Test
     void theAnalysisOfTheFiveHundredNodeDiamondCostsTwoQueriesPerLevelAndNotOnePerNode() {
         DiamondGraph.load(neo4j, A, B);
@@ -276,7 +257,6 @@ class FailureImpactIT extends IntegrationTestBase {
         impact.apply(new AnalyzeFailureImpactCommand(UUID.randomUUID(), failure, failed));
         long queries = QueryCounting.count();
 
-        // por dirección 2 por nivel × (10 niveles + 1 sonda) = 22; fijo: lote de partida, ¿ya registrada?, la fila del outbox
         long cap = 2L * 2 * 11 + 3;
         System.out.printf("CONSULTAS del análisis de impacto en el diamante de 500 nodos: %d (tope %d)%n", queries, cap);
         assertThat(queries).isLessThanOrEqualTo(cap);

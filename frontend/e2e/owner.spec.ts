@@ -1,5 +1,5 @@
 import { test, expect } from './base';
-import { account, ensureAccount, env } from './support';
+import { chooseLoginRole, account, ensureAccount, env } from './support';
 test('el dueño acepta su invitación, inicia sesión y conserva la identidad al recargar', async ({
   page,
   request,
@@ -10,6 +10,7 @@ test('el dueño acepta su invitación, inicia sesión y conserva la identidad al
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/login');
+  await chooseLoginRole(page, 'owner');
   await page.getByLabel('Correo', { exact: true }).fill(owner.email);
   await page.getByLabel('Contraseña', { exact: true }).fill(owner.password);
   await page.getByRole('button', { name: 'Ingresar', exact: true }).click();

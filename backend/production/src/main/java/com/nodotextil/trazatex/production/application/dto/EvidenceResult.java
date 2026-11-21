@@ -7,10 +7,6 @@ import com.nodotextil.trazatex.production.domain.model.EvidenceStatus;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * Una evidencia tal como la ve el cliente. {@code url} y {@code uploadedAt} son nulos mientras está {@code PENDING} (o si quedó
- * {@code FAILED}); los intentos y el último error son datos de operación y no se exponen.
- */
 public record EvidenceResult(
         UUID id,
         EvidenceOwnerType ownerType,

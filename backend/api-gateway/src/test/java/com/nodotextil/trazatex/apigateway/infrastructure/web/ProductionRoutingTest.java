@@ -21,10 +21,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * 04f-1: las rutas de production llegan a production tal cual, y una subida de evidencias (hasta 5 archivos de 10 MB) pasa íntegra: el
- * Gateway no lee ni limita el cuerpo; quien rechaza un archivo de más de 10 MB es production, con su ApiError 413, que el Gateway deja pasar.
- */
 class ProductionRoutingTest extends GatewayTestSupport {
 
     private static final int TEN_MB = 10 * 1024 * 1024;

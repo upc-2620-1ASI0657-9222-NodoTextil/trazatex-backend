@@ -20,7 +20,6 @@ import static com.nodotextil.trazatex.production.domain.SampleImages.webp;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** US42: adjuntar y listar fotos de un lote o una transformación; validación, permisos y privacidad entre empresas. */
 class EvidenceApiIT extends EvidenceItBase {
 
     @Autowired
@@ -29,8 +28,6 @@ class EvidenceApiIT extends EvidenceItBase {
     private JsonNode items(HttpResponse<String> response) {
         return body(response).path("items");
     }
-
-    // ---- escenarios 1 y 2 de US42: en lote y en transformación ----
 
     @Test
     void photosAttachedToABatchAreUploadedToCloudinaryAndListed() throws Exception {
@@ -59,7 +56,6 @@ class EvidenceApiIT extends EvidenceItBase {
         assertThat(created.get(1).path("contentType").asString()).isEqualTo("image/png");
         assertThat(created.get(1).path("sizeBytes").asLong()).isEqualTo(second.length);
 
-        // lo que viajó a Cloudinary: public_id = id de la evidencia, sin sobrescribir, firmado, y el secreto no viaja
         List<LoggedRequest> sent = uploadRequests();
         assertThat(sent).hasSize(2);
         for (int i = 0; i < 2; i++) {
@@ -81,7 +77,7 @@ class EvidenceApiIT extends EvidenceItBase {
         assertThat(listed.get(0).path("id").asString()).isEqualTo(created.get(0).path("id").asString());
         assertThat(count("SELECT count(*) FROM evidence_upload_queue")).as("lo ya subido no deja bytes en la cola").isZero();
         assertThat(count("SELECT count(*) FROM audit_log WHERE action = 'EVIDENCE_ATTACHED'")).isEqualTo(1);
-        assertThat(count("SELECT count(*) FROM outbox")).as("las evidencias no publican eventos").isEqualTo(1);   // solo el BatchRegistered
+        assertThat(count("SELECT count(*) FROM outbox")).as("las evidencias no publican eventos").isEqualTo(1);
     }
 
     @Test
@@ -95,15 +91,12 @@ class EvidenceApiIT extends EvidenceItBase {
         assertThat(response.statusCode()).isEqualTo(201);
         assertThat(items(response).get(0).path("ownerType").asString()).isEqualTo("TRANSFORMATION");
         assertThat(items(getHttp(transformationEvidence(transformation), ADMIN_OF_A))).hasSize(1);
-        // y también sobre una transformación ya finalizada
         postAs(OPERATOR_OF_A, "/api/transformations/" + transformation + "/complete", obj("outputs", List.of(obj("materialType", "Hilo", "quantityKg", 9)),
                 "wasteKg", 0.5, "wasteReason", "Orillo")).andExpect(status().isOk());
         assertThat(postMultipart(transformationEvidence(transformation), OPERATOR_OF_A, newBoundary(), null,
                 FilePart.files("final.jpg", "image/jpeg", jpeg())).statusCode()).isEqualTo(201);
         assertThat(items(getHttp(transformationEvidence(transformation), OPERATOR_OF_A))).hasSize(2);
     }
-
-    // ---- escenario 3: formato no soportado (por los primeros bytes) ----
 
     @Test
     void theFormatComesFromTheFirstBytesNotFromTheExtensionNorTheDeclaredType() throws Exception {
@@ -154,8 +147,6 @@ class EvidenceApiIT extends EvidenceItBase {
         }
     }
 
-    // ---- cuántos archivos ----
-
     @Test
     void upToFiveFilesPerRequestAreAcceptedAndMoreAreRejected() throws Exception {
         stubUploadOk();
@@ -197,8 +188,6 @@ class EvidenceApiIT extends EvidenceItBase {
         assertThat(body(json).path("code").asString()).isEqualTo("UNSUPPORTED_MEDIA_TYPE");
     }
 
-    // ---- tamaño: 10 MB por archivo, con un ApiError y no con un error genérico ----
-
     @Test
     void aFileOfExactlyTenMegabytesIsAcceptedAndOneByteMoreIsRejectedWithAnApiError413() throws Exception {
         stubUploadOk();
@@ -220,10 +209,6 @@ class EvidenceApiIT extends EvidenceItBase {
         assertThat(count("SELECT count(*) FROM evidence")).isEqualTo(1);
     }
 
-    /**
-     * Un archivo muy por encima del límite (40 MB): Tomcat deja de leer al pasar los 10 MB y debe poder descartar el resto del cuerpo
-     * (server.tomcat.max-swallow-size) para que el cliente reciba el ApiError y no un corte de conexión.
-     */
     @Test
     void aFarLargerFileStillGetsTheApiErrorAndNotAConnectionReset() throws Exception {
         UUID batch = idOf(registerBatch(10));
@@ -253,8 +238,6 @@ class EvidenceApiIT extends EvidenceItBase {
         assertThat(postMultipart(batchEvidence(batch), OPERATOR_OF_A, newBoundary(), key, FilePart.files("bien.jpg", "image/jpeg", jpeg())).statusCode())
                 .as("la misma clave sirve después de corregir el archivo").isEqualTo(201);
     }
-
-    // ---- permisos ----
 
     @Test
     void onlyAnOperatorOfTheOwningCompanyAttachesAndBothCompanyRolesList() throws Exception {
@@ -311,8 +294,6 @@ class EvidenceApiIT extends EvidenceItBase {
         assertThat(count("SELECT count(*) FROM evidence WHERE owner_id = ?", batch)).isEqualTo(2);
     }
 
-    // ---- Idempotency-Key con multipart ----
-
     @Test
     void aRetryWithTheSameKeyAndFilesButAnotherBoundaryReturnsTheSameResponseAndStoresNothingNew() throws Exception {
         stubUploadOk();
@@ -367,14 +348,11 @@ class EvidenceApiIT extends EvidenceItBase {
         assertThat(count("SELECT count(*) FROM evidence")).isEqualTo(1);
     }
 
-    // ---- sin Cloudinary: la cola sobrevive a un reinicio ----
-
     @Test
     void evidencePendingFromBeforeIsUploadedByTheJobOnceCloudinaryIsConfigured() throws Exception {
         stubUploadOk();
         UUID batch = idOf(registerBatch(10));
         UUID id = UUID.randomUUID();
-        // lo que dejó una ejecución anterior sin CLOUDINARY_URL: la fila PENDING y sus bytes en la cola
         jdbc.sql("""
                 INSERT INTO evidence (id, owner_type, owner_id, company_id, status, original_filename, content_type, size_bytes, uploaded_by,
                                       created_at, attempts, next_attempt_at, last_error)

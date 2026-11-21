@@ -9,21 +9,10 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Tópico {@code production.batch}, clave parentBatchId. Lo consumen traceability, quality y analytics: los hijos no llevan
- * {@code BatchRegistered}, así que este evento es el que los da a conocer (nacen {@code AVAILABLE} y con el
- * {@code qualityStatus} del padre).
- */
 public record BatchSplit(UUID parentBatchId, UUID companyId, List<Child> children) implements ProductionEvent {
 
     public static final String TYPE = "BatchSplit";
 
-    /**
-     * Un hijo nace con los datos del padre (material, composición, origen, proveedor y recepción; decisión de 04a) y los hijos
-     * no llevan {@code BatchRegistered}: sin copiarlos aquí los consumidores no los conocerían. {@code createdAt} es el instante
-     * de la división. {@code finalProduct} no viaja: un hijo nunca es producto final. {@code name} (agregado en V2) es el nombre libre
-     * del hijo (si no se da, el del padre): solo para la empresa dueña, como en {@code BatchRegistered}.
-     */
     public record Child(UUID batchId, String traceabilityId, String qrCode, String materialType, BigDecimal quantityKg,
                         List<CompositionComponent> composition, String origin, String supplierName, String receptionCharacteristics,
                         QualityStatus qualityStatus, Instant createdAt, String name) {

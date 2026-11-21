@@ -22,7 +22,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** Tabla de transiciones de fase de docs/domain/production.md, comprobada completa: 7 fases × 9 operaciones. */
 class BatchTest {
 
     private enum Operation {
@@ -85,8 +84,6 @@ class BatchTest {
         assertThat(phase.isHistorical()).isFalse();
     }
 
-    // --- habilitado (glosario, RF-024) --------------------------------------------------------------------------
-
     @ParameterizedTest(name = "{0}, retención={1}, final={2}")
     @MethodSource("everyPhaseAndFlagCombination")
     void aBatchIsEnabledOnlyWhenAvailableWithoutHoldAndNotFinal(BatchPhase phase, boolean hold, boolean finalProduct) {
@@ -125,8 +122,6 @@ class BatchTest {
                 .isInstanceOfSatisfying(ConflictException.class, e -> assertThat(e.code()).isEqualTo(ErrorCodes.BATCH_IS_FINAL_PRODUCT));
         assertThat(batch.phase()).isEqualTo(BatchPhase.AVAILABLE);
     }
-
-    // --- retención por calidad (comandos de Quality) -------------------------------------------------------------
 
     @Test
     void aHeldBatchCanStillStartAQualityEvaluationAndBeDiscarded() {
@@ -197,8 +192,6 @@ class BatchTest {
         }
     }
 
-    // --- transferencia -------------------------------------------------------------------------------------------
-
     @Test
     void acceptingATransferChangesTheResponsibleCompanyAndKeepsTheCodes() {
         Batch batch = batch(BatchPhase.IN_TRANSFER, false, false, "10");
@@ -233,8 +226,6 @@ class BatchTest {
 
         assertThat(batch.companyId()).isEqualTo(COMPANY);
     }
-
-    // --- datos comerciales ---------------------------------------------------------------------------------------
 
     @Test
     void commercialDataCanOnlyBeEditedOnAFinalProduct() {

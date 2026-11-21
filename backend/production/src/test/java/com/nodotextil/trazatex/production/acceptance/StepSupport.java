@@ -13,11 +13,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Lo común de las clases de pasos: preparar el escenario <b>por HTTP real</b> (registrar lotes, maquinaria, transformaciones...) y leer lo
- * ocurrido. Los datos de partida pasan por los mismos endpoints que usará el frontend; lo único que no es HTTP es leer el outbox y la
- * base para comprobar lo que el escenario promete (eventos, filas que no deben existir).
- */
 abstract class StepSupport {
 
     protected final World world;
@@ -35,8 +30,6 @@ abstract class StepSupport {
         this.json = json;
     }
 
-    // ---- cuerpos ----
-
     protected static Map<String, Object> map(Object... keysAndValues) {
         Map<String, Object> map = new LinkedHashMap<>();
         for (int i = 0; i < keysAndValues.length; i += 2) {
@@ -49,13 +42,10 @@ abstract class StepSupport {
         return map("name", name, "percentage", percentage);
     }
 
-    /** Un registro de lote completo y válido: composición 70/30, con proveedor. */
     protected static Map<String, Object> lotBody(double kg) {
         return map("name", "Algodón Pima", "materialType", "Fibra", "composition", List.of(component("Algodón", 70), component("Poliéster", 30)),
                 "quantityKg", kg, "origin", "Piura", "supplierName", "Textiles del Norte", "receptionCharacteristics", "Fibra limpia");
     }
-
-    // ---- preparar el escenario por HTTP ----
 
     protected JsonNode registerLot(Map<String, Object> body) {
         Reply reply = api.post(world.operatorA, "/api/batches", body);
@@ -96,7 +86,6 @@ abstract class StepSupport {
         return api.post(world.operatorA, "/api/transformations/" + id(transformation) + "/complete", body);
     }
 
-    /** Retiene el lote por calidad con el comando interno de Quality (el mismo HTTP real que usará Quality). */
     protected void holdForQuality(JsonNode lot) {
         Reply reply = api.internal("/internal/batches/" + id(lot) + "/phase-transitions",
                 map("operation", "HOLD", "requestId", "falla-" + UUID.randomUUID(), "reason", "Posible falla derivada"));
@@ -104,7 +93,6 @@ abstract class StepSupport {
         assertThat(reply.body().path("qualityHold").asBoolean()).isTrue();
     }
 
-    /** Un producto final ya creado: transformación de un lote y finalización con una salida marcada como producto final. */
     protected JsonNode finalProduct() {
         JsonNode lot = registerLot(100);
         JsonNode transformation = startTransformation("DYEING", registerMachine(), lot);
@@ -115,8 +103,6 @@ abstract class StepSupport {
         world.batch = output;
         return output;
     }
-
-    // ---- leer ----
 
     protected static UUID id(JsonNode node) {
         return UUID.fromString(node.path("id").asString());
@@ -147,7 +133,6 @@ abstract class StepSupport {
     protected void assertWithinTheRequest(String instant, String what) {
         assertThat(instant).as("%s debe estar registrada", what).isNotBlank();
         Instant value = Instant.parse(instant);
-        // el servidor y la prueba comparten reloj: la fecha cae dentro de la petición (con un segundo de holgura)
         assertThat(value).as(what).isBetween(world.sentAt.minusSeconds(1), world.answeredAt.plusSeconds(1));
     }
 

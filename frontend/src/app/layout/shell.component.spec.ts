@@ -11,7 +11,6 @@ import { ShellComponent } from './shell.component';
 @Component({ template: '<p>página</p>' })
 class PaginaFalsa {}
 
-/** ApiService de mentira: solo responde lo que el contador necesita; el resto del refresh() falla sin ruido. */
 class FakeApi {
   readonly calls: string[] = [];
   count = 0;
@@ -58,7 +57,7 @@ describe('Contador de notificaciones en el shell (FE-I9)', () => {
     store = TestBed.inject(StoreService);
     fixture = TestBed.createComponent(ShellComponent);
     await render();
-    await new Promise(resolve => setTimeout(resolve, 20)); // deja terminar el refresh() inicial del store
+    await new Promise(resolve => setTimeout(resolve, 20));
     await render();
   });
   afterEach(() => { fixture.destroy(); sessionStorage.clear(); });

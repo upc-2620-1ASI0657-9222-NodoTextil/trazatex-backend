@@ -18,11 +18,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * 06b: las rutas de {@code /api/quality/**} llegan a quality con la identidad que inyecta el Gateway y con la {@code Idempotency-Key}; la
- * respuesta 202 (Production caído, el control sigue {@code STARTING}) pasa tal cual, con su {@code Location} y {@code Retry-After}. El comando
- * interno Quality → Production ({@code /internal/**}) sigue sin salir por el Gateway.
- */
 class QualityRoutingTest extends GatewayTestSupport {
 
     @BeforeEach

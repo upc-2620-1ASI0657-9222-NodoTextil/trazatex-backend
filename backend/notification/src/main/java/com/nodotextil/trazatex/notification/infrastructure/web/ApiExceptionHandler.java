@@ -16,7 +16,6 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-/** Todo error HTTP de Notification es un {@link ApiError} con un código del contrato (api.md): ya no hay {@code REQUEST_REJECTED} (M1). */
 @RestControllerAdvice
 class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
@@ -44,7 +43,6 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return respond(HttpStatus.INTERNAL_SERVER_ERROR, ApiError.of("INTERNAL_ERROR", "Ocurrió un error inesperado. Intenta de nuevo."));
     }
 
-    /** Errores estándar de Spring MVC (método no permitido, ruta inexistente...): su estado, con el mismo cuerpo {@link ApiError}. */
     @Override
     protected ResponseEntity<Object> handleExceptionInternal(Exception ex, Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
         String code = switch (statusCode.value()) {

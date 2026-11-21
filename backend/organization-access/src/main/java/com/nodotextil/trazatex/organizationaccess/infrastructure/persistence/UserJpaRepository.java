@@ -11,7 +11,6 @@ interface UserJpaRepository extends JpaRepository<UserEntity, UUID> {
 
     Optional<UserEntity> findByEmail(String email);
 
-
     boolean existsByEmail(String email);
 
     List<UserEntity> findByCompanyIdOrderByCreatedAtAsc(UUID companyId);

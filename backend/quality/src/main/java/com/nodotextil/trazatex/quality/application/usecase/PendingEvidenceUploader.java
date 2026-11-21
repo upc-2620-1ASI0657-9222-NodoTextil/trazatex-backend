@@ -20,19 +20,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
 
-/**
- * La cola diferida de Cloudinary (ADR-007). Cada evidencia se reclama en una transacción corta (con un <i>lease</i>, así dos jobs no
- * la suben a la vez), se sube <b>fuera</b> de cualquier transacción y su resultado se guarda en otra corta. La subida es idempotente
- * ({@code public_id} = id de la evidencia, sin sobrescribir), así que un reintento tras una respuesta perdida no duplica la imagen.
- *
- * <ul>
- *   <li>Subida correcta → {@code UPLOADED} y se borran sus bytes de la cola.</li>
- *   <li>Cloudinary respondió mal → suma un intento y reprograma con espera creciente; al agotar los intentos, {@code FAILED}.</li>
- *   <li>Cloudinary rechazó el archivo (no es una imagen) → {@code FAILED} de inmediato.</li>
- *   <li>Circuito abierto o sin configurar → se reprograma <b>sin sumar intentos</b>: no se llegó a intentar.</li>
- * </ul>
- * En {@code FAILED} los bytes se conservan (se reencola a mano; ver docs/progress.md).
- */
 @Service
 class PendingEvidenceUploader implements UploadPendingEvidenceUseCase {
 

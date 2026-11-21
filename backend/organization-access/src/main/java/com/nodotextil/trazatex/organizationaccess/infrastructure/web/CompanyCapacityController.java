@@ -8,7 +8,6 @@ import com.nodotextil.trazatex.organizationaccess.infrastructure.web.security.Re
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** El cupo de usuarios de la propia empresa ({@code {limit, activeUsers, pendingInvitations}}). Solo llama al caso de uso (regla 5 de CLAUDE.md). */
 @RestController
 class CompanyCapacityController {
 

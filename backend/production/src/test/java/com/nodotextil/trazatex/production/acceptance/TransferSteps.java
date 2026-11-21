@@ -13,7 +13,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** US21 (iniciar una transferencia) y US22 (resolverla). Los avisos a otros servicios se comprueban en el evento del outbox. */
 public class TransferSteps extends StepSupport {
 
     public TransferSteps(World world, ProductionApi api, Outbox outbox, JdbcClient jdbc, ObjectMapper json) {
@@ -28,8 +27,6 @@ public class TransferSteps extends StepSupport {
     private List<String> lotIds() {
         return lots().stream().map(lot -> id(lot).toString()).toList();
     }
-
-    // ---- US21 esc. 1 ----
 
     @Dado("^que existen lotes habilitados$")
     public void enabledBatchesExist() {
@@ -56,7 +53,6 @@ public class TransferSteps extends StepSupport {
 
     @Y("^alerta a los administradores receptores\\.$")
     public void itAlertsTheReceivingAdministrators() {
-        // el aviso lo envía Notification al consumir TransferInitiated: se verifica el evento, con la empresa receptora
         List<Outbox.Event> initiated = outbox.ofType("TransferInitiated", world.last.text("id"));
         assertThat(initiated).hasSize(1);
         assertThat(initiated.get(0).topic()).isEqualTo("production.transfer");
@@ -68,8 +64,6 @@ public class TransferSteps extends StepSupport {
         payload.path("batchIds").forEach(batch -> published.add(batch.asString()));
         assertThat(published).containsExactlyInAnyOrderElementsOf(lotIds());
     }
-
-    // ---- US21 esc. 2 ----
 
     @Dado("^que se desea transferir solamente parte de un lote$")
     public void onlyPartOfABatchShouldBeTransferred() {
@@ -91,7 +85,6 @@ public class TransferSteps extends StepSupport {
     @Y("^requiere realizar previamente una división\\.$")
     public void itRequiresSplittingFirst() {
         assertThat(world.last.message()).isEqualTo("Solo se transfieren lotes completos: divida el lote antes");
-        // y con la división hecha, el hijo de la cantidad deseada sí se transfiere
         Reply split = api.post(world.operatorA, "/api/batches/" + id(world.batch) + "/split",
                 map("children", List.of(map("name", "Parte a transferir", "quantityKg", 4), map("name", "Resto", "quantityKg", 6))));
         assertThat(split.status()).isEqualTo(201);
@@ -101,8 +94,6 @@ public class TransferSteps extends StepSupport {
         assertThat(transfer.status()).as("transferir el hijo completo: %s", transfer.raw()).isEqualTo(201);
         assertThat(transfer.field("batchIds")).hasSize(1);
     }
-
-    // ---- US22 ----
 
     @Dado("^que existe una transferencia Pendiente$")
     public void aPendingTransferExists() {

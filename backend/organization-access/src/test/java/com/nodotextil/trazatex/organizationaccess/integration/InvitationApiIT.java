@@ -15,7 +15,6 @@ import static org.hamcrest.Matchers.hasKey;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** US04, US06, US41 y la vigencia de las invitaciones. */
 class InvitationApiIT extends IntegrationTestBase {
 
     @Autowired
@@ -49,8 +48,6 @@ class InvitationApiIT extends IntegrationTestBase {
     private org.springframework.test.web.servlet.ResultActions accept(String token, String password, String confirmation) throws Exception {
         return perform(body(POST("/api/invitations/" + token + "/accept"), acceptBody(password, confirmation)));
     }
-
-    // ---- US06: invitar operario ----
 
     @Test
     void adminInvitesAnOperator() throws Exception {
@@ -117,8 +114,6 @@ class InvitationApiIT extends IntegrationTestBase {
                 .andExpect(status().isForbidden());
     }
 
-    // ---- US41: cancelar ----
-
     @Test
     void theIssuerCancelsAPendingInvitation() throws Exception {
         UUID id = insertInvitation(company, "luis@hilos.pe", "OPERATOR", "PENDING", admin, START);
@@ -156,8 +151,6 @@ class InvitationApiIT extends IntegrationTestBase {
         assertThat(jdbc.sql("SELECT status FROM invitations WHERE id = :id").param("id", expired).query(String.class).single()).isEqualTo("PENDING");
     }
 
-    // ---- Ver el enlace (público) ----
-
     @Test
     void anyoneWithTheLinkSeesTheInvitationWithoutIdentityHeaders() throws Exception {
         UUID id = insertInvitation(company, "luis@hilos.pe", "OPERATOR", "PENDING", admin, START);
@@ -178,8 +171,6 @@ class InvitationApiIT extends IntegrationTestBase {
 
         perform(GET("/api/invitations/" + tokenOf(id))).andExpect(jsonPath("$.status").value("EXPIRED"));
     }
-
-    // ---- US04: aceptar ----
 
     @Test
     void acceptingCreatesTheActiveAccountWithTheInvitationCompanyAndRole() throws Exception {
@@ -272,15 +263,12 @@ class InvitationApiIT extends IntegrationTestBase {
                 .andExpect(status().isCreated());
 
         assertThat(count("SELECT count(*) FROM idempotency_keys")).isZero();
-        // no se repite la respuesta guardada: la segunda aceptación se evalúa y la invitación ya fue usada
         perform(body(POST("/api/invitations/" + tokenOf(id) + "/accept"), acceptBody("contraseña1", "contraseña1"))
                 .header("Idempotency-Key", key))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("INVITATION_ALREADY_ACCEPTED"));
         assertThat(count("SELECT count(*) FROM users WHERE email = 'luis@hilos.pe'")).isEqualTo(1);
     }
-
-    // ---- Vigencia y cupo ----
 
     @Test
     void anExpiredInvitationNoLongerTakesASlotEvenBeforeTheJobMarksIt() throws Exception {
@@ -293,7 +281,6 @@ class InvitationApiIT extends IntegrationTestBase {
         invite("tres@hilos.pe").andExpect(status().isCreated());
         invite("cuatro@hilos.pe").andExpect(status().isCreated());
         invite("cinco@hilos.pe").andExpect(status().isConflict());
-        // las dos primeras siguen guardadas como PENDING: el job aún no corrió
         assertThat(count("SELECT count(*) FROM invitations WHERE status = 'PENDING' AND expires_at <= ?", utc(clock.instant()))).isEqualTo(2);
     }
 

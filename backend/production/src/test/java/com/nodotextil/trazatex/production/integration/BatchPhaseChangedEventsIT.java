@@ -19,19 +19,11 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * La regla de docs/architecture/communication.md: {@code BatchPhaseChanged} por cada lote cuya fase o retención por calidad
- * cambie, sea cual sea la operación, además del evento de negocio. Recorre <b>todas</b> las operaciones de escritura de
- * Production: la lista se saca del mapeo real de Spring y la prueba falla si una ruta no está clasificada (una operación nueva
- * no puede olvidar el evento) o si una clasificada ya no existe.
- */
 class BatchPhaseChangedEventsIT extends ApiTestBase {
 
     @Autowired
     @Qualifier("requestMappingHandlerMapping")
     RequestMappingHandlerMapping handlerMapping;
-
-    // ---- lo esperado de cada operación ----
 
     private record Business(String type, String aggregateId, String topic) {
     }
@@ -39,7 +31,6 @@ class BatchPhaseChangedEventsIT extends ApiTestBase {
     private record Phase(UUID batchId, UUID companyId, String previous, String next, boolean hold, String reason, String requestId) {
     }
 
-    /** Lo que la operación debe dejar en el outbox, en orden: primero los eventos de negocio, luego un BatchPhaseChanged por lote. */
     private record Outcome(List<Business> business, List<Phase> phases) {
         static Outcome of(List<Business> business, List<Phase> phases) {
             List<Phase> sorted = new ArrayList<>(phases);
@@ -55,7 +46,6 @@ class BatchPhaseChangedEventsIT extends ApiTestBase {
 
     private static final String BATCH = "production.batch";
 
-    /** ruta → ¿cambia fase o retención? Es la clasificación que la prueba de completitud exige. */
     private static final Map<String, Boolean> CHANGES_PHASE = new LinkedHashMap<>();
 
     static {
@@ -64,7 +54,6 @@ class BatchPhaseChangedEventsIT extends ApiTestBase {
         CHANGES_PHASE.put("PUT /api/batches/{id}/commercial-data", false);
         CHANGES_PHASE.put("POST /api/batches/{id}/evidence", false);
         CHANGES_PHASE.put("POST /api/transformations/{id}/evidence", false);
-        // Borrado de evidencias (agregado en V2): marca la evidencia como borrada; no toca fase ni retención del lote
         CHANGES_PHASE.put("DELETE /api/batches/{id}/evidence/{evidenceId}", false);
         CHANGES_PHASE.put("DELETE /api/transformations/{id}/evidence/{evidenceId}", false);
         CHANGES_PHASE.put("POST /api/machines", false);
@@ -74,7 +63,6 @@ class BatchPhaseChangedEventsIT extends ApiTestBase {
         CHANGES_PHASE.put("POST /api/transfers", true);
         CHANGES_PHASE.put("POST /api/transfers/{id}/accept", true);
         CHANGES_PHASE.put("POST /api/transfers/{id}/reject", true);
-        // Comando interno de Quality (04e): cambia fase o retención. Sus cinco operaciones tienen escenario aparte ("ruta#OPERACIÓN").
         CHANGES_PHASE.put("POST /internal/batches/{batchId}/phase-transitions", true);
     }
 
@@ -240,7 +228,6 @@ class BatchPhaseChangedEventsIT extends ApiTestBase {
             internalCommand(idOf(batch), phaseCommand("RELEASE_HOLD", "fail-1")).andExpect(status().isOk());
             return Outcome.of(List.of(), List.of(phaseOfCommand(batch, "AVAILABLE", "AVAILABLE", false, "RELEASE_HOLD", "fail-1")));
         });
-        // Sin cambio no hay evento: HOLD sobre un lote ya retenido, RELEASE_HOLD sobre uno libre y la repetición de un comando
         scenarios.put(internal + "#HOLD_WITHOUT_CHANGE", () -> {
             JsonNode batch = registerBatch(10);
             internalCommand(idOf(batch), phaseCommand("HOLD", "derived-1")).andExpect(status().isOk());
@@ -270,12 +257,9 @@ class BatchPhaseChangedEventsIT extends ApiTestBase {
         return batch;
     }
 
-    /** El BatchPhaseChanged de un comando interno: la empresa es la del lote y requestId/reason vienen del comando. */
     private static Phase phaseOfCommand(JsonNode batch, String previous, String next, boolean hold, String reason, String requestId) {
         return new Phase(UUID.fromString(batch.path("id").asString()), COMPANY_A, previous, next, hold, reason, requestId);
     }
-
-    // ---- la prueba que recorre todas las operaciones ----
 
     @Test
     void everyWriteRouteIsClassifiedAndHasAScenario() {
@@ -290,7 +274,6 @@ class BatchPhaseChangedEventsIT extends ApiTestBase {
                 .isEqualTo(CHANGES_PHASE.keySet());
     }
 
-    /** "ruta#OPERACIÓN" → "ruta": una ruta con varias operaciones (el comando interno) tiene un escenario por cada una. */
     private static String routeOf(String scenario) {
         int hash = scenario.indexOf('#');
         return hash < 0 ? scenario : scenario.substring(0, hash);
@@ -329,11 +312,8 @@ class BatchPhaseChangedEventsIT extends ApiTestBase {
                     .allSatisfy(names -> assertThat(names).containsExactlyInAnyOrder("batchId", "companyId", "previousPhase",
                             "newPhase", "qualityHold", "reason", "requestId", "batchVersion"));
         }
-        // Clasificada como "cambia fase o retención" ⇒ al menos un escenario de la ruta publica; "no cambia" ⇒ ninguno
         assertThat(publishedByRoute).as("la clasificación de cada ruta coincide con lo que publica").isEqualTo(CHANGES_PHASE);
     }
-
-    // ---- bordes de la regla ----
 
     @Test
     void anOperationThatFailsLeavesNoEventBehind() throws Exception {
@@ -400,8 +380,6 @@ class BatchPhaseChangedEventsIT extends ApiTestBase {
         assertThat(outbox().get(0).type()).isEqualTo("TransferInitiated");
     }
 
-    // ---- contenido de los eventos de negocio ----
-
     @Test
     void batchRegisteredCarriesTheCatalogFieldsAndNothingPrivate() throws Exception {
         JsonNode batch = registerBatch(12.5);
@@ -415,7 +393,6 @@ class BatchPhaseChangedEventsIT extends ApiTestBase {
         JsonNode payload = event.payload().path("payload");
         assertThat(payload.propertyNames()).containsExactlyInAnyOrder("batchId", "traceabilityId", "qrCode", "companyId", "materialType",
                 "composition", "quantityKg", "origin", "supplierName", "receptionCharacteristics", "createdAt", "name");
-        // name: el nombre libre del lote (solo para la empresa dueña; Traceability lo filtra, ver communication.md)
         assertThat(payload.path("name").asString()).isEqualTo("Algodón Pima").isEqualTo(batch.path("name").asString());
         assertThat(payload.path("traceabilityId").asString()).isEqualTo(batch.path("traceabilityId").asString());
         assertThat(payload.path("qrCode").asString()).isEqualTo(batch.path("qrCode").asString());
@@ -444,9 +421,7 @@ class BatchPhaseChangedEventsIT extends ApiTestBase {
             JsonNode created = split.path("children").get(i);
             assertThat(child.propertyNames()).containsExactlyInAnyOrder("batchId", "traceabilityId", "qrCode", "materialType", "quantityKg",
                     "composition", "origin", "supplierName", "receptionCharacteristics", "qualityStatus", "createdAt", "name");
-            // sin nombre en la petición, el hijo hereda el del padre
             assertThat(child.path("name").asString()).isEqualTo(created.path("name").asString()).isEqualTo(parent.path("name").asString());
-            // heredados del padre: sin ellos los consumidores no conocerían el material ni la composición de un hijo
             assertThat(child.path("materialType").asString()).isEqualTo(parent.path("materialType").asString());
             assertThat(child.path("composition")).isEqualTo(parent.path("composition"));
             assertThat(child.path("origin").asString()).isEqualTo("Piura");
@@ -532,7 +507,6 @@ class BatchPhaseChangedEventsIT extends ApiTestBase {
         JsonNode finalOutput = payload.path("outputs").get(1);
         assertThat(finalOutput.propertyNames()).containsExactlyInAnyOrder("batchId", "traceabilityId", "qrCode", "materialType",
                 "quantityKg", "composition", "finalProduct", "name");
-        // sin nombre en la petición, la salida se llama como su Traceability ID
         assertThat(finalOutput.path("name").asString()).isEqualTo(completed.path("outputs").get(1).path("name").asString())
                 .isEqualTo(finalOutput.path("traceabilityId").asString());
         assertThat(finalOutput.path("batchId").asString()).isEqualTo(completed.path("outputs").get(1).path("id").asString());
@@ -584,8 +558,6 @@ class BatchPhaseChangedEventsIT extends ApiTestBase {
         assertThat(second.path("wasteReason").isNull() || second.path("wasteReason").isMissingNode()).isTrue();
     }
 
-    // ---- utilidades ----
-
     private record Event(UUID id, String type, String aggregateId, String topic, JsonNode payload) {
     }
 
@@ -612,7 +584,6 @@ class BatchPhaseChangedEventsIT extends ApiTestBase {
         return new Phase(UUID.fromString(batch.path("id").asString()), company, previous, next, hold, reason, requestId.toString());
     }
 
-    /** Un producto final ya creado por la API (transformación de un lote y finalización con una salida final). */
     private JsonNode completedFinalProduct() throws Exception {
         UUID transformation = idOf(startTransformation("DYEING", idOf(registerMachine("MQ-F" + UUID.randomUUID().toString().substring(0, 6))),
                 idOf(registerBatch(100))));
@@ -620,7 +591,6 @@ class BatchPhaseChangedEventsIT extends ApiTestBase {
                 obj("materialType", "Tela", "quantityKg", 90, "finalProduct", true)))).andExpect(status().isOk())).path("outputs").get(0);
     }
 
-    /** Todas las rutas de escritura (todo menos GET) que mapean los controladores de este servicio. */
     private Set<String> writeRoutes() {
         Set<String> routes = new TreeSet<>();
         handlerMapping.getHandlerMethods().forEach((info, method) -> {

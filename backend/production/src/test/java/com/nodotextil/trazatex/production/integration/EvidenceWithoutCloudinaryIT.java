@@ -18,11 +18,6 @@ import static com.nodotextil.trazatex.production.domain.SampleImages.jpeg;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Sin {@code CLOUDINARY_URL} Production arranca igual: avisa con un WARN y todas las evidencias se aceptan y quedan PENDING en la cola
- * local hasta que se configure (ADR-007). Mientras tanto el job no consume intentos: no se intentó nada.
- */
-// "test.context": contexto propio (si no, se reutilizaría uno ya creado y el WARN del arranque no saldría en esta clase)
 @SpringBootTest(properties = {"trazatex.messaging.enabled=false", "trazatex.cloudinary.url=", "trazatex.evidence.upload.enabled=false",
         "test.context=sin-cloudinary"})
 @ExtendWith(OutputCaptureExtension.class)

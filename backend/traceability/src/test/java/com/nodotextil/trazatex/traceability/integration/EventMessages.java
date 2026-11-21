@@ -11,17 +11,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Los mensajes tal como los publican los demás servicios: el sobre de {@code communication.md} con el payload del catálogo,
- * escrito a mano (con los campos que traceability no usa, como {@code previousPhase}, {@code reason} o {@code machineId}, para
- * comprobar que se ignoran). No usa ninguna clase de Production: es el contrato, no su implementación.
- */
 public final class EventMessages {
 
     public static final ObjectMapper MAPPER = JsonMapper.builder().build();
     public static final Instant ENVELOPE_TIME = Instant.parse("2026-10-21T09:00:00Z");
 
-    /** Un mensaje listo para publicar en {@code topic} con {@code key} = aggregateId. */
     public record Message(String topic, String key, UUID eventId, String type, String json) {
     }
 

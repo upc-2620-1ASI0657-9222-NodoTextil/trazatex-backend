@@ -32,16 +32,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Comando interno de Quality (ADR-009). <b>Bloqueo optimista</b> (decisión del informe): el lote se lee sin {@code FOR UPDATE} y
- * {@code @Version} detecta que otra transacción lo modificó; el servicio reintenta la transacción <i>completa</i> —conflicto de
- * versión, o clave duplicada en {@code phase_command_log}— y, si la carrera persiste, responde 503 para que Quality repita el
- * comando con el mismo {@code requestId}. Un 409 es solo un rechazo de negocio: Quality cancela el control cuando lo recibe.
- *
- * <p>Por eso el servicio no es {@code @Transactional}: cada intento abre su propia transacción. Una espera a un bloqueo
- * ({@code lock_timeout}, p. ej. una operación del usuario que tiene el lote con {@code FOR UPDATE}) <b>no</b> se reintenta
- * dentro: ya consumió su tiempo y Quality tiene un timeout de 2 s; se responde 503 de inmediato y Quality reintenta.
- */
 @Service
 class PhaseTransitionService implements ExecutePhaseTransitionUseCase {
 
@@ -88,7 +78,6 @@ class PhaseTransitionService implements ExecutePhaseTransitionUseCase {
             try {
                 return transaction.execute(status -> applyOnce(batchId, command));
             } catch (OptimisticLockingFailureException | DuplicateKeyException conflict) {
-                // Otra transacción ganó la carrera: se reintenta desde cero, y esta vez ve su resultado (o su cambio)
                 lastConflict = conflict;
                 log.debug("Comando {} {} del lote {}: carrera en el intento {} de {} ({})", command.operation(), command.requestId(),
                         batchId, attempt, attempts, conflict.getClass().getSimpleName());
@@ -109,14 +98,11 @@ class PhaseTransitionService implements ExecutePhaseTransitionUseCase {
         Batch batch = batches.findById(batchId).orElseThrow(() -> new NotFoundException(ErrorCodes.BATCH_NOT_FOUND, "El lote no existe."));
         PhaseOperation operation = command.operation();
 
-        // Repetición: el resultado guardado manda aunque el lote haya cambiado y hoy la operación ya no sería válida
         Optional<PhaseCommandResult> done = commandLog.find(batchId, command.requestId(), operation);
         if (done.isPresent()) {
             return new PhaseTransitionResult(batchId, done.get().phase(), done.get().qualityHold());
         }
 
-        // RF-003: una empresa inactiva es de solo lectura, y Quality no conoce el estado de las empresas. Solo START_EVALUATION
-        // inicia trabajo; los demás comandos cierran o protegen un lote y no pueden dejarlo atrapado.
         if (operation == PhaseOperation.START_EVALUATION) {
             companyGuard.requireActive(batch.companyId());
         }
@@ -169,7 +155,6 @@ class PhaseTransitionService implements ExecutePhaseTransitionUseCase {
 
     private void pause(int attempt) {
         try {
-            // Espera creciente con un poco de azar: varios comandos que chocaron a la vez no vuelven a chocar a la vez
             Thread.sleep(backoff.toMillis() * attempt + java.util.concurrent.ThreadLocalRandom.current().nextLong(backoff.toMillis() + 1));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

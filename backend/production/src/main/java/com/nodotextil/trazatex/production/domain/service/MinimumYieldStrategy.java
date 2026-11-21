@@ -9,11 +9,6 @@ import com.nodotextil.trazatex.sharedkernel.exception.ValidationException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-/**
- * Regla común de las estrategias: rendimiento mínimo = {@code salida total / entrada total ≥ mínimo %}. Solo rechaza;
- * no recibe nada que pueda modificar. La comparación es exacta (sin dividir ni redondear); el porcentaje del mensaje se
- * trunca, para que nunca parezca cumplir el mínimo quien no lo cumple.
- */
 abstract class MinimumYieldStrategy implements TransformationStrategy {
 
     private static final BigDecimal HUNDRED = new BigDecimal("100");
@@ -43,7 +38,6 @@ abstract class MinimumYieldStrategy implements TransformationStrategy {
 
     @Override
     public void validate(BalanceSummary balance) {
-        // salida / entrada ≥ mínimo / 100  ⇔  salida × 100 ≥ entrada × mínimo
         BigDecimal output = balance.totalOutput().kg().multiply(HUNDRED);
         BigDecimal required = balance.totalInput().kg().multiply(minimumYieldPercent);
         if (output.compareTo(required) < 0) {

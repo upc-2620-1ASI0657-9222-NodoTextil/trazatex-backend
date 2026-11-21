@@ -10,14 +10,12 @@ import { StoreService } from './store.service';
 
 const SIN_RESPUESTA = 'No se pudo confirmar la respuesta del servidor. Conserva los datos y vuelve a intentarlo.';
 
-/** ApiService, StoreService y DraftStorage reales; solo HTTP e IndexedDB son de prueba. No se ejecuta el efecto inicial del store. */
 describe('Plazo agotado en una escritura: mensaje, datos y clave pendiente (FE-I2)', () => {
   let http: HttpTestingController;
   let store: StoreService;
   let idb: ReturnType<typeof fakeIndexedDB>;
   const operaciones = () => [...idb.data.entries()].filter(([key]) => key.startsWith('operation/'));
 
-  /** Espera con setTimeout real a que la petición aparezca (la huella SHA-256 y IndexedDB son asíncronas). */
   async function peticion(url: string): Promise<TestRequest> {
     for (let i = 0; i < 400; i++) {
       try { return http.expectOne(url); } catch { await new Promise(resolve => setTimeout(resolve, 5)); }
@@ -70,7 +68,6 @@ describe('Plazo agotado en una escritura: mensaje, datos y clave pendiente (FE-I
     expect(operaciones()).toHaveLength(1);
 
     retryRequest.flush({ id: 't1' });
-    // Tras el éxito, mutate() espera a refresh() (sus GET no se responden aquí): se comprueba lo que ocurre antes.
     for (let i = 0; i < 400 && operaciones().length; i++) await new Promise(resolve => setTimeout(resolve, 5));
     expect(operaciones()).toHaveLength(0);
     void retry;

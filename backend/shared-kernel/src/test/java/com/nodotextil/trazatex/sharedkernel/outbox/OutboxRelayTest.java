@@ -131,7 +131,7 @@ class OutboxRelayTest {
         assertThat(store.isPublished(a2.id())).isFalse();
         assertThat(store.isPublished(b1.id())).isTrue();
         assertThat(store.isPublished(b2.id())).isTrue();
-        assertThat(transactionManager.outcomes()).containsExactly("commit"); // las marcas ya hechas se conservan
+        assertThat(transactionManager.outcomes()).containsExactly("commit");
 
         publisher.recover();
         relay.publishPending();
@@ -180,7 +180,7 @@ class OutboxRelayTest {
 
         assertThat(transactionManager.outcomes()).containsExactly("rollback");
         assertThat(store.isPublished(m.id())).isFalse();
-        assertThat(publisher.payloads()).containsExactly("{}"); // ya salió hacia Kafka: el duplicado es esperado
+        assertThat(publisher.payloads()).containsExactly("{}");
 
         store.failMarkPublishedWith(null);
         relay.publishPending();
@@ -207,7 +207,7 @@ class OutboxRelayTest {
 
         OutboxRelay.Result secondResult = new OutboxRelay(store, publisher, transactionManager, clock, 100).publishPending();
 
-        assertThat(secondResult).isEqualTo(new OutboxRelay.Result(0, 0, 0)); // la fila está bloqueada: SKIP LOCKED
+        assertThat(secondResult).isEqualTo(new OutboxRelay.Result(0, 0, 0));
         release.countDown();
         assertThat(firstRelay.get(10, TimeUnit.SECONDS)).isEqualTo(new OutboxRelay.Result(1, 0, 0));
         assertThat(publisher.published()).hasSize(1);
@@ -218,8 +218,6 @@ class OutboxRelayTest {
         assertThatThrownBy(() -> new OutboxRelay(store, publisher, transactionManager, clock, 0))
                 .isInstanceOf(IllegalArgumentException.class);
     }
-
-    // --- Intentos y último error ---------------------------------------------------------------------------------
 
     @Test
     void cadaFalloSumaUnIntentoYGuardaElUltimoErrorConSuCausa() {
@@ -332,8 +330,6 @@ class OutboxRelayTest {
     void sinCausaDistintaElErrorNoRepiteLaCausa() {
         assertThat(OutboxRelay.describe(new IllegalStateException("solo"))).isEqualTo("IllegalStateException: solo");
     }
-
-    // --- Ayudas ---------------------------------------------------------------------------------
 
     private OutboxMessage seed(String aggregateId, String payload, int secondsAfterT0) {
         return seed(BATCH_TOPIC, aggregateId, payload, secondsAfterT0);

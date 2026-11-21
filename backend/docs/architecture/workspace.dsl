@@ -4,33 +4,19 @@ workspace "TrazaTex" "Plataforma B2B de trazabilidad textil - Iteracion 4 (Comun
 
     model {
 
-        # ===============================================================
-        # Actores
-        # ===============================================================
         operario = person "Operario de Transformacion Textil" "Registra lotes, transformaciones y transferencias en planta."
         administrador = person "Administrador de Empresa" "Gestiona controles de calidad, fallas, usuarios, maquinaria y privacidad B2B de su empresa."
         duenoLicencia = person "Dueno de Licencia" "Administra la cadena: empresas, primeros administradores y solicitudes de administradores."
 
-        # ===============================================================
-        # Sistemas externos (R10 revisada en Iteracion 4)
-        #  - PDFMonkey se elimina: el reporte se genera localmente en Quality (ADR-011).
-        #  - El RUC se valida con la API de Chequea.pe, que expone el padron de SUNAT (ADR-012).
-        # ===============================================================
         chequea = softwareSystem "Chequea.pe" "API REST de consulta RUC con datos del padron de SUNAT actualizados a diario. No oficial y sin SLA." "External"
         hibp = softwareSystem "Have I Been Pwned" "Verifica si una contrasena se encuentra comprometida (k-anonymity)." "External"
         cloudinary = softwareSystem "Cloudinary" "Almacena evidencias fotograficas de lotes, transformaciones, controles y fallas." "External"
         sendgrid = softwareSystem "SendGrid" "Envia invitaciones y alertas por correo electronico." "External"
 
-        # ===============================================================
-        # Sistema TrazaTex
-        # ===============================================================
         trazatex = softwareSystem "TrazaTex" "Plataforma B2B de trazabilidad de lotes en la cadena textil." {
 
             webapp = container "Aplicacion Web" "Interfaz para operarios, administradores y dueno de licencia. Detecta desconexion (<3 s), conserva borradores en el navegador y reintenta con la misma Idempotency-Key (RNF-05)." "React" "WebApp"
 
-            # -----------------------------------------------------------
-            # API GATEWAY
-            # -----------------------------------------------------------
             apiGateway = container "API Gateway" "Punto unico de entrada. Valida JWT RS256, rechaza tokens de usuarios inactivos, aplica rate limiting y enruta a los microservicios." "Spring Cloud Gateway" {
                 gwJwtFilter = component "JWT Authentication Filter" "Valida firma RS256, expiracion y claims. Rutas publicas: login y aceptacion de invitacion." "Spring Security OAuth2 Resource Server" "Inbound Adapter"
                 gwRateLimiter = component "Rate Limiting Filter" "Token Bucket por usuario y empresa en rutas autenticadas, y por IP en login, invitaciones publicas y fallos de autenticacion. Contadores en la memoria del propio Gateway." "Bucket4j (en memoria)" "Application"
@@ -40,14 +26,8 @@ workspace "TrazaTex" "Plataforma B2B de trazabilidad textil - Iteracion 4 (Comun
                 gwJwksClient = component "JWKS Client" "Obtiene y cachea las claves publicas de Organization & Access." "NimbusReactiveJwtDecoder" "Outbound Adapter"
             }
 
-            # -----------------------------------------------------------
-            # MESSAGE BROKER (ADR-004)
-            # -----------------------------------------------------------
             kafka = container "Event Broker" "Un topico por tipo de agregado; clave de particion = aggregateId; retencion para replay; topicos .DLT para errores." "Apache Kafka (Azure Event Hubs, protocolo Kafka)" "Broker"
 
-            # -----------------------------------------------------------
-            # 1. ORGANIZATION & ACCESS
-            # -----------------------------------------------------------
             orgAccess = container "Organization & Access" "Licencia, empresas, usuarios, invitaciones y privacidad B2B. Identity Provider (JWT RS256). Aprovisiona al Dueno de Licencia al iniciar. Valida RUC con la API de Chequea.pe." "Spring Boot / Java 21" {
                 oaRest = component "Organization REST Controllers" "Licencia, empresas, usuarios, invitaciones, solicitudes de administrador, privacidad y login." "Spring MVC" "Inbound Adapter"
                 oaJwks = component "JWKS Controller" "Publica las claves publicas en /.well-known/jwks.json." "Spring MVC" "Inbound Adapter"
@@ -66,9 +46,6 @@ workspace "TrazaTex" "Plataforma B2B de trazabilidad textil - Iteracion 4 (Comun
             }
             orgAccessDb = container "Organization & Access DB" "Licencia, empresas, usuarios, invitaciones, privacidad, cache de RUC validados, outbox." "PostgreSQL" "Database"
 
-            # -----------------------------------------------------------
-            # 2. PRODUCTION
-            # -----------------------------------------------------------
             production = container "Production" "Lotes, composicion, divisiones, transformaciones, maquinaria y transferencias. Unica autoridad sobre la fase operativa del lote." "Spring Boot / Java 21" "Core" {
                 prRest = component "Production REST Controllers" "BatchController, TransformationController, TransferController, MachineController." "Spring MVC" "Inbound Adapter"
                 prInternalPhase = component "Internal Phase Controller" "POST /internal/batches/{id}/phase-transitions. Solo red interna; idempotente por requestId (controlId)." "Spring MVC" "Inbound Adapter"
@@ -90,9 +67,6 @@ workspace "TrazaTex" "Plataforma B2B de trazabilidad textil - Iteracion 4 (Comun
             }
             productionDb = container "Production DB" "Lotes, composicion, transformaciones, transferencias, maquinaria, proyeccion de empresas, outbox, processed_events, idempotency_keys." "PostgreSQL" "Database"
 
-            # -----------------------------------------------------------
-            # 3. QUALITY
-            # -----------------------------------------------------------
             quality = container "Quality" "Controles de calidad, pruebas, estados de calidad y fallas. Genera el reporte del control finalizado (sin servicio externo)." "Spring Boot / Java 21" "Core" {
                 qaRest = component "Quality REST Controllers" "QualityControlController, FailureController, ReportController." "Spring MVC" "Inbound Adapter"
                 qaIdempotency = component "Idempotency Filter" "Guarda Idempotency-Key + respuesta en la misma transaccion." "HandlerInterceptor" "Inbound Adapter"
@@ -115,9 +89,6 @@ workspace "TrazaTex" "Plataforma B2B de trazabilidad textil - Iteracion 4 (Comun
             }
             qualityDb = container "Quality DB" "Controles, pruebas, fallas, proyeccion de lotes, outbox, processed_events, idempotency_keys." "PostgreSQL" "Database"
 
-            # -----------------------------------------------------------
-            # 4. TRACEABILITY
-            # -----------------------------------------------------------
             traceability = container "Traceability" "Genealogia de lotes, trazabilidad bidireccional, analisis de impacto y autorizacion B2B (ABAC)." "Spring Boot / Java 21" "Core" {
                 trRest = component "Lineage REST Controller" "Consulta de genealogia hacia atras y hacia adelante y busqueda por QR." "Spring MVC" "Inbound Adapter"
                 trConsumer = component "Lineage Events Consumer" "Consume los eventos de lotes de Production, QualityStatusChanged, FailureConfirmed, CompanyRegistered y CompanyPrivacyUpdated. Idempotente (ProcessedEvent)." "Spring Kafka Listener" "Inbound Adapter"
@@ -134,9 +105,6 @@ workspace "TrazaTex" "Plataforma B2B de trazabilidad textil - Iteracion 4 (Comun
             }
             traceabilityDb = container "Traceability DB" "Grafo genealogico (DAG), empresa propietaria por nodo, privacidad, ProcessedEvent, OutboxEvent." "Neo4j" "Database"
 
-            # -----------------------------------------------------------
-            # 5. NOTIFICATION
-            # -----------------------------------------------------------
             notification = container "Notification" "Entrega y seguimiento (leida / no leida) de invitaciones y alertas." "Spring Boot / Java 21" {
                 ntRest = component "Notification REST Controller" "Lista notificaciones del usuario y las marca como leidas." "Spring MVC" "Inbound Adapter"
                 ntConsumer = component "Notification Events Consumer" "Consume InvitationCreated, AdminRequestResolved, UserAccountUpdated, Transfer*, PossibleDerivedFailureDetected. Idempotente." "Spring Kafka Listener" "Inbound Adapter"
@@ -150,9 +118,6 @@ workspace "TrazaTex" "Plataforma B2B de trazabilidad textil - Iteracion 4 (Comun
             }
             notificationDb = container "Notification DB" "Notificaciones, estado de lectura, correos diferidos, directorio de destinatarios, processed_events." "PostgreSQL" "Database"
 
-            # -----------------------------------------------------------
-            # 6. ANALYTICS
-            # -----------------------------------------------------------
             analytics = container "Analytics" "Indicadores por periodo (CQRS, solo lectura). Ya no genera reportes PDF." "Spring Boot / Java 21" {
                 anRest = component "Analytics REST Controller" "Consulta de indicadores por periodo." "Spring MVC" "Inbound Adapter"
                 anConsumer = component "Analytics Events Consumer" "Consume eventos de Production, Quality y Traceability. Idempotente." "Spring Kafka Listener" "Inbound Adapter"
@@ -165,10 +130,6 @@ workspace "TrazaTex" "Plataforma B2B de trazabilidad textil - Iteracion 4 (Comun
             analyticsDb = container "Analytics DB" "Modelo de lectura agregado (CQRS), processed_events." "PostgreSQL" "Database"
         }
 
-        # =================================================================
-        # RELACIONES A NIVEL CONTENEDOR (se declaran primero para que las
-        # relaciones de componentes no generen duplicados implicitos)
-        # =================================================================
         operario -> webapp "Usa" "HTTPS"
         administrador -> webapp "Usa" "HTTPS"
         duenoLicencia -> webapp "Usa" "HTTPS"
@@ -185,17 +146,14 @@ workspace "TrazaTex" "Plataforma B2B de trazabilidad textil - Iteracion 4 (Comun
         apiGateway -> notification "Enruta" "HTTP interno" "Sync"
         apiGateway -> analytics "Enruta" "HTTP interno" "Sync"
 
-        # Unica comunicacion sincrona entre microservicios (ADR-009)
         quality -> production "Comando sobre el lote: iniciar evaluacion, descartar, retener por calidad" "REST interno, idempotente, Resilience4j" "Sync,InterService"
 
-        # Integraciones externas
         orgAccess -> chequea "Valida RUC (GET /api/v1/ruc/{ruc})" "HTTPS/REST, Bearer token, Resilience4j" "Sync"
         orgAccess -> hibp "Verifica contrasena" "HTTPS, Resilience4j" "Sync"
         production -> cloudinary "Sube evidencias" "HTTPS, Resilience4j" "Sync"
         quality -> cloudinary "Sube evidencias" "HTTPS, Resilience4j" "Sync"
         notification -> sendgrid "Envia correos" "HTTPS, Resilience4j" "Sync"
 
-        # Kafka: los servicios publican y consumen (modelo pull)
         orgAccess -> kafka "Publica eventos de empresa, usuario, invitacion y privacidad" "Kafka" "Async"
         production -> kafka "Publica eventos de lote, transformacion y transferencia; consume eventos de empresa y de estado de calidad" "Kafka" "Async"
         quality -> kafka "Publica eventos de control y falla; consume eventos de lote y PossibleDerivedFailureDetected" "Kafka" "Async"
@@ -204,7 +162,6 @@ workspace "TrazaTex" "Plataforma B2B de trazabilidad textil - Iteracion 4 (Comun
         analytics -> kafka "Consume eventos de Production, Quality y Traceability" "Kafka" "Async"
         apiGateway -> kafka "Consume UserAccountUpdated (revocacion de usuarios inactivos)" "Kafka" "Async"
 
-        # Persistencia (Database per Service)
         orgAccess -> orgAccessDb "Lee y escribe" "JDBC"
         production -> productionDb "Lee y escribe" "JDBC"
         quality -> qualityDb "Lee y escribe" "JDBC"
@@ -212,9 +169,6 @@ workspace "TrazaTex" "Plataforma B2B de trazabilidad textil - Iteracion 4 (Comun
         notification -> notificationDb "Lee y escribe" "JDBC"
         analytics -> analyticsDb "Lee y escribe" "JDBC"
 
-        # =================================================================
-        # COMPONENTES - API GATEWAY
-        # =================================================================
         webapp -> gwJwtFilter "Envia peticion" "HTTPS/REST"
         gwJwtFilter -> gwJwksClient "Obtiene clave publica"
         gwJwtFilter -> gwRevocation "Rechaza tokens de usuarios inactivos"
@@ -230,9 +184,6 @@ workspace "TrazaTex" "Plataforma B2B de trazabilidad textil - Iteracion 4 (Comun
         gwRouteLocator -> ntRest "Enruta /api/notifications" "HTTP interno"
         gwRouteLocator -> anRest "Enruta /api/analytics" "HTTP interno"
 
-        # =================================================================
-        # COMPONENTES - ORGANIZATION & ACCESS
-        # =================================================================
         oaRest -> oaLicenseUc "Invoca"
         oaRest -> oaIdentityUc "Invoca"
         oaRest -> oaPrivacyUc "Invoca"
@@ -255,9 +206,6 @@ workspace "TrazaTex" "Plataforma B2B de trazabilidad textil - Iteracion 4 (Comun
         oaOutbox -> orgAccessDb "Lee eventos pendientes" "JDBC"
         oaOutbox -> kafka "Publica eventos de organizacion" "Kafka"
 
-        # =================================================================
-        # COMPONENTES - PRODUCTION
-        # =================================================================
         prRest -> prIdempotency "Pasa por"
         prIdempotency -> prBatchUc "Invoca"
         prIdempotency -> prTransformationUc "Invoca"
@@ -283,9 +231,6 @@ workspace "TrazaTex" "Plataforma B2B de trazabilidad textil - Iteracion 4 (Comun
         prOutbox -> productionDb "Lee eventos pendientes" "JDBC"
         prOutbox -> kafka "Publica eventos de produccion" "Kafka"
 
-        # =================================================================
-        # COMPONENTES - QUALITY
-        # =================================================================
         qaRest -> qaIdempotency "Pasa por"
         qaIdempotency -> qaControlUc "Invoca"
         qaIdempotency -> qaFailureUc "Invoca"
@@ -315,9 +260,6 @@ workspace "TrazaTex" "Plataforma B2B de trazabilidad textil - Iteracion 4 (Comun
         qaOutbox -> qualityDb "Lee eventos pendientes" "JDBC"
         qaOutbox -> kafka "Publica eventos de calidad" "Kafka"
 
-        # =================================================================
-        # COMPONENTES - TRACEABILITY
-        # =================================================================
         trRest -> trLineageUc "GetLineageUseCase"
         trLineageUc -> trPolicy "Filtra la respuesta por nodo y atributo"
         trConsumer -> kafka "Consume eventos de lote, transferencia, calidad, falla y privacidad" "Kafka"
@@ -335,9 +277,6 @@ workspace "TrazaTex" "Plataforma B2B de trazabilidad textil - Iteracion 4 (Comun
         trOutbox -> traceabilityDb "Lee OutboxEvent pendientes" "Bolt"
         trOutbox -> kafka "Publica PossibleDerivedFailureDetected" "Kafka"
 
-        # =================================================================
-        # COMPONENTES - NOTIFICATION
-        # =================================================================
         ntRest -> ntUc "Invoca"
         ntConsumer -> kafka "Consume eventos" "Kafka"
         ntConsumer -> ntUc "Invoca"
@@ -348,9 +287,6 @@ workspace "TrazaTex" "Plataforma B2B de trazabilidad textil - Iteracion 4 (Comun
         ntEmail -> sendgrid "Envia con Circuit Breaker + Retry" "HTTPS"
         ntPersistence -> notificationDb "Lee y escribe" "JDBC"
 
-        # =================================================================
-        # COMPONENTES - ANALYTICS
-        # =================================================================
         anRest -> anQueryUc "Invoca"
         anConsumer -> kafka "Consume eventos" "Kafka"
         anConsumer -> anProjectionUc "Invoca"
@@ -425,9 +361,6 @@ workspace "TrazaTex" "Plataforma B2B de trazabilidad textil - Iteracion 4 (Comun
             autoLayout lr
         }
 
-        # -------------------------------------------------------------
-        # Vistas dinamicas (Iteracion 4)
-        # -------------------------------------------------------------
         dynamic trazatex "Dinamica-1-Bootstrap" "Aprovisionamiento del primer usuario: Dueno de Licencia (punto 4)" {
             orgAccess -> orgAccessDb "Al iniciar: si no existe licencia, la crea con las variables de entorno y registra la invitacion del Dueno + evento en outbox"
             orgAccess -> kafka "Publica InvitationCreated"

@@ -12,13 +12,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
-/**
- * Envío de los correos diferidos (ADR-007). Un correo nunca se pierde: queda {@code PENDING} hasta que el proveedor lo acepta. El Retry está
- * <b>acotado</b>: cada fallo transitorio (429, 5xx, tiempo agotado) suma un intento y espera más (30 s, 60 s, … hasta 1 h); al llegar a
- * {@code maxAttempts} pasa a {@code FAILED}. Un 4xx permanente (clave inválida, remitente sin verificar) pasa a {@code FAILED} de inmediato, sin
- * reintentar. Con el circuito abierto no se llama al proveedor ni se gastan intentos. El destinatario se resolvió al crear el correo; este
- * servicio no recorre las notificaciones.
- */
 public class EmailDeliveryService {
     private static final Logger log = LoggerFactory.getLogger(EmailDeliveryService.class);
     static final int BATCH_SIZE = 10;

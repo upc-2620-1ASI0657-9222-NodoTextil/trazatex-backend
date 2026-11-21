@@ -10,7 +10,6 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 
-/** Contrato de {@link IdempotencyStorePort}: {@code INSERT ... ON CONFLICT DO NOTHING} con {@code response_status = 0} provisional. */
 @Component
 class JdbcIdempotencyStoreAdapter implements IdempotencyStorePort {
 

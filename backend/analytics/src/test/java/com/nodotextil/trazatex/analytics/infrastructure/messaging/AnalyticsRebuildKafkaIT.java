@@ -39,14 +39,8 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-/**
- * I10, la reconstrucción REAL de Analytics desde Kafka: con el servicio parado se vacía su base, se rebobinan sus cinco grupos al principio de cada
- * tópico y se vuelve a arrancar. El resultado tiene que ser idéntico —tablas fila por fila y los cuatro indicadores— al que había antes. Son los pasos
- * de {@code docs/operations/analytics-rebuild.md}, hechos con las mismas herramientas de Kafka que usaría quien opera el servicio.
- */
 @SpringBootTest(properties = {
         "trazatex.messaging.enabled=true",
-        // el vigilante no se programa solo: el servicio «parado» de la prueba no puede resucitar a mitad del procedimiento
         "trazatex.messaging.consumer.topic-check-interval=PT1H"})
 class AnalyticsRebuildKafkaIT {
     static final KafkaContainer KAFKA = new TrazatexKafkaContainer();
@@ -80,7 +74,6 @@ class AnalyticsRebuildKafkaIT {
         return result;
     }
 
-    /** Un mes de operación de dos empresas: nacimientos, división, transformación, cambios de dueño con la versión al revés del reloj, transferencias, controles y fallas. */
     private List<Message> history() {
         UUID lot1 = UUID.randomUUID(), lot2 = UUID.randomUUID(), child = UUID.randomUUID(), tr = UUID.randomUUID(), accepted = UUID.randomUUID(), rejected = UUID.randomUUID(),
                 control = UUID.randomUUID(), failure1 = UUID.randomUUID(), failure2 = UUID.randomUUID();
@@ -102,14 +95,13 @@ class AnalyticsRebuildKafkaIT {
         m.add(message("quality.failure", "QualityFailureUpdated", failure1, map("failureId", failure1, "companyId", a, "cause", null, "status", "OPEN"), 70));
         m.add(message("quality.failure", "QualityFailureUpdated", failure1, map("failureId", failure1, "companyId", a, "cause", "Fibra corta", "status", "OPEN"), 80));
         m.add(message("quality.failure", "QualityFailureUpdated", failure2, map("failureId", failure2, "companyId", a, "cause", "Manchas", "status", "CONFIRMED"), 90));
-        m.add(m.get(0));                                                   // entrega repetida: Kafka garantiza «al menos una vez»
+        m.add(m.get(0));
         return m;
     }
 
     private String table(String sql) {
         return jdbc.sql(sql).query(String.class).single();
     }
-    /** Las cuatro tablas, fila por fila y ordenadas (menos {@code projected_at}, que es la hora de proyección), y los cuatro indicadores de cada empresa. */
     private List<Object> snapshot() {
         List<Object> snapshot = new ArrayList<>();
         snapshot.add(table("SELECT coalesce(string_agg(concat_ws('|',event_id,event_type,aggregate_id,occurred_at,company_id,business_at,payload::text),E'\\n' ORDER BY event_id),'') FROM analytics_event"));
@@ -137,7 +129,6 @@ class AnalyticsRebuildKafkaIT {
             for (Message m : history) producer.send(new ProducerRecord<>(m.topic(), m.key(), m.json())).get();
         }
 
-        // 1. el servicio consume por primera vez
         watcher.startConsumersWhoseTopicExists();
         await().atMost(Duration.ofSeconds(60)).untilAsserted(() -> assertThat(events()).isEqualTo(distinct));
         List<Object> before = snapshot();
@@ -147,13 +138,11 @@ class AnalyticsRebuildKafkaIT {
         assertThat(october.failureCauses()).hasSize(2);
         assertThat(october.materials().completedTransformations()).isEqualTo(1);
 
-        // 2. se para el servicio y se vacía su base (solo la suya)
         registry.getListenerContainers().forEach(container -> container.stop());
         jdbc.sql("TRUNCATE analytics_event,batch_birth,batch_owner,batch_quality").update();
         assertThat(events()).isZero();
         assertThat(queries.summary(a, "2026-10-01", "2026-10-31").quality()).isEmpty();
 
-        // 3. se rebobinan los cinco grupos al principio de su tópico (kafka-consumer-groups.sh --reset-offsets --to-earliest --execute)
         try (AdminClient admin = AdminClient.create(Map.<String, Object>of("bootstrap.servers", KAFKA.getBootstrapServers()))) {
             for (var source : ConsumedTopics.ALL) {
                 String group = groupOf(source);
@@ -165,14 +154,12 @@ class AnalyticsRebuildKafkaIT {
             }
         }
 
-        // 4. se arranca el servicio: lee todo otra vez
         watcher.startConsumersWhoseTopicExists();
         await().atMost(Duration.ofSeconds(60)).untilAsserted(() -> assertThat(events()).isEqualTo(distinct));
         await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(snapshot()).isEqualTo(before));
         assertThat(queries.summary(a, "2026-10-01", "2026-10-31").quality()).isEqualTo(october.quality());
     }
 
-    /** El grupo de cada contenedor, tal como lo declara su {@code @KafkaListener}. */
     private String groupOf(TopicWatcher.Source source) {
         return registry.getListenerContainer(source.listenerId()).getGroupId();
     }

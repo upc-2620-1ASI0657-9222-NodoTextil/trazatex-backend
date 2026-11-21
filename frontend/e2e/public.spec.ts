@@ -9,7 +9,6 @@ test('un visitante no puede abrir la aplicación ni elegir una identidad de demo
   await page.goto('/login?como=dueno&empresa=EB&ir=/empresas');
   await expect(page).toHaveURL(/login/);
   await expect(page.getByRole('button', { name: 'Ingresar', exact: true })).toBeVisible();
-  // El selector de rol es solo una ayuda visual (FE-I3): la URL (?como=dueno) no preselecciona ninguna identidad de demostración.
   await expect(page.getByRole('button', { name: 'Dueño', exact: true })).toHaveAttribute('aria-pressed', 'false');
   await expect(page.getByRole('button', { name: 'Operario', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.goto('/empresas');
@@ -65,8 +64,8 @@ test('la aplicación carga las fuentes Arvo y Bukhari aprobadas', async ({ page 
   await expect(page.locator('body')).toHaveCSS('font-family', /Arvo/);
 });
 
-test('login: aclara que el rol lo define la cuenta y no hay un h1 duplicado (FE-M4, FE-I8)', async ({ page }) => {
+test('login: pide elegir el rol de la cuenta y no hay un h1 duplicado (H4, FE-I8)', async ({ page }) => {
   await page.goto('/login');
-  await expect(page.getByText('El rol lo define tu cuenta.', { exact: true })).toBeVisible();
+  await expect(page.getByText('Elige el rol registrado en tu cuenta.', { exact: true })).toBeVisible();
   await expect(page.locator('h1')).toHaveCount(1);
 });

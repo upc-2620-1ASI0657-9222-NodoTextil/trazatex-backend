@@ -6,10 +6,6 @@ import com.nodotextil.trazatex.organizationaccess.domain.model.Role;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * Tópico {@code orgaccess.invitation}, clave invitationId. Lo consume notification. {@code fullName} es nulo si la
- * invitación no trae nombres (los completa el invitado al aceptar); {@code companyId} es nulo para el Dueño.
- */
 public record InvitationCreated(
         UUID invitationId,
         String email,

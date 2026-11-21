@@ -7,10 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Una prueba de un control (US24): criterio, valor esperado, valor obtenido, unidad, resultado y observaciones. Todo es obligatorio
- * salvo las observaciones. Los valores son texto: un criterio puede ser cuantitativo ("95", "%") o cualitativo.
- */
 public record QualityTest(UUID id, UUID controlId, String criterionName, String expectedValue, String obtainedValue, String unit,
                           TestResult testResult, String remarks) {
 

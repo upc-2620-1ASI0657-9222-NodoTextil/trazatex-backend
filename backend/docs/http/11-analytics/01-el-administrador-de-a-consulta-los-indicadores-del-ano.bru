@@ -19,9 +19,9 @@ assert {
 }
 
 script:pre-request {
-  await bru.sleep(2500);   // Analytics proyecta lo que Production y Quality publicaron (consistencia eventual)
-  const lima = new Date().toLocaleDateString("en-CA", { timeZone: "America/Lima" });   // AAAA-MM-DD
-  bru.setVar("analyticsFrom", lima.slice(0, 4) + "-01-01");   // lo que va del año: nunca más de 366 días
+  await bru.sleep(2500);
+  const lima = new Date().toLocaleDateString("en-CA", { timeZone: "America/Lima" });
+  bru.setVar("analyticsFrom", lima.slice(0, 4) + "-01-01");
   bru.setVar("analyticsTo", lima);
 }
 

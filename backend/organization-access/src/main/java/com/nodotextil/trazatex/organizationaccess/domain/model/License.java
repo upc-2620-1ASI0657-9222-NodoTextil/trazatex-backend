@@ -9,11 +9,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * Licencia única creada por el bootstrap (ADR-013). Fija los límites de la cadena (RF-013). Los conteos
- * ({@code companies}, {@code usedSlots}) los entrega quien llama: la persistencia los calcula con la fila de la
- * licencia (o de la empresa) bloqueada para que dos operaciones simultáneas no superen el límite.
- */
 public final class License {
 
     private final UUID id;
@@ -39,7 +34,6 @@ public final class License {
         return new License(id, maxCompanies, maxUsersPerCompany, createdAt);
     }
 
-    /** Las empresas inactivas también cuentan (US02 esc. 2). */
     public boolean hasCompanyCapacity(long companies) {
         return companies < maxCompanies;
     }
@@ -51,7 +45,6 @@ public final class License {
         }
     }
 
-    /** {@code usedSlots} = usuarios ACTIVE + invitaciones PENDING vigentes de la empresa. */
     public boolean hasUserCapacity(long usedSlots) {
         return usedSlots < maxUsersPerCompany;
     }

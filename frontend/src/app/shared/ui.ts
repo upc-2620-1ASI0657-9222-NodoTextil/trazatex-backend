@@ -23,8 +23,6 @@ import { IconComponent } from './icon.component';
 import { FormDraftDirective } from './form-draft.directive';
 import { DialogFocusDirective } from './dialog-focus.directive';
 
-                   
-/** Tiempo mínimo que se ve un aviso informativo (los errores no se retiran solos). */
 export const TOAST_MIN_MS = 4000;
 
 @Injectable({ providedIn: 'root' })
@@ -46,8 +44,6 @@ export class UiService {
   toast(text: string, error = false) {
     const id = ++this.n;
     this.toasts.update((t) => [...t, { id, text, error }]);
-    // Un error NO se retira solo: se queda hasta que la persona lo cierre (FE-I8), porque un temporizador no sabe si ya se leyó.
-    // Un aviso informativo sí se retira, con tiempo de lectura proporcional al texto (~45 ms por carácter, mínimo 4 s).
     if (!error) setTimeout(() => this.dismissToast(id), Math.max(TOAST_MIN_MS, text.length * 45));
   }
   dismissToast(id: number) {
@@ -55,7 +51,6 @@ export class UiService {
   }
 }
 
-                             
 @Directive({ selector: 'ng-template[appHeaderActions]' })
 export class HeaderActionsDirective {
   private readonly ui = inject(UiService);
@@ -108,7 +103,6 @@ export class HorasPipe implements PipeTransform {
   }
 }
 
-                          
 export const tonoFase = (f: FaseOperativa) =>
   f === 'Disponible' ? 'neutral' : f === 'Descartado' ? 'fail' : ['Procesado', 'Dividido'].includes(f) ? 'hist' : 'busy';
 export const tonoCalidad = (c: EstadoCalidad) =>
@@ -126,7 +120,6 @@ export class BadgeComponent {
   readonly icon = input<string>();
 }
 
-                                                                      
 @Component({
   selector: 'app-lot-status',
   template: `<span class="badges">
@@ -134,11 +127,13 @@ export class BadgeComponent {
     <app-badge [text]="lote().calidad" [tone]="tc()" />
     @if (showAvail() && disp().bloqueado && disp().tono !== 'hist') {
       <span [attr.data-tip]="disp().motivo"><app-badge [text]="disp().etiqueta" tone="hist" icon="lock" /></span>
+      @if (showReason()) { <small class="lock-why">{{ disp().motivo }}</small> } @else { <span class="visually-hidden">{{ disp().motivo }}</span> }
     }
     @if (lote().productoFinal) {
       <app-badge text="Producto final" tone="final" />
     }
   </span>`,
+  styles: `.lock-why { flex-basis: 100%; font-size: .76rem; color: var(--muted); }`,
   imports: [BadgeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -146,12 +141,12 @@ export class LotStatusComponent {
   private readonly store = inject(StoreService);
   readonly lote = input.required<Lote>();
   readonly showAvail = input(true);
+  readonly showReason = input(false);
   readonly tf = computed(() => tonoFase(this.lote().fase));
   readonly tc = computed(() => tonoCalidad(this.lote().calidad));
   readonly disp = computed(() => this.store.disponibilidad(this.lote()));
 }
 
-                         
 @Component({
   selector: 'app-priv',
   template: `<span class="masked" [attr.data-tip]="why()"><app-icon name="lock" [size]="10" [stroke]="2" />Privado</span>`,
@@ -165,7 +160,6 @@ export class PrivComponent {
   );
 }
 
-                     
 @Component({
   selector: 'app-lot-link',
   template: `<a [routerLink]="['/lotes', store.codigoLote(id())]" [attr.title]="store.codigoLote(id())" [attr.aria-label]="'Lote ' + store.codigoLote(id())" (click)="$event.stopPropagation()">{{ store.nombreLote(id()) }}</a>`,
@@ -177,7 +171,6 @@ export class LotLinkComponent {
   readonly id = input.required<string>();
 }
 
-                        
 @Component({
   selector: 'app-composition',
   template: `<div class="comp" aria-hidden="true">
@@ -197,7 +190,6 @@ export class CompositionComponent {
   readonly comp = input.required<Componente[]>();
 }
 
-                        
 @Component({
   selector: 'app-qr-tag',
   template: `<figure class="qr-single qr-printable" [attr.aria-label]="'QR del lote ' + lote().id">
@@ -224,7 +216,6 @@ export class CompositionComponent {
 })
 export class QrTagComponent {
   readonly lote = input.required<Lote>();
-  /** Muestra «Imprimir etiqueta» y «Descargar QR» (FE-M15). */
   readonly actions = input(false);
   readonly qr = computed(() => {
     const q = qrcode(0, 'M');
@@ -236,7 +227,6 @@ export class QrTagComponent {
     return { n: n + 8, d };
   });
 
-  /** El QR como archivo SVG independiente (fondo blanco, módulos oscuros), para imprimirlo desde cualquier programa. */
   svg(): string {
     const { n, d } = this.qr();
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${n} ${n}" width="${n * 8}" height="${n * 8}" shape-rendering="crispEdges">` +
@@ -250,7 +240,6 @@ export class QrTagComponent {
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
-  /** Imprime SOLO la etiqueta: `body.printing-qr` activa las reglas de `@media print` de styles.css y se quita al terminar. */
   imprimir() {
     const body = document.body;
     const terminar = () => { body.classList.remove('printing-qr'); window.removeEventListener('afterprint', terminar); };
@@ -260,7 +249,6 @@ export class QrTagComponent {
   }
 }
 
-                                      
 @Component({
   selector: 'app-evidence',
   template: `
@@ -353,7 +341,36 @@ export class EvidenceComponent {
   }
 }
 
-                         
+@Component({
+  selector: 'app-copy-id',
+  template: `<span class="copy-id"><span class="id" [attr.title]="id()">{{ prefijo() }}{{ store.referencia(id()) }}</span><button type="button" class="copy-btn" (click)="copiar($event)" [attr.aria-label]="'Copiar identificador completo ' + id()" [attr.data-tip]="copiado() ? 'Copiado' : 'Copiar identificador completo'"><app-icon [name]="copiado() ? 'check' : 'copy'" [size]="13" /></button></span>`,
+  styles: `
+    .copy-id { display: inline-flex; align-items: center; gap: .2rem; }
+    .copy-btn { display: inline-grid; place-items: center; width: 1.5rem; height: 1.5rem; padding: 0; border: 0; background: none; color: var(--green-700); cursor: pointer; }
+    .copy-btn:hover { background: var(--canvas-2); }
+  `,
+  imports: [IconComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class CopyIdComponent {
+  readonly store = inject(StoreService);
+  private readonly ui = inject(UiService);
+  readonly id = input.required<string>();
+  readonly prefijo = input('');
+  readonly copiado = signal(false);
+  async copiar(event: Event) {
+    event.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(this.id());
+      this.copiado.set(true);
+      setTimeout(() => this.copiado.set(false), 2000);
+      this.ui.toast('Identificador completo copiado.');
+    } catch {
+      this.ui.toast('No se pudo copiar. Identificador completo: ' + this.id(), true);
+    }
+  }
+}
+
 @Component({
   selector: 'app-dialog',
   template: `<div class="backdrop" (click)="closed.emit()"></div>
@@ -380,7 +397,6 @@ export class DialogComponent {
   readonly closed = output<void>();
 }
 
-                                                                                    
 @Component({
   selector: 'app-action',
   template: `<button type="button" class="btn {{ cls() }}" [disabled]="!!reason()" [attr.aria-describedby]="reason() ? reasonId : null" (click)="run.emit()">
@@ -394,9 +410,7 @@ export class DialogComponent {
 })
 export class ActionComponent {
   private static next = 0;
-  /** Id de la razón visible, referenciada por `aria-describedby` del botón. */
   protected readonly reasonId = 'action-reason-' + ++ActionComponent.next;
-  /** Por qué el botón está deshabilitado. Se muestra SIEMPRE como texto junto al botón (no solo al pasar el ratón). */
   readonly reason = input<string | null | undefined>();
   readonly cls = input('btn--ghost');
   readonly icon = input<string>();
@@ -404,7 +418,6 @@ export class ActionComponent {
   readonly run = output<void>();
 }
 
-                                                        
 @Component({
   selector: 'app-readonly',
   template: '',
@@ -432,9 +445,9 @@ export const SHARED = [
   DialogComponent,
   ActionComponent,
   ReadonlyComponent,
+  CopyIdComponent,
   FechaPipe,
   KgPipe,
   HorasPipe,
   RouterLink,
 ] as const;
-

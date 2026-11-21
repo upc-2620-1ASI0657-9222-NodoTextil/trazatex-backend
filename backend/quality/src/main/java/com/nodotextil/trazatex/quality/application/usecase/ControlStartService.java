@@ -24,19 +24,6 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Inicia un control en tres fases, <b>ninguna dentro de la transacción del llamador</b> (el {@code IdempotencyFilter} envuelve la
- * petición en una; un control guardado ahí se perdería si Quality cae después de que Production aplicó el comando, y un 409 revertiría el
- * control cancelado junto con su motivo):
- * <ol>
- *   <li><b>A</b> ({@code REQUIRES_NEW}): reglas de dominio + control {@code STARTING} + {@code CONTROL_STARTED} en la auditoría. Se confirma antes de llamar.</li>
- *   <li>Sin transacción: {@code START_EVALUATION} a Production con {@code requestId = controlId}.</li>
- *   <li><b>B</b> ({@code REQUIRES_NEW}): aplica la respuesta ({@link ControlStartResolver}).</li>
- * </ol>
- * Si algo se corta entre la 2 y la 3, el control sigue {@code STARTING} y {@link PendingControlRecoveryService} repite el comando.
- *
- * <p>Esta clase no es {@code @Transactional} a propósito.
- */
 @Service
 class ControlStartService implements StartQualityControlUseCase, GetQualityControlUseCase {
 
@@ -91,7 +78,6 @@ class ControlStartService implements StartQualityControlUseCase, GetQualityContr
                 }
                 throw new ConflictException(resolution.code(), "No se pudo iniciar el control: " + resolution.message());
             }
-            // El defecto es de Quality, no del usuario: 500 y el detalle en el log (ya se registró un ERROR)
             case DEFECT -> throw new IllegalStateException("Production rechazó el comando de inicio del control " + result.id() + ": "
                     + resolution.httpStatus() + " " + resolution.code());
             case ALREADY_RESOLVED -> {

@@ -18,7 +18,6 @@ interface Summary {
 }
 const names: Record<string,string> = { NOT_REVIEWED:'No revisado', CONFORMING:'Conforme', FAILED:'Con falla',
   PENDING_REEVALUATION:'Por reevaluar', POTENTIAL_DERIVED_FAILURE:'Posible falla derivada' };
-/** El servicio rechaza más de 366 días (fechas inclusivas): se avisa antes de pedirlo. */
 export const MAX_DAYS = 366;
 export function daysBetween(from: string, to: string): number {
   return Math.round((Date.UTC(+to.slice(0,4), +to.slice(5,7)-1, +to.slice(8,10)) - Date.UTC(+from.slice(0,4), +from.slice(5,7)-1, +from.slice(8,10))) / 86400000) + 1;
@@ -32,7 +31,6 @@ function date(days = 0) {
   selector: 'app-analitica', imports: [...SHARED,...DENSITY,FormsModule,DecimalPipe,FallasPage], changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
-      <!-- El título vive en la barra superior (regla de encabezados): aquí solo queda la frase de ayuda, sin .page-head ni segundo h2. -->
       <p class="page-lead">Indicadores calculados con los registros de Producción y Calidad de {{ store.nombreEmpresa(session.empresaId()) }}.</p>
       <form class="filters" (ngSubmit)="load()">
         <label class="field"><span>Desde</span><input class="input" type="date" name="from" [(ngModel)]="from" required /></label>
@@ -124,4 +122,3 @@ export class AnaliticaPage {
     finally { this.loading.set(false); }
   }
 }
-

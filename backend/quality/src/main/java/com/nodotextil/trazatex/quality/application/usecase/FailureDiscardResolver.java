@@ -21,12 +21,6 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Resuelve el descarte pendiente de una falla: manda {@code DISCARD} a Production <b>fuera de toda transacción</b> con
- * {@code requestId = failureId} y aplica la respuesta en una transacción propia, igual que {@link ControlFinishResolver}. La falla solo queda
- * {@code CONFIRMED} —y {@code FailureConfirmed} solo se escribe en el outbox— con la confirmación de Production, en la misma transacción. Un 409, 404
- * o 400 descarta el descarte pendiente (la falla sigue {@code OPEN}) y registra un ERROR.
- */
 @Component
 class FailureDiscardResolver {
 
@@ -55,7 +49,6 @@ class FailureDiscardResolver {
         this.requiresNew.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
-    /** Cómo terminó: lo que Production respondió y la falla tal como quedó. */
     record Resolution(ControlResolution.Kind kind, QualityFailure failure, int httpStatus, String code, String message) {
     }
 

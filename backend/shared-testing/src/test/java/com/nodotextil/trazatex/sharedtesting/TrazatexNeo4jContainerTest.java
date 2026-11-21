@@ -15,7 +15,6 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** El Neo4j de las pruebas se comporta como el del compose: misma imagen y misma memoria. Requiere Docker. */
 class TrazatexNeo4jContainerTest {
 
     static final TrazatexNeo4jContainer NEO4J = new TrazatexNeo4jContainer("prueba-de-memoria");

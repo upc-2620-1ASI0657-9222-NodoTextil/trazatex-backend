@@ -8,10 +8,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Doble de prueba de {@link ProcessedEventPort}: el registro es parte de la transacción (se deshace al revertir) y un
- * {@code markProcessed} concurrente del mismo {@code eventId} espera a la transacción dueña, como la PK de PostgreSQL.
- */
 public class InMemoryProcessedEventStore implements ProcessedEventPort {
 
     private final ConcurrentHashMap<UUID, CountDownLatch> entries = new ConcurrentHashMap<>();

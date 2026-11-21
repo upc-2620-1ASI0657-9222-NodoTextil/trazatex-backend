@@ -2,7 +2,6 @@ package com.nodotextil.trazatex.production.acceptance;
 
 import tools.jackson.databind.JsonNode;
 
-/** Una respuesta HTTP real del servicio. {@code body} es el JSON (nulo si no hubo cuerpo). */
 public record Reply(int status, JsonNode body, String raw) {
 
     public String text(String field) {

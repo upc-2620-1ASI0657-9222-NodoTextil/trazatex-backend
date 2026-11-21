@@ -6,7 +6,6 @@ import com.nodotextil.trazatex.organizationaccess.domain.model.Role;
 
 import java.time.Instant;
 
-/** Lo que ve quien abre el enlace (endpoint público): lo necesario para el formulario de aceptación. */
 public record InvitationDetailResult(
         String email,
         String displayName,

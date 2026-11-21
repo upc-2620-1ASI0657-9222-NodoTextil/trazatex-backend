@@ -2,7 +2,6 @@ package com.nodotextil.trazatex.apigateway;
 
 import java.util.UUID;
 
-/** {@code UserAccountUpdated} con el sobre del catálogo (communication.md), como lo publica organization-access. */
 public final class RevocationEvents {
 
     private RevocationEvents() {
@@ -15,7 +14,6 @@ public final class RevocationEvents {
                 .formatted(UUID.randomUUID(), userId, userId, userId.toString().substring(0, 8), TestTokens.COMPANY_ID, status);
     }
 
-    /** Igual, pero con campos que el Gateway no conoce (organization-access podría agregarlos en el futuro). */
     public static String userUpdatedWithUnknownFields(UUID userId, String status) {
         return """
                 {"eventId":"%s","type":"UserAccountUpdated","aggregateId":"%s","version":2,"occurredAt":"2026-10-20T10:00:00Z","traceId":"abc",

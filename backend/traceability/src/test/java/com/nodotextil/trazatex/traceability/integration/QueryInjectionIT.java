@@ -11,11 +11,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Las consultas son texto fijo y todo valor del usuario entra como parámetro: un QR o un Traceability ID con comillas y caracteres de
- * Cypher es solo un texto raro. Se prueba que (1) un lote cuyo QR y Traceability ID son exactamente esos textos se encuentra por ellos,
- * (2) buscar esos textos cuando no existen no da error ni devuelve nada, y (3) el grafo y sus restricciones quedan intactos.
- */
 class QueryInjectionIT extends IntegrationTestBase {
 
     static final UUID COMPANY = UUID.fromString("00000000-0000-0000-0000-0000000000a1");

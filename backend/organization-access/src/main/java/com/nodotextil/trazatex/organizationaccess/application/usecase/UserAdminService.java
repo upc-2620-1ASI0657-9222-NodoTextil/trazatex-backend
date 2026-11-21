@@ -58,8 +58,6 @@ class UserAdminService implements ManageUsersUseCase {
             throw new ValidationException(ErrorCodes.MISSING_FIELDS, "Faltan datos obligatorios: status.", List.of("status"));
         }
         Instant now = clock.instant();
-        // Con la fila de la empresa bloqueada: dos inactivaciones no dejan la empresa sin administrador y dos
-        // reactivaciones no se reparten el mismo último cupo.
         companyGuard.lockActive(actor.companyId());
         User user = users.findById(userId)
                 .filter(candidate -> actor.companyId().equals(candidate.companyId()))

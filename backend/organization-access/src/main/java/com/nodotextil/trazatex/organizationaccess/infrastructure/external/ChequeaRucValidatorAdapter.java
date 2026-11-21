@@ -27,22 +27,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Validación del RUC contra Chequea.pe (ADR-012; {@code GET /api/v1/ruc/{ruc}}, {@code Authorization: Bearer}). El dígito
- * verificador ya lo validó {@link Ruc}. Orden: caché reciente → API (timeout, circuit breaker) → respaldo.
- *
- * <ul>
- *   <li>{@code 200} con estado ACTIVO y condición HABIDO: se acepta y se guarda en {@code validated_ruc_cache}. Con cualquier
- *       otro estado o condición (BAJA, NO HABIDO...): se rechaza con {@code RUC_INVALID}; no se cachea.</li>
- *   <li>{@code 400} (formato) y {@code 404} (no existe): se rechaza con {@code RUC_INVALID}. No cuentan como fallo del servicio.</li>
- *   <li>Timeout, error de red, {@code 401/403/429/5xx}, circuito abierto o respuesta que no se entiende: la API "no responde".
- *       Un {@code 401/403} se registra como ERROR ("token de Chequea.pe inválido o vencido, revisar CHEQUEA_API_TOKEN") y un
- *       {@code 429} como WARN ("cuota de Chequea.pe agotada"); hacia el usuario es lo mismo que cualquier otra caída.
- *       Si hay una validación en caché (aunque sea antigua) se usa; si no, se rechaza con 503 {@code RUC_VALIDATION_UNAVAILABLE}
- *       y mensaje de reintento. <b>Nunca se acepta un RUC sin validar.</b></li>
- * </ul>
- * Si la API rechaza un RUC que estaba en caché, la entrada se borra. El token nunca se registra.
- */
 public class ChequeaRucValidatorAdapter implements RucValidatorPort {
 
     private static final Logger log = LoggerFactory.getLogger(ChequeaRucValidatorAdapter.class);
@@ -166,7 +150,6 @@ public class ChequeaRucValidatorAdapter implements RucValidatorPort {
         return node == null || !node.isString() || node.asString().isBlank() ? null : node.asString().trim();
     }
 
-    /** Lo que viene de un tercero se acota y se limpia antes de ponerlo en un mensaje. */
     private static String shown(String value) {
         String clean = value.replaceAll("[^\\p{L}\\p{N} ]", "");
         return clean.length() <= MAX_SHOWN ? clean : clean.substring(0, MAX_SHOWN);
@@ -183,7 +166,6 @@ public class ChequeaRucValidatorAdapter implements RucValidatorPort {
         }
     }
 
-    /** Fallo técnico (cuenta para el circuit breaker): red, timeout, token, 429/5xx o respuesta incomprensible. */
     private static final class ChequeaUnavailableException extends RuntimeException {
 
         ChequeaUnavailableException(String message) {

@@ -16,14 +16,8 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Las mismas carreras de {@code ConcurrencyIT}, pero por HTTP contra los casos de uso reales (no simulados): comprueba que
- * los servicios bloquean los lotes antes de decidir. De dos peticiones simultáneas sobre el mismo lote prospera una y la
- * otra recibe 409 (nunca un 500 ni una violación de restricción). Cada escenario se repite 6 veces.
- */
 class ApiConcurrencyIT extends ApiTestBase {
 
-    /** Respuestas de la última carrera (estado y código), para comprobar quién perdió y por qué. */
     private final List<String> lastCodes = new java.util.concurrent.CopyOnWriteArrayList<>();
 
     private List<Integer> race(List<Callable<MvcResult>> tasks) throws Exception {
@@ -54,8 +48,6 @@ class ApiConcurrencyIT extends ApiTestBase {
     private void assertOneWinner(List<Integer> statuses, int winnerStatus) {
         assertThat(statuses.stream().filter(s -> s == winnerStatus).count()).as("estados: %s", statuses).isEqualTo(1);
         assertThat(statuses.stream().filter(s -> s != winnerStatus)).as("los demás son 409: %s", statuses).allMatch(s -> s == 409);
-        // El perdedor espera al bloqueo de fila, ve el estado nuevo y recibe el conflicto del DOMINIO. Si recibiera
-        // CONCURRENT_MODIFICATION (bloqueo optimista) o CONFLICT (restricción de la base) significaría que no se bloqueó antes de decidir.
         assertThat(lastCodes).as("códigos: %s", lastCodes).noneMatch(c -> c.endsWith(":CONCURRENT_MODIFICATION") || c.equals("409:CONFLICT"));
     }
 

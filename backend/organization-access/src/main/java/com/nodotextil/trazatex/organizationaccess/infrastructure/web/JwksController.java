@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.Duration;
 import java.util.Map;
 
-/** Claves públicas para que el Gateway valide los JWT (ADR-005). Público, sin JWT. */
 @RestController
 class JwksController {
 

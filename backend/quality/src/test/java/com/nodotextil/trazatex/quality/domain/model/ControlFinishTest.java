@@ -17,7 +17,6 @@ import static com.nodotextil.trazatex.quality.domain.Fixtures.startedControl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** US24 (pruebas), US25 y US28 (resultado del control). */
 class ControlFinishTest {
 
     private static QualityControl control() {

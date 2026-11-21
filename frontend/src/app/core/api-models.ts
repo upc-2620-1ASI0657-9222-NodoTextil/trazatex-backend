@@ -79,12 +79,10 @@ export interface ApiBatch {
   createdAt: string;
   commercialData?: ApiCommercial;
 }
-/** `GET /batches/qr/{qrCode}`: propio → todos los datos; ajeno → solo los siempre compartidos (sin `name`). Si no existe, 404 `QR_NOT_FOUND`. */
 export interface ApiQrLookup {
   access: 'OWN' | 'SHARED';
   batch: ApiBatch;
 }
-/** Un resultado de `GET /traceability/lineages` (US30): la vista visible para la empresa que consulta. */
 export interface ApiLineageHit {
   batchId: string;
   traceabilityId: string;
@@ -189,21 +187,14 @@ export interface ApiQualityFailure {
   id: string; batchId: string; companyId: string; controlId: string; rootCause: string | null;
   affectedQtyKg: number | null; observations: string | null; status: 'OPEN' | 'CONFIRMED' | 'RESOLVED'; discardPending: boolean;
 }
-/** Códigos de error del contrato (`ApiError.code`) que el front ramifica. */
 export const API_ERROR = {
-  /** `PATCH|PUT /notifications/{id}/read` de una notificación que no existe o es de otro usuario o empresa (mismo cuerpo en ambos casos). */
   NOTIFICATION_NOT_FOUND: 'NOTIFICATION_NOT_FOUND',
-  /** 401 del Gateway (`AuthenticationFailedException.Reason`): el `code` dice por qué terminó la sesión. */
   MISSING_TOKEN: 'MISSING_TOKEN',
   INVALID_TOKEN: 'INVALID_TOKEN',
   TOKEN_EXPIRED: 'TOKEN_EXPIRED',
   USER_INACTIVE: 'USER_INACTIVE',
 } as const;
 
-/**
- * Motivo con el que Quality cancela un control cuyo inicio rechazó Production: es el `code` del error de Production (o
- * `MANUAL_CANCELLATION`). Se muestra con estas frases y nunca en crudo; un código nuevo cae en la frase genérica.
- */
 export const CANCEL_REASON_TEXT: Readonly<Record<string, string>> = {
   INVALID_PHASE_TRANSITION: 'el lote ya no estaba disponible para un control (cambió de fase mientras tanto)',
   BATCH_ON_QUALITY_HOLD: 'el lote está retenido por una falla de calidad',
@@ -216,7 +207,6 @@ export function cancelReasonText(code: string | null | undefined): string {
   return (code && CANCEL_REASON_TEXT[code]) || 'Producción no aceptó el inicio';
 }
 export interface ApiNotification {
-  /** Código estable (`CodigoNotificacion`); puede traer uno que este front aún no conoce. */
   id: string; type: string; title: string; message: string;
   resourceType: import('./models').EntidadRef['tipo'] | null; resourceId: string | null;
   data: Record<string, unknown> | null;

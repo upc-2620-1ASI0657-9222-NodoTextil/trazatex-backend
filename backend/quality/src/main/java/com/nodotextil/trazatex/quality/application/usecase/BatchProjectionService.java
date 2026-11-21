@@ -19,10 +19,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Aplica los eventos de Production a la proyección. Los tópicos no tienen orden entre sí: un lote puede conocerse primero por su
- * {@code BatchPhaseChanged} (fila parcial) y completarse después con el evento que lo da a conocer, sin pisar una versión mayor.
- */
 @Service
 @Transactional
 class BatchProjectionService implements SyncBatchProjectionUseCase {
@@ -75,7 +71,6 @@ class BatchProjectionService implements SyncBatchProjectionUseCase {
         BatchProjection batch = existing.get();
         if (batch.applyPhaseChanged(companyId, newPhase, qualityHold, batchVersion, now)) {
             batches.update(batch);
-            // Novedades del lote: sus avisos de falla derivada pendientes se vuelven a decidir ya (p. ej. volvió a AVAILABLE tras una transferencia)
             impacted.markDue(batchId, now);
         } else {
             log.debug("BatchPhaseChanged del lote {} con versión {} no es más nueva que la {} guardada: se ignora", batchId, batchVersion,
@@ -89,7 +84,6 @@ class BatchProjectionService implements SyncBatchProjectionUseCase {
         for (UUID batchId : batchIds) {
             Optional<BatchProjection> existing = batches.findByIdForUpdate(batchId);
             if (existing.isEmpty()) {
-                // El BatchPhaseChanged de la aceptación trae la empresa nueva y creará la fila
                 log.debug("TransferAccepted de un lote {} que la proyección no conoce: lo creará su BatchPhaseChanged", batchId);
                 continue;
             }

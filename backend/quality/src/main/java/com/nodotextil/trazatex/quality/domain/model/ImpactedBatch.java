@@ -5,12 +5,6 @@ import com.nodotextil.trazatex.sharedkernel.exception.ConflictException;
 
 import java.util.UUID;
 
-/**
- * Un lote que Traceability marcó como posible falla derivada de una falla confirmada ({@code PossibleDerivedFailureDetected}). Se
- * registra siempre, para no perder qué falla señaló al lote. {@code impactType} se deduce del antecesor común
- * ({@link ImpactType#derive}); {@code lockStatus} nace según {@link DerivedFailurePolicy} y solo puede pasar de {@code PENDING} a
- * {@code APPLIED} o {@code NO_ACTION}.
- */
 public final class ImpactedBatch {
 
     private final UUID failureId;
@@ -33,13 +27,11 @@ public final class ImpactedBatch {
         return new ImpactedBatch(failureId, batchId, impactType, lockStatus);
     }
 
-    /** Production confirmó el {@code HOLD}. */
     public void markApplied() {
         requirePending("marcar como aplicada");
         lockStatus = LockStatus.APPLIED;
     }
 
-    /** Al reevaluar el aviso resultó que no hay nada que hacer (lote ya retenido o histórico). */
     public void markNoAction() {
         requirePending("marcar sin acción");
         lockStatus = LockStatus.NO_ACTION;

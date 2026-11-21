@@ -21,11 +21,6 @@ import java.util.function.Supplier;
 import static com.nodotextil.trazatex.traceability.integration.GraphBuilder.id;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Cuánto tarda UNA consulta de genealogía, sin contar la carga del grafo (que se arma antes): varias repeticiones tras calentar, con la mediana y el
- * máximo. Es la base de RNF-04 (en 05c-4 serán 100 a la vez). La cota de la prueba es holgada a propósito (no es la prueba de RNF-04): lo que importa
- * es la cifra que imprime.
- */
 class LineageQueryTimingIT extends IntegrationTestBase {
 
     static final UUID A = UUID.fromString("00000000-0000-0000-0000-0000000000a1");

@@ -18,7 +18,6 @@ interface BatchJpaRepository extends JpaRepository<BatchEntity, UUID>, JpaSpecif
     @Query("select b from BatchEntity b where b.id = :id")
     Optional<BatchEntity> findByIdForUpdate(@Param("id") UUID id);
 
-    /** {@code order by id}: el bloqueo se toma siempre en el mismo orden, así que no hay interbloqueos entre lotes. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select b from BatchEntity b where b.id in :ids order by b.id")
     List<BatchEntity> findAllByIdForUpdate(@Param("ids") Collection<UUID> ids);

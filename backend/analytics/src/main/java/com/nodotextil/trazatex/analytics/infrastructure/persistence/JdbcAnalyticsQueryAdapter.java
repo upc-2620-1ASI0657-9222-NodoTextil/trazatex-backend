@@ -11,10 +11,6 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.UUID;
 
-/**
- * Los cuatro indicadores de EP05, siempre de {@code company}. Las consultas filtran por las columnas {@code company_id} y {@code business_at}
- * (índice {@code analytics_event_company_type_time}), no por texto dentro del JSON.
- */
 @Repository
 public class JdbcAnalyticsQueryAdapter implements AnalyticsQueryPort {
     private final JdbcClient jdbc;
@@ -24,9 +20,6 @@ public class JdbcAnalyticsQueryAdapter implements AnalyticsQueryPort {
     public AnalyticsSummary.Indicators indicators(UUID company, ReportingPeriod period) {
         OffsetDateTime start = period.startInclusive().atOffset(ZoneOffset.UTC), end = period.endExclusive().atOffset(ZoneOffset.UTC);
 
-        // US37: estado de calidad AL CIERRE del periodo. Universo: lotes registrados en el periodo que al cierre pertenecen a la empresa. La dueña
-        // es la del BatchPhaseChanged de mayor batchVersion con evento anterior al cierre (los nacimientos y TransferAccepted heredados, versión -1,
-        // solo cuentan si no hay ninguno); el estado, el último QualityStatusChanged anterior al cierre.
         var quality = query("""
                 WITH scope AS (
                     SELECT b.batch_id,
@@ -39,8 +32,6 @@ public class JdbcAnalyticsQueryAdapter implements AnalyticsQueryPort {
                 FROM scope GROUP BY status ORDER BY status
                 """,company,start,end).query((rs,n)->new QualityIndicator(rs.getString("status"),rs.getLong("count"),rs.getBigDecimal("percentage"))).list();
 
-        // US38: fallas REGISTRADAS: toda falla que Quality informó (QualityFailureUpdated: abierta, confirmada o resuelta), contada una vez, en el
-        // periodo de su primer evento, con la causa que tenía al cierre. Sin causa todavía: «Causa por registrar».
         var failures = query("""
                 WITH all_failures AS (
                     SELECT aggregate_id,min(occurred_at) AS created_at FROM analytics_event
@@ -56,8 +47,6 @@ public class JdbcAnalyticsQueryAdapter implements AnalyticsQueryPort {
                     count(*) AS count FROM current_failure GROUP BY cause ORDER BY count DESC,cause
                 """,company,start,end).query((rs,n)->new FailureCause(rs.getString("cause"),rs.getLong("count"))).list();
 
-        // US39: transformaciones y controles finalizados en el periodo; transferencias ACEPTADAS, solo de la empresa de ORIGEN (company_id de
-        // TransferAccepted es fromCompanyId), de su inicio a su aceptación. Las rechazadas no tienen duración.
         var durations = query("""
                 WITH durations AS (
                     SELECT 'Transformaciones' AS operation,
@@ -77,7 +66,6 @@ public class JdbcAnalyticsQueryAdapter implements AnalyticsQueryPort {
                 FROM durations GROUP BY operation ORDER BY operation
                 """,company,start,end).query((rs,n)->new OperationDuration(rs.getString("operation"),rs.getLong("count"),rs.getBigDecimal("averageHours"))).list();
 
-        // US40: merma y desperdicio acumulados de las transformaciones finalizadas en el periodo.
         var materials = query("""
                 SELECT coalesce(sum((payload->>'shrinkageKg')::numeric),0) AS "shrinkageKg",
                     coalesce(sum((payload->>'wasteKg')::numeric),0) AS "wasteKg",count(*) AS "completedTransformations"

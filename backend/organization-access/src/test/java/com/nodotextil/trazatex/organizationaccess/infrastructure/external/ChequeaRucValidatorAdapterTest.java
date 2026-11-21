@@ -35,7 +35,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** ADR-012 con WireMock. Nunca se llama a la API real. */
 class ChequeaRucValidatorAdapterTest {
 
     @RegisterExtension
@@ -64,8 +63,6 @@ class ChequeaRucValidatorAdapterTest {
     private static Ruc ruc() {
         return new Ruc(RUC);
     }
-
-    // ---- Los cuatro resultados de negocio ----
 
     @Test
     void activoYHabidoSeAceptaSeEnvíaElBearerYSeGuardaEnCaché() {
@@ -121,7 +118,6 @@ class ChequeaRucValidatorAdapterTest {
 
     @Test
     void unaRespuesta400ProblemJsonDeLaApiSeRechazaComoInvalida() {
-        // El prefijo y el módulo 11 ya se validan en Ruc, así que un 400 solo llega si la API cambia sus reglas: se rechaza igual
         chequea.stubFor(forRuc(RUC).willReturn(problem(400, required("ruc-formato-invalido.json"))));
 
         assertThatThrownBy(() -> adapter.ensureActiveAndHabido(ruc()))
@@ -159,8 +155,6 @@ class ChequeaRucValidatorAdapterTest {
         assertThat(real.propertyNames()).containsExactlyInAnyOrder("ruc", "razonSocial", "estado", "condicion", "tipo", "ubigeo",
                 "direccion", "ciiu", "actualizado");
     }
-
-    // ---- Fallos del servicio: nunca se acepta un RUC sin validar ----
 
     @Test
     void siLaApiTardaMásDelTimeoutSeRechazaConMensajeDeReintentoSinEsperarLaRespuesta() {
@@ -226,8 +220,6 @@ class ChequeaRucValidatorAdapterTest {
         chequea.verify(0, getRequestedFor(urlEqualTo("/api/v1/ruc/" + RUC)));
     }
 
-    // ---- Caché (ADR-012: dígito verificador → caché → API) ----
-
     private void cacheValidatedAt(Instant validatedAt) {
         cache.save(new CachedRucValidation(ruc(), "SUNAT", "ACTIVO", "HABIDO", validatedAt));
     }
@@ -272,8 +264,6 @@ class ChequeaRucValidatorAdapterTest {
 
         assertThat(cache.entries).isEmpty();
     }
-
-    // ---- Registro de la causa (el usuario ve lo mismo en todos los casos) ----
 
     private ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent> captureLogs() {
         var appender = new ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>();
@@ -341,8 +331,6 @@ class ChequeaRucValidatorAdapterTest {
         }
     }
 
-    // ---- Circuit breaker ----
-
     @Test
     void trasVariosFallosElCircuitoSeAbreYNoSeVuelveALlamarALaApiHastaQueSeRecupera() throws Exception {
         adapter = adapter(Duration.ofSeconds(3), new CircuitBreakerSettings(4, 4, 50, Duration.ofMillis(300), 1), TOKEN);
@@ -387,8 +375,6 @@ class ChequeaRucValidatorAdapterTest {
         assertThat(breaker.getState()).isEqualTo(CircuitBreaker.State.CLOSED);
         chequea.verify(12, getRequestedFor(urlEqualTo("/api/v1/ruc/" + RUC)));
     }
-
-    // ---- El token no se filtra ----
 
     @Test
     void elTokenNoApareceEnLasPropiedadesImpresas() {

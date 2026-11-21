@@ -15,12 +15,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.Clock;
 
-/**
- * Escribe el evento en el outbox, en la transacción del caso de uso (ADR-004). Tópicos del catálogo
- * ({@code docs/architecture/communication.md}); el relay los publica en Kafka tras el commit. Un evento sin ruta es un error
- * de programación y falla en el momento (con un {@code switch} sellado el compilador lo avisaría; la interfaz no lo es
- * para que los eventos de las fases siguientes no obliguen a tocar el dominio).
- */
 @Component
 class OutboxProductionEventPublisher implements ProductionEventPublisherPort {
 

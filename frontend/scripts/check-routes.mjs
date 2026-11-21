@@ -1,6 +1,3 @@
-// Detecta rutas del backend sin clasificar: lee los controladores de ../backend (solo lectura, sin dependencias) y
-// comprueba que cada ruta /api/** esté en src/app/core/service-routes.ts. También avisa de entradas del catálogo que
-// ya no existen en el backend. Salida 1 si falta alguna; 0 si todo coincide. Si no hay carpeta ../backend, se omite.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,7 +16,6 @@ const walk = (dir) => readdirSync(dir).flatMap((name) => {
 });
 const normalize = (path) => path.replace(/\{[^}]*\}/g, '{}').replace(/\/+$/, '') || '/';
 
-// Rutas del backend: @RequestMapping de clase + @Get/Post/Put/Patch/DeleteMapping de método.
 const found = new Map();
 for (const file of walk(backend)) {
   if (!/Controller[^/]*\.java$/.test(file) || file.includes(`${join('src', 'test')}`)) continue;
@@ -29,12 +25,11 @@ for (const file of walk(backend)) {
   for (const match of source.matchAll(mapping)) {
     const own = match[2] ?? '';
     const path = own.startsWith('/api') ? own : base + own;
-    if (!path.startsWith('/api')) continue; // /internal/** no sale por el Gateway
+    if (!path.startsWith('/api')) continue;
     found.set(`${match[1].toUpperCase()} ${normalize(path.replace(/^\/api/, ''))}`, `${match[1].toUpperCase()} ${path}  (${file.slice(backend.length + 1)})`);
   }
 }
 
-// Catálogo del front: una entrada por línea con el formato de service-routes.ts.
 const catalog = new Map();
 const text = readFileSync(join(root, 'src', 'app', 'core', 'service-routes.ts'), 'utf8');
 for (const match of text.matchAll(/\{\s*method:\s*'([A-Z]+)',\s*path:\s*'([^']+)',\s*clase:\s*'([a-z-]+)'/g)) {

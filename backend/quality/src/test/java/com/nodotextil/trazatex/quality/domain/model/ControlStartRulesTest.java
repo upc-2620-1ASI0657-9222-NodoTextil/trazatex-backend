@@ -19,19 +19,15 @@ import static com.nodotextil.trazatex.quality.domain.Fixtures.id;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** US23 y US34: qué tipo de control corresponde a cada lote y cuáles no se pueden controlar. */
 class ControlStartRulesTest {
 
-    /** Estado de calidad × ¿tuvo algún control? → tipo de control, o el código del 409. Con el lote {@code AVAILABLE}. */
     static Stream<Arguments> byQualityStatus() {
         return Stream.of(
                 Arguments.of(QualityStatus.NOT_REVIEWED, false, ControlType.EVALUATION, null),
                 Arguments.of(QualityStatus.PENDING_REEVALUATION, true, ControlType.REEVALUATION, null),
                 Arguments.of(QualityStatus.PENDING_REEVALUATION, false, ControlType.REEVALUATION, null),
-                // US34 esc. 1 y 2
                 Arguments.of(QualityStatus.POTENTIAL_DERIVED_FAILURE, false, ControlType.EVALUATION, null),
                 Arguments.of(QualityStatus.POTENTIAL_DERIVED_FAILURE, true, ControlType.REEVALUATION, null),
-                // decisiones del usuario, 2026-10-23
                 Arguments.of(QualityStatus.CONFORMING, true, null, ErrorCodes.BATCH_ALREADY_CONFORMING),
                 Arguments.of(QualityStatus.FAILED, true, null, ErrorCodes.BATCH_FAILED_REQUIRES_REEVALUATION));
     }

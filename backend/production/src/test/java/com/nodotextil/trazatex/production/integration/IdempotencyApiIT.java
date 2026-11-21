@@ -17,7 +17,6 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** ADR-010: toda escritura expuesta al frontend acepta {@code Idempotency-Key} y no duplica al reintentar. */
 class IdempotencyApiIT extends ApiTestBase {
 
     private static String key() {
@@ -28,10 +27,6 @@ class IdempotencyApiIT extends ApiTestBase {
         return result.getResponse().getContentAsString();
     }
 
-    /**
-     * La repetición devuelve el cuerpo guardado en una columna JSONB, que PostgreSQL normaliza (orden de claves y
-     * espacios): el texto puede diferir del original aunque el JSON sea el mismo. Se compara el JSON interpretado.
-     */
     private JsonNode parsed(String body) throws Exception {
         return json.readTree(body);
     }
@@ -128,14 +123,12 @@ class IdempotencyApiIT extends ApiTestBase {
         JsonNode batch = registerBatch(100);
         UUID machine = idOf(registerMachine("MQ-01"));
 
-        // iniciar transformación
         String startKey = key();
         var start = obj("type", "SPINNING", "machineId", machine, "batchIds", List.of(idOf(batch)));
         String started = bodyOf(postWithKey(OPERATOR_OF_A, "/api/transformations", start, startKey).andExpect(status().isCreated()).andReturn());
         assertThat(parsed(bodyOf(postWithKey(OPERATOR_OF_A, "/api/transformations", start, startKey).andExpect(status().isCreated()).andReturn()))).isEqualTo(parsed(started));
         assertThat(count("SELECT count(*) FROM transformations")).isEqualTo(1);
 
-        // finalizar
         String id = json.readTree(started).path("id").asString();
         String completeKey = key();
         var complete = obj("outputs", List.of(output("Hilo", 90)));
@@ -145,7 +138,6 @@ class IdempotencyApiIT extends ApiTestBase {
                 .andExpect(status().isOk()).andReturn()))).isEqualTo(parsed(completed));
         assertThat(count("SELECT count(*) FROM batches WHERE origin_type = 'TRANSFORMATION'")).isEqualTo(1);
 
-        // iniciar transferencia y aceptarla
         String output = json.readTree(completed).path("outputs").get(0).path("id").asString();
         String transferKey = key();
         var transfer = obj("targetCompanyId", COMPANY_B, "batchIds", List.of(output));

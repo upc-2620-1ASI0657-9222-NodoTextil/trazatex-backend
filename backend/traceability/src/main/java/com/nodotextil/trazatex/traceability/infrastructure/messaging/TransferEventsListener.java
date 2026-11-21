@@ -13,7 +13,6 @@ import tools.jackson.databind.ObjectMapper;
 import java.util.Map;
 import java.util.function.Consumer;
 
-/** {@code production.transfer}: solo {@code TransferAccepted}; {@code TransferInitiated} y {@code TransferRejected} son de notification. */
 @Component
 @ConditionalOnProperty(name = "trazatex.messaging.enabled", havingValue = "true", matchIfMissing = true)
 class TransferEventsListener extends AbstractEventListener {

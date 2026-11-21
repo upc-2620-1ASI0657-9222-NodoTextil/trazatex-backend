@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** El outbox de nodos {@code :OutboxEvent} y el {@code OutboxRelay} del shared-kernel, contra Neo4j real. */
 class TransactionalOutboxIT extends IntegrationTestBase {
 
     @Autowired
@@ -61,8 +60,6 @@ class TransactionalOutboxIT extends IntegrationTestBase {
         return neo4j.query("MATCH (o:OutboxEvent {eventId: $id}) RETURN o.status AS status, o.attempts AS attempts, o.lastError AS lastError, "
                 + "o.publishedAt AS publishedAt, o.createdAt AS createdAt").bind(id.toString()).to("id").fetch().one().orElseThrow();
     }
-
-    // ---- el almacén ----
 
     @Test
     void pendingMessagesComeOldestFirstWithTheirFieldsAndTheLimitIsRespected() {
@@ -116,8 +113,6 @@ class TransactionalOutboxIT extends IntegrationTestBase {
                 .hasMessageContaining("already exists");
     }
 
-    // ---- el relay ----
-
     @Test
     void theRelayPublishesInOrderWithTheAggregateAsKeyAndMarksEachOne() {
         tx.executeWithoutResult(s -> {
@@ -158,7 +153,6 @@ class TransactionalOutboxIT extends IntegrationTestBase {
         try {
             tx.executeWithoutResult(s -> {
                 recorder.record("Failure", "traceability.impact", BaseDomainEvent.of("PossibleDerivedFailureDetected", "f-1", Map.of("n", 1)));
-                // el relay corre en otro hilo (otra transacción) con la del caso de uso todavía abierta
                 try {
                     assertThat(other.submit(() -> relay().publishPending().published()).get(30, TimeUnit.SECONDS)).isZero();
                 } catch (Exception e) {
@@ -206,9 +200,7 @@ class TransactionalOutboxIT extends IntegrationTestBase {
         } finally {
             pool.shutdownNow();
         }
-        // vaciar lo que quede con pasadas sucesivas
         while (relay().publishPending().published() > 0) {
-            // sigue hasta que no quede nada pendiente
         }
 
         assertThat(published).as("cada mensaje exactamente una vez").hasSize(total).doesNotHaveDuplicates();

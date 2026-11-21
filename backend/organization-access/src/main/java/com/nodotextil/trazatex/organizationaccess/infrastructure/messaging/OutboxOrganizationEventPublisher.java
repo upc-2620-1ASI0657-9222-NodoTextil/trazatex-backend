@@ -14,10 +14,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.Clock;
 
-/**
- * Escribe el evento en el outbox, en la transacción del caso de uso (ADR-004). Tópicos del catálogo
- * ({@code docs/architecture/communication.md}); el relay (02e) los publica en Kafka tras el commit.
- */
 @Component
 class OutboxOrganizationEventPublisher implements OrganizationEventPublisherPort {
 

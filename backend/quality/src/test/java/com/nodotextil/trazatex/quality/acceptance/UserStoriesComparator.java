@@ -21,16 +21,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/**
- * Compara los {@code .feature} ejecutables con {@code docs/domain/user-stories.md}: por historia, el título, la descripción y, de cada
- * escenario, el título y cada paso (palabra clave y texto) en el mismo orden. El texto se normaliza (Unicode NFC y espacios
- * colapsados) pero nada más: una palabra distinta, un paso de más o de menos, un escenario faltante o sobrante, otro orden, una
- * etiqueta que lo saltaría o un archivo que falta son diferencias. Lo único que cambia respecto del documento es la sintaxis
- * obligatoria de Gherkin: {@code Escenario 1: Título} se escribe {@code Escenario: 1: Título}.
- */
 public final class UserStoriesComparator {
 
-    /** Las historias de Quality con escenarios ejecutables: US23 a US28, US34, US43 y US44. */
     public static final List<String> STORIES = List.of("US23", "US24", "US25", "US26", "US27", "US28", "US34", "US43", "US44");
 
     private static final Pattern SECTION = Pattern.compile("(?m)^### (US\\d+) — (.+)$");
@@ -49,7 +41,6 @@ public final class UserStoriesComparator {
         return Normalizer.normalize(text == null ? "" : text, Normalizer.Form.NFC).replaceAll("[\\s\\u00A0\\u2007\\u202F]+", " ").trim();
     }
 
-    /** @return las diferencias, una por línea; vacío si los {@code .feature} son exactamente los escenarios de las historias */
     public static List<String> differences(Path userStories, Path featuresDir) throws IOException {
         List<String> differences = new ArrayList<>();
         Map<String, DocStory> docs = storiesInDocs(userStories, differences);

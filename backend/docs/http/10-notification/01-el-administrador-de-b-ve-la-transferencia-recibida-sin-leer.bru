@@ -19,7 +19,7 @@ assert {
 }
 
 script:pre-request {
-  await bru.sleep(2500);   // la notificación nace cuando Notification lee `production.transfer` (consistencia eventual)
+  await bru.sleep(2500);
 }
 
 script:post-response {

@@ -15,13 +15,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * El servicio por HTTP real (Tomcat en un puerto aleatorio), con la identidad que inyecta el Gateway. Los pasos de los escenarios
- * solo hablan con Production por aquí: ni MockMvc ni los casos de uso.
- */
 public class ProductionApi {
 
-    /** Una parte de un {@code multipart/form-data}. */
     public record Part(String field, String filename, String contentType, byte[] content) {
     }
 
@@ -29,7 +24,6 @@ public class ProductionApi {
     private final ObjectMapper json;
     private final HttpClient http = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build();
 
-    /** El puerto aleatorio se conoce cuando el servidor ya arrancó (después de crear los beans): se lee en el primer uso. */
     public ProductionApi(Environment environment, ObjectMapper json) {
         this.environment = environment;
         this.json = json;
@@ -55,7 +49,6 @@ public class ProductionApi {
         return send(jsonBody(identity(HttpRequest.newBuilder(URI.create(baseUrl() + path)), who), body, "PATCH"));
     }
 
-    /** El comando interno de Quality: red interna, sin identidad. */
     public Reply internal(String path, Object body) {
         return send(jsonBody(HttpRequest.newBuilder(URI.create(baseUrl() + path)), body, "POST"));
     }

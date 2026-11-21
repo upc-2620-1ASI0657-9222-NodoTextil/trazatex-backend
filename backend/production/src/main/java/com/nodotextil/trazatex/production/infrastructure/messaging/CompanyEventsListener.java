@@ -17,11 +17,6 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.util.UUID;
 
-/**
- * {@code orgaccess.company}: alimenta la proyección de empresas. Por el mismo tópico llegan eventos que no son de production
- * (p. ej. {@code CompanyPrivacyUpdated}, de traceability): se ignoran sin error y sin enviarlos a la DLT, y como se filtran
- * <b>antes</b> del consumo idempotente tampoco dejan filas en {@code processed_events}. Lo ilegible sí va a la DLT sin reintentos.
- */
 @Component
 @ConditionalOnProperty(name = "trazatex.messaging.enabled", havingValue = "true", matchIfMissing = true)
 class CompanyEventsListener {

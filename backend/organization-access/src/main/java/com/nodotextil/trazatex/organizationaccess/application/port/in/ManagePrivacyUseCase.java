@@ -10,6 +10,5 @@ public interface ManagePrivacyUseCase {
 
     PrivacyResult get(Actor actor);
 
-    /** US11. Cambios parciales por nombre de campo; todo o nada. */
     PrivacyResult update(Map<String, Visibility> changes, Actor actor);
 }

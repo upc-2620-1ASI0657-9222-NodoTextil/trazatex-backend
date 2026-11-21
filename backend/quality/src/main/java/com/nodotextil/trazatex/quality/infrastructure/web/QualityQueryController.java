@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Los listados de la empresa, paginados. Solo llama al caso de uso (regla 5 de CLAUDE.md). */
 @RestController
 @RequestMapping("/api/quality")
 class QualityQueryController {

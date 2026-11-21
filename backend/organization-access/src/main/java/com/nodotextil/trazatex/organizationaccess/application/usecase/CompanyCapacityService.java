@@ -13,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.util.UUID;
 
-/** Cupo de usuarios de una empresa: los mismos conteos que usa {@link SlotCounter} al invitar, por los puertos de salida (sin SQL en la aplicación). */
 @Service
 @Transactional(readOnly = true)
 class CompanyCapacityService implements ConsultCompanyCapacityUseCase {

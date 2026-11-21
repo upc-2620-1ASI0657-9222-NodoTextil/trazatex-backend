@@ -7,14 +7,6 @@ import org.springframework.stereotype.Component;
 import java.time.Clock;
 import java.util.UUID;
 
-/**
- * {@code (:ProcessedEvent {eventId})}. Se usa dentro de la transacción que abre {@code IdempotentEventHandler}, que es la
- * <b>misma</b> transacción de Neo4j que cambia el grafo y escribe el {@code :OutboxEvent} (ADR-004): el
- * {@code Neo4jTransactionManager} es el único gestor del servicio y el {@code Neo4jClient} participa de ella.
- *
- * <p>{@code MERGE} sobre la restricción de unicidad: si otra transacción abierta creó el mismo {@code eventId}, esta espera
- * a que termine (y entonces solo encuentra el nodo: duplicado) o a que se revierta (y entonces lo crea).
- */
 @Component
 class Neo4jProcessedEventAdapter implements ProcessedEventPort {
 

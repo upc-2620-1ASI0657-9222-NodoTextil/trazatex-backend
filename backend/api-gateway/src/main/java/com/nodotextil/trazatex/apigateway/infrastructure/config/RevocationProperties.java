@@ -4,10 +4,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.time.Duration;
 
-/**
- * Revocación de usuarios inactivos (RF-012). {@code enabled=false} existe solo para pruebas que no tienen Kafka: no hay
- * consumidor y nadie queda revocado.
- */
 @ConfigurationProperties("trazatex.revocation")
 public record RevocationProperties(
         Boolean enabled,

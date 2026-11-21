@@ -70,7 +70,7 @@ type Tab = 'genealogia' | 'procesos' | 'controles' | 'transferencias' | 'evidenc
             <span
               ><b>{{ d.etiqueta }}.</b> {{ d.motivo }}
               @if (store.fallaAbiertaDe(l.id); as f) {
-                Falla <a [routerLink]="['/fallas', f.id]" class="id">{{ f.id }}</a
+                Falla <a [routerLink]="['/fallas', f.id]" class="id" [attr.title]="f.id">{{ store.referencia(f.id) }}</a
                 >.
               }
               @if (store.controlActivo(l.id); as c) {
@@ -202,8 +202,6 @@ type Tab = 'genealogia' | 'procesos' | 'controles' | 'transferencias' | 'evidenc
               </dl>
             </app-fold>
 
-            
-
             <app-fold
               n="04"
               title="Genealogía"
@@ -236,7 +234,6 @@ type Tab = 'genealogia' | 'procesos' | 'controles' | 'transferencias' | 'evidenc
                     >
                       <span class="label" [style.color]="r.rel === 'Padre' ? 'var(--brown-ink)' : 'var(--green-800)'">{{ r.rel }}</span>
                       <b class="id">{{ r.id }}</b>
-                      <!-- un padre o derivado puede no estar en el almacén (otra empresa o aún sin cargar): se muestra sin sus datos privados -->
                       @if (rl) {
                         <span class="small">{{ rl.material }}</span>
                         <span class="small muted">{{ rl.fase }} / {{ rl.calidad }}</span>
@@ -251,7 +248,7 @@ type Tab = 'genealogia' | 'procesos' | 'controles' | 'transferencias' | 'evidenc
               }
             </app-fold>
 
-            <app-fold n="05" title="Procesos" [summary]="conteo('procesos') + ' procesos'">
+            <app-fold n="05" title="Transformaciones" [summary]="conteo('procesos') + ' transformación(es)'">
               <ul class="rel">
                 @if (store.procesoOrigen(l.id); as p) {
                   <li>
@@ -266,7 +263,7 @@ type Tab = 'genealogia' | 'procesos' | 'controles' | 'transferencias' | 'evidenc
                   </li>
                 }
                 @if (!conteo('procesos')) {
-                  <li class="muted small">Sin procesos relacionados.</li>
+                  <li class="muted small">Sin transformaciones relacionadas.</li>
                 }
               </ul>
             </app-fold>

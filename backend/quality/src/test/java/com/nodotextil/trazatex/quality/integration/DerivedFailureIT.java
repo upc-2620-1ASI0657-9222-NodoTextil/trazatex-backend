@@ -29,10 +29,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 
-/**
- * US34 / RF-060 (decisión del usuario, 2026-10-23): POTENTIAL_DERIVED_FAILURE implica qualityHold = true, así que la calidad solo cambia cuando
- * Production confirma el HOLD. El aviso siempre se registra; el job lo retiene cuando se puede, con el mismo requestId (= failureId).
- */
 @SpringBootTest(properties = {
         "trazatex.messaging.enabled=false", "trazatex.quality.start.job-enabled=false",
         "trazatex.production.read-timeout=PT0.5S", "trazatex.production.connect-timeout=PT0.5S",
@@ -60,8 +56,6 @@ class DerivedFailureIT extends FlowTestBase {
     LockStatus lock(UUID failureId, UUID batch) {
         return LockStatus.valueOf(notice(failureId, batch, "lock_status", String.class));
     }
-
-    // ---- caso A: AVAILABLE y sin retención ----
 
     @Test
     void anAvailableBatchIsHeldAndOnlyThenItsQualityChanges() throws Exception {
@@ -99,8 +93,6 @@ class DerivedFailureIT extends FlowTestBase {
         assertThat(recovery.recoverPendingHolds()).as("nada más que hacer").isZero();
     }
 
-    // ---- caso B: transferencia en curso (prueba exigida por el usuario) ----
-
     @Test
     void aBatchInTransferIsHeldInTheReceivingCompanyOnceTheTransferIsAccepted() throws Exception {
         UUID batch = seed(BatchPhase.IN_TRANSFER, QualityStatus.CONFORMING, false, true);
@@ -116,7 +108,6 @@ class DerivedFailureIT extends FlowTestBase {
         assertThat(ProductionStub.allRequests()).isEmpty();
         assertThat(outbox()).isEmpty();
 
-        // Se acepta la transferencia: Production publica BatchPhaseChanged → AVAILABLE con la empresa receptora
         sync.phaseChanged(batch, COMPANY_B, BatchPhase.AVAILABLE, false, 4);
         assertThat(at(notice(failure, batch, "next_attempt_at", OffsetDateTime.class))).as("el cambio del lote despierta el aviso").isEqualTo(START);
         assertThat(recovery.recoverPendingHolds()).isEqualTo(1);
@@ -142,8 +133,6 @@ class DerivedFailureIT extends FlowTestBase {
         assertThat(output.getAll()).contains("WAIT_FOR_AVAILABLE");
     }
 
-    // ---- caso C: histórico ----
-
     @Test
     void aHistoricBatchIsRecordedWithoutActionAndWithAWarning(CapturedOutput output) throws Exception {
         for (BatchPhase phase : new BatchPhase[]{BatchPhase.PROCESSED, BatchPhase.SPLIT, BatchPhase.DISCARDED}) {
@@ -160,8 +149,6 @@ class DerivedFailureIT extends FlowTestBase {
         assertThat(ProductionStub.allRequests()).isEmpty();
         assertThat(output.getAll()).contains("NO_ACTION_HISTORIC");
     }
-
-    // ---- ya retenido ----
 
     @Test
     void aBatchAlreadyRetainedKeepsItsStateAndTheSecondFailureOverItIsNoAction() throws Exception {
@@ -194,12 +181,10 @@ class DerivedFailureIT extends FlowTestBase {
         assertThat(ProductionStub.allRequests()).isEmpty();
     }
 
-    // ---- HOLD con 409: la proyección va atrasada ----
-
     @Test
     void aHoldRejectedWith409KeepsTheNoticePendingWithoutChangingTheQualityAndDecidesAgainWithTheCorrectedProjection(CapturedOutput output) throws Exception {
-        UUID batch = seedAvailable();   // la proyección cree que está disponible...
-        ProductionStub.answers(409, ProductionStub.apiError("INVALID_PHASE_TRANSITION"));   // ...pero Production dice que no
+        UUID batch = seedAvailable();
+        ProductionStub.answers(409, ProductionStub.apiError("INVALID_PHASE_TRANSITION"));
         detect(failure, batch);
 
         assertThat(recovery.recoverPendingHolds()).isEqualTo(1);
@@ -212,13 +197,11 @@ class DerivedFailureIT extends FlowTestBase {
         assertThat(outbox()).isEmpty();
         assertThat(output.getAll()).contains("la proyección de Quality va atrasada");
 
-        // Llega lo que la proyección no sabía: el lote está en transferencia → se espera sin llamar
         sync.phaseChanged(batch, COMPANY_A, BatchPhase.IN_TRANSFER, false, 2);
         assertThat(recovery.recoverPendingHolds()).isEqualTo(1);
         assertThat(sent(batch)).as("no se vuelve a llamar con el lote en transferencia").hasSize(1);
         assertThat(lock(failure, batch)).isEqualTo(LockStatus.PENDING);
 
-        // Vuelve a AVAILABLE: ahora sí se retiene
         ProductionStub.reset();
         ProductionStub.answersOk();
         sync.phaseChanged(batch, COMPANY_A, BatchPhase.AVAILABLE, false, 3);
@@ -287,8 +270,6 @@ class DerivedFailureIT extends FlowTestBase {
         assertThat(outbox()).hasSize(1);
     }
 
-    // ---- registro del aviso ----
-
     @Test
     void theSameNoticeTwiceIsRecordedOnce() throws Exception {
         UUID batch = seedAvailable();
@@ -320,7 +301,6 @@ class DerivedFailureIT extends FlowTestBase {
         UUID batch = seedAvailable();
         ProductionStub.answersOk();
         detect(failure, batch);
-        // La decisión se toma con una copia vieja (disponible y sin calidad retenida) mientras la fila real ya cambió a FAILED
         BatchProjection stale = projection(batch);
         projections.update(BatchProjection.restore(batch, COMPANY_A, BatchPhase.AVAILABLE, true, QualityStatus.FAILED, true, 2, START));
         Mockito.doReturn(Optional.of(stale)).doCallRealMethod().when(projectionSpy).findById(any());

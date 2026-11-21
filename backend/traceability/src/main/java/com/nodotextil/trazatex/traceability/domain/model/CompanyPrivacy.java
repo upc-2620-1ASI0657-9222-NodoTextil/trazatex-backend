@@ -5,14 +5,8 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Privacidad B2B de una empresa: qué campos configurables comparte. <b>Todo lo que no diga {@code SHARED} es
- * {@code PRIVATE}</b> (los configurables son privados por defecto): un campo ausente, un valor desconocido o una empresa
- * sin configuración nunca se comparten.
- */
 public final class CompanyPrivacy {
 
-    /** La privacidad leída de un mensaje: la tolerante deja pasar lo desconocido pero lo avisa. */
     public record Parsed(CompanyPrivacy privacy, List<String> warnings) {
     }
 
@@ -28,10 +22,6 @@ public final class CompanyPrivacy {
         return new CompanyPrivacy(fields.isEmpty() ? new EnumMap<>(ConfigurableField.class) : new EnumMap<>(fields));
     }
 
-    /**
-     * Lee el mapa de {@code CompanyPrivacyUpdated}. Un campo que no es {@link ConfigurableField} se ignora; un valor que no es
-     * {@code SHARED} ni {@code PRIVATE} se toma como {@code PRIVATE}. Ambos casos quedan en {@code warnings}.
-     */
     public static Parsed fromRaw(Map<String, String> raw) {
         Map<ConfigurableField, Visibility> fields = new EnumMap<>(ConfigurableField.class);
         List<String> warnings = new ArrayList<>();
@@ -59,7 +49,6 @@ public final class CompanyPrivacy {
         return visibilityOf(field) == Visibility.SHARED;
     }
 
-    /** Mapa completo (los 11 campos), para guardarlo: lo que no se configuró figura como {@code PRIVATE}. */
     public Map<ConfigurableField, Visibility> asMap() {
         Map<ConfigurableField, Visibility> all = new EnumMap<>(ConfigurableField.class);
         for (ConfigurableField field : ConfigurableField.values()) {

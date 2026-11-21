@@ -5,7 +5,6 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 
 import java.time.Duration;
 
-/** Have I Been Pwned (ADR-007). {@code enabled} viene de {@code HIBP_ENABLED}; apagado, no se consulta ni se audita nada. */
 @ConfigurationProperties("trazatex.hibp")
 public record HibpProperties(
         @DefaultValue("true") boolean enabled,

@@ -13,7 +13,6 @@ import static com.nodotextil.trazatex.traceability.application.dto.EventFields.n
 import static com.nodotextil.trazatex.traceability.application.dto.EventFields.positiveKg;
 import static com.nodotextil.trazatex.traceability.application.dto.EventFields.required;
 
-/** {@code BatchSplit}: el padre ya existe (no cambia su fase, llega con su {@code BatchPhaseChanged}) y los hijos nacen aquí. */
 public record ApplyBatchSplitCommand(UUID eventId, UUID parentBatchId, UUID companyId, List<Child> children) {
 
     public record Child(
@@ -42,7 +41,6 @@ public record ApplyBatchSplitCommand(UUID eventId, UUID parentBatchId, UUID comp
             Instant createdAt) {
         this(batchId, traceabilityId, qrCode, materialType, quantityKg, composition, origin, supplierName, receptionCharacteristics, qualityStatus, createdAt, null);
     }
-
 
         public Child {
             required(batchId, "children.batchId");

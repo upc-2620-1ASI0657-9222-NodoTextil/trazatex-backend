@@ -4,10 +4,8 @@ import com.nodotextil.trazatex.apigateway.domain.model.AuthenticatedUser;
 
 import java.util.Objects;
 
-/** Quién hace la petición, según la ruta: las públicas se limitan por IP; las autenticadas, por usuario y empresa. */
 public sealed interface RateLimitSubject {
 
-    /** @param clientKey IP del cliente ya normalizada (IPv6 por /64) */
     record Login(String clientKey) implements RateLimitSubject {
         public Login {
             Objects.requireNonNull(clientKey, "clientKey");
@@ -20,7 +18,6 @@ public sealed interface RateLimitSubject {
         }
     }
 
-    /** Una petición a una ruta protegida que no trae ninguna credencial válida (sin token o con un token que no es nuestro). */
     record AuthenticationFailure(String clientKey) implements RateLimitSubject {
         public AuthenticationFailure {
             Objects.requireNonNull(clientKey, "clientKey");

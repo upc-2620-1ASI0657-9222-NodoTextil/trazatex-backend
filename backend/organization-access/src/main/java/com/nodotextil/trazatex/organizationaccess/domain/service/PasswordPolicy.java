@@ -6,11 +6,6 @@ import com.nodotextil.trazatex.sharedkernel.exception.ValidationException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-/**
- * Política de contraseña al crear la cuenta: mínimo {@value #MIN_LENGTH} caracteres, sin reglas de composición (decisión del
- * usuario, fase 02), y confirmación idéntica. El rechazo por contraseña filtrada (HIBP, ADR-007) se aplica aparte, tras
- * esta validación. El máximo de 72 bytes es el límite técnico de BCrypt, que ignoraría el resto.
- */
 public final class PasswordPolicy {
 
     public static final int MIN_LENGTH = 8;

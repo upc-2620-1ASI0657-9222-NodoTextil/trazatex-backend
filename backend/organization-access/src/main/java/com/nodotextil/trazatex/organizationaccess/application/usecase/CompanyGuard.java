@@ -9,10 +9,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
-/**
- * Los usuarios de una empresa INACTIVE pueden iniciar sesión y consultar, pero no escribir (decisión del usuario, fase 02).
- * {@link #lockActive} además bloquea la fila de la empresa para serializar las operaciones que usan sus cupos de usuario.
- */
 @Component
 class CompanyGuard {
 
@@ -28,7 +24,6 @@ class CompanyGuard {
         return company;
     }
 
-    /** Bloquea la fila sin exigir que esté activa (aprobar una solicitud de administrador). */
     Company lockCompany(UUID companyId) {
         return companies.findByIdForUpdate(companyId).orElseThrow(() -> notFound(companyId));
     }

@@ -11,7 +11,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** US16 iniciar, US17 composición, US18 balance, US19 desperdicio y US20 producto final. */
 class TransformationApiIT extends ApiTestBase {
 
     private UUID machine;
@@ -26,8 +25,6 @@ class TransformationApiIT extends ApiTestBase {
     private String phaseOf(JsonNode batch) throws Exception {
         return read(getAs(OPERATOR_OF_A, "/api/batches/" + batch.path("id").asString())).path("phase").asString();
     }
-
-    // ---- US16 iniciar ----
 
     @Test
     void startingRegistersTheStartTimeAndMovesTheBatchesToInTransformation() throws Exception {
@@ -115,8 +112,6 @@ class TransformationApiIT extends ApiTestBase {
                 .andExpect(status().isBadRequest());
         assertThat(phaseOf(batch)).isEqualTo("AVAILABLE");
     }
-
-    // ---- US18 finalizar, US19 desperdicio, US17 composición ----
 
     @Test
     void completingComputesTheShrinkageProcessesTheInputsAndCreatesAvailableOutputs() throws Exception {
@@ -236,7 +231,6 @@ class TransformationApiIT extends ApiTestBase {
         assertThat(result.path("outputs").get(1).path("finalProduct").asBoolean()).isFalse();
         assertThat(result.path("outputs").get(1).path("commercialData").path("buyerOrDistributor").isNull()).isTrue();
 
-        // US20 esc. 4: un producto final ya no se divide, transforma ni transfiere
         String url = "/api/batches/" + finalProduct.path("id").asString();
         assertThat(code(postAs(OPERATOR_OF_A, url + "/split", obj("children", List.of(obj("quantityKg", 40), obj("quantityKg", 50))))
                 .andExpect(status().isConflict()))).isEqualTo("BATCH_IS_FINAL_PRODUCT");
@@ -325,8 +319,6 @@ class TransformationApiIT extends ApiTestBase {
                 .isEqualTo("INVALID_QUANTITY");
         assertThat(phaseOf(input)).isEqualTo("IN_TRANSFORMATION");
     }
-
-    // ---- consulta ----
 
     @Test
     void transformationsAreListedAndReadOnlyByTheirCompany() throws Exception {

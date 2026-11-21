@@ -108,7 +108,7 @@ class KafkaMessagingIntegrationTest {
         publisher.publish(topic, "b-1", "{\"n\":1}");
 
         List<ConsumerRecord<String, String>> dlt = consume(topic + ".DLT", 1);
-        assertThat(attempts).hasValue(3); // intento inicial + 2 reintentos
+        assertThat(attempts).hasValue(3);
         assertThat(dlt.get(0).key()).isEqualTo("b-1");
         assertThat(dlt.get(0).value()).isEqualTo("{\"n\":1}");
     }
@@ -179,11 +179,11 @@ class KafkaMessagingIntegrationTest {
         }, RetrySettings.DEFAULT);
 
         OutboxRelay.Result result = relay.publishPending();
-        publisher.publish(topic, "b-1", mapper.writeValueAsString(phase)); // reentrega at-least-once
+        publisher.publish(topic, "b-1", mapper.writeValueAsString(phase));
 
         assertThat(result).isEqualTo(new OutboxRelay.Result(3, 0, 0));
         await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(deliveries).hasValue(4));
-        assertThat(effects).containsExactly("BatchRegistered", "BatchPhaseChanged", "BatchSplit"); // en orden y sin duplicado
+        assertThat(effects).containsExactly("BatchRegistered", "BatchPhaseChanged", "BatchSplit");
         assertThat(store.pendingCount()).isZero();
     }
 
@@ -201,19 +201,12 @@ class KafkaMessagingIntegrationTest {
         }
     }
 
-    // --- Ayudas ---------------------------------------------------------------------------------
-
-    /**
-     * Un tópico nuevo, declarado como lo haría un servicio: el productor declara el tópico y el consumidor su {@code .DLT} (el broker
-     * de las pruebas no crea tópicos solos, como el del compose; ver {@code docs/conventions.md}).
-     */
     private static String topic(String base) {
         String name = base + "." + UUID.randomUUID();
         declare(name, name + KafkaConsumerErrorHandling.DLT_SUFFIX);
         return name;
     }
 
-    /** Lo que hace {@code KafkaAdmin} con los {@code NewTopic} de un servicio: 1 partición y 1 réplica. */
     private static void declare(String... names) {
         try (AdminClient admin = AdminClient.create(Map.<String, Object>of("bootstrap.servers", KAFKA.getBootstrapServers()))) {
             admin.createTopics(Arrays.stream(names).map(name -> new NewTopic(name, 1, (short) 1)).toList()).all().get(30, TimeUnit.SECONDS);
@@ -259,7 +252,6 @@ class KafkaMessagingIntegrationTest {
                 ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
     }
 
-    /** Almacén mínimo del outbox para el recorrido completo (sin base de datos). */
     private static final class ListStore implements OutboxStorePort {
         private final List<OutboxMessage> pending = new ArrayList<>();
 

@@ -34,17 +34,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * ADR-011: el PDF se genera localmente con Thymeleaf (plantilla {@code templates/control-report.html}, valores siempre escapados) y OpenHTMLtoPDF.
- *
- * <p><b>El generador no puede cargar nada de afuera.</b> Ni imágenes, ni hojas de estilo, ni fuentes: ningún URI se resuelve y los protocolos de red
- * ({@code http}, {@code https}, {@code ftp}, {@code file}, {@code jar}) están bloqueados con una implementación que no abre nada y cuenta el intento.
- * Tampoco se admite {@code DOCTYPE} ni entidades en lo que se renderiza (XXE / SSRF). El texto del usuario además va escapado por Thymeleaf, así que
- * un criterio con {@code <img src="http://...">} sale como texto.
- *
- * <p>Protección del servicio: un tiempo máximo por generación y un tope de generaciones simultáneas; superarlos es un {@link PdfGenerationException}
- * (503 {@code REPORT_UNAVAILABLE}, reintentable). Los textos se limitan a lo que representan las fuentes base del PDF (Windows-1252); lo demás sale como {@code ?}.
- */
 public class OpenHtmlToPdfAdapter implements PdfGeneratorPort {
 
     private static final Logger log = LoggerFactory.getLogger(OpenHtmlToPdfAdapter.class);
@@ -60,7 +49,6 @@ public class OpenHtmlToPdfAdapter implements PdfGeneratorPort {
     }
     private static final Charset WIN_1252 = Charset.forName("windows-1252");
 
-    /** Lo que «se carga» de un recurso bloqueado: nada. */
     private static final FSStream EMPTY = new FSStream() {
         @Override
         public java.io.InputStream getStream() {
@@ -110,17 +98,14 @@ public class OpenHtmlToPdfAdapter implements PdfGeneratorPort {
         return renderWithinLimits(xhtml);
     }
 
-    /** Cuántas generaciones hay en curso (para las pruebas). */
     int inFlight() {
         return maxConcurrent - permits.availablePermits();
     }
 
-    /** Los intentos de cargar algo de afuera que se bloquearon (para las pruebas). */
     int blockedFetches() {
         return blockedFetches.get();
     }
 
-    /** Renderiza un XHTML ya armado, con el tiempo y la concurrencia acotados. Package-private: las pruebas le pasan marcado hostil. */
     byte[] renderWithinLimits(String xhtml) {
         if (!permits.tryAcquire()) {
             throw new PdfGenerationException("Hay demasiados reportes generándose a la vez");
@@ -186,8 +171,6 @@ public class OpenHtmlToPdfAdapter implements PdfGeneratorPort {
         }
     }
 
-    // ---- el contexto de la plantilla: todo texto, saneado ----
-
     private Context context(ControlReport report) {
         Context context = new Context(new Locale("es", "PE"));
         context.setVariable("logo", LOGO);
@@ -218,7 +201,6 @@ public class OpenHtmlToPdfAdapter implements PdfGeneratorPort {
         return instant == null ? "" : DATE_TIME.format(instant.atZone(LIMA));
     }
 
-    /** Solo lo que las fuentes base del PDF pueden dibujar (Windows-1252); el resto, y los caracteres de control, salen como «?». */
     static String clean(String text) {
         if (text == null) {
             return "";

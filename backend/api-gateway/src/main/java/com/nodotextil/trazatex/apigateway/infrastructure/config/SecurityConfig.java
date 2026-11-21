@@ -27,7 +27,6 @@ import java.net.URL;
 @EnableConfigurationProperties(JwtProperties.class)
 class SecurityConfig {
 
-    /** Tope del JWKS descargado: el de organization-access mide ~400 bytes. */
     private static final int JWKS_SIZE_LIMIT_BYTES = 64 * 1024;
 
     @Bean
@@ -35,13 +34,11 @@ class SecurityConfig {
         URL url = jwksUrl(props.jwksUri());
         DefaultResourceRetriever retriever = new DefaultResourceRetriever(
                 (int) props.connectTimeout().toMillis(), (int) props.readTimeout().toMillis(), JWKS_SIZE_LIMIT_BYTES);
-        // descarga limitada (estricto: una cada minReloadInterval, ver StrictRateLimitedJWKSetSource) + caché con vigencia +
-        // sigue sirviendo con la caché si organization-access cae (tolerancia = vigencia del JWT)
         JWKSetSource<SecurityContext> limited = new StrictRateLimitedJWKSetSource<>(
                 new URLBasedJWKSetSource<>(url, retriever), props.minReloadInterval().toMillis(), props.failureRetryInterval().toMillis());
         return JWKSourceBuilder.<SecurityContext>create(limited)
                 .cache(props.cacheTtl().toMillis(), 5_000)
-                .refreshAheadCache(false) // sin descargas en segundo plano: solo cuando una petición lo necesita
+                .refreshAheadCache(false)
                 .rateLimited(false)
                 .outageTolerant(props.outageTolerance().toMillis())
                 .build();

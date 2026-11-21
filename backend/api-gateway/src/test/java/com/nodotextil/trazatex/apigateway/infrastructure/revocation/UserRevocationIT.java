@@ -22,10 +22,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-/**
- * RF-012 de extremo a extremo con Kafka real: el Gateway arranca con el tópico ya poblado (con basura mezclada), no queda listo
- * hasta leerlo todo, y después revoca y restituye tokens en vivo, en pocos segundos.
- */
 @Import(RevocationLogCapture.class)
 class UserRevocationIT extends RevocationItSupport {
 
@@ -43,7 +39,6 @@ class UserRevocationIT extends RevocationItSupport {
     static final UUID Z_NO_USER_ID = UUID.randomUUID();
 
     static {
-        // 2 particiones; el estado previo al arranque del Gateway: 8 mensajes (3 ilegibles), 2 usuarios INACTIVE
         KafkaTestSupport.createCompactedTopic(TOPIC, 2);
         KafkaTestSupport.publish(TOPIC, A_INACTIVE, RevocationEvents.userUpdated(A_INACTIVE, "INACTIVE"));
         KafkaTestSupport.publish(TOPIC, B_INACTIVE_THEN_ACTIVE, RevocationEvents.userUpdated(B_INACTIVE_THEN_ACTIVE, "INACTIVE"));
@@ -70,7 +65,6 @@ class UserRevocationIT extends RevocationItSupport {
 
     @Test
     void whenItBecomesReadyItHasAlreadyReadTheWholeTopicAndLogsWhatItLoaded() {
-        // Recién listo: lo último que se publicó antes de arrancar ya está aplicado (nunca 200 para un revocado)
         assertThat(statusOf(tokenOf(A_INACTIVE))).isEqualTo(401);
         assertThat(statusOf(tokenOf(D_INACTIVE_UNKNOWN_FIELDS))).isEqualTo(401);
 
@@ -114,11 +108,9 @@ class UserRevocationIT extends RevocationItSupport {
         assertThat(toRevoke).as("tiempo hasta que el token dejó de servir").isLessThan(Duration.ofSeconds(5));
         assertThat(statusOf(token)).isEqualTo(401);
 
-        // (b) el mismo token, todavía vigente, vuelve a servir al reactivar
         KafkaTestSupport.publish(TOPIC, user, RevocationEvents.userUpdated(user, "ACTIVE"));
         await().atMost(Duration.ofSeconds(5)).pollInterval(Duration.ofMillis(50)).until(() -> statusOf(token) == 200);
 
-        // y se puede volver a inactivar
         KafkaTestSupport.publish(TOPIC, user, RevocationEvents.userUpdated(user, "INACTIVE"));
         await().atMost(Duration.ofSeconds(5)).pollInterval(Duration.ofMillis(50)).until(() -> statusOf(token) == 401);
     }

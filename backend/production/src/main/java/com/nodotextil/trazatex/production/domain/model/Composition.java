@@ -14,14 +14,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Composición de un lote (US12): uno o más componentes cuyos porcentajes suman <b>exactamente</b> 100,00. Sin
- * componentes repetidos (sin distinguir mayúsculas). Inmutable.
- */
 public final class Composition {
 
     public static final BigDecimal HUNDRED = new BigDecimal("100");
-    /** 100,00 % expresado en centésimas. */
     static final int TOTAL_HUNDREDTHS = 10_000;
 
     private final List<CompositionComponent> components;
@@ -52,17 +47,9 @@ public final class Composition {
         return new Composition(List.copyOf(components));
     }
 
-    /** Un lote de entrada: su composición y los kg que aporta a la transformación. */
     public record Contribution(Composition composition, Quantity quantity) {
     }
 
-    /**
-     * Composición resultante de varias entradas: promedio ponderado por kg (US17). Con una sola entrada devuelve la
-     * misma composición. Es aritmética exacta de enteros (gramos × centésimas): cada componente vale
-     * {@code Σ gramos·centésimas / Σ gramos}; las partes enteras casi siempre suman menos de 100,00 y las centésimas
-     * que faltan se reparten por <b>mayor resto</b> (empate: el componente que apareció primero), así el resultado suma
-     * exactamente 100,00. Un componente que quedaría en 0,00 se omite.
-     */
     public static Composition weightedAverage(List<Contribution> contributions) {
         if (contributions == null || contributions.isEmpty()) {
             throw new ValidationException(ErrorCodes.NO_BATCHES_SELECTED,
@@ -87,7 +74,6 @@ public final class Composition {
             assigned += accumulator.hundredths;
         }
         int missing = TOTAL_HUNDREDTHS - assigned;
-        // sorted() es estable: ante igual resto conserva el orden de aparición
         List<Accumulator> byRemainder = ordered.stream()
                 .sorted(Comparator.comparing((Accumulator accumulator) -> accumulator.remainder).reversed())
                 .toList();

@@ -10,7 +10,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/** Los detalles de calidad como propiedades del {@code :Batch}: {@code qualityTests} (JSON) y {@code failureCause}, cada uno con el instante del evento que lo dejó. */
 @Component
 class Neo4jQualityDetailsAdapter implements QualityDetailsPort {
 

@@ -30,31 +30,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
-/**
- * Idempotencia de las escrituras expuestas al frontend (ADR-010). Solo para servicios Spring MVC.
- *
- * <p>Para {@code POST/PUT/PATCH} con cabecera {@code Idempotency-Key}:
- * <ol>
- *   <li>Abre una transacción y reserva la clave primero ({@link IdempotencyStorePort#tryReserve}): la PK bloquea a las
- *       peticiones simultáneas con la misma clave hasta que esta confirme o revierta.</li>
- *   <li>Ejecuta el resto de la cadena <b>en esa misma transacción</b> (el caso de uso se une a ella) con la respuesta
- *       en búfer, de modo que nada llega al cliente antes del commit.</li>
- *   <li>Si la respuesta es 2xx guarda estado y cuerpo y confirma. Con cualquier otro código, o con una excepción,
- *       revierte: la operación y la clave desaparecen y el cliente puede reintentar con la misma clave.
- *       Si el commit falla con {@link UnexpectedRollbackException} (algún participante marcó la transacción como
- *       rollback-only aunque la respuesta fuera 2xx) se responde 500 con {@code OPERATION_ROLLED_BACK}.</li>
- * </ol>
- *
- * <p>Clave repetida con la misma petición: devuelve la respuesta guardada sin ejecutar nada. Clave repetida con otro
- * cuerpo, otra ruta u otro usuario: 422. El hash cubre método, URI con query y cuerpo; en {@code multipart/form-data}, las partes
- * (campo, nombre de archivo, tipo y bytes) y no el cuerpo crudo, porque el separador cambia en cada intento. La clave pertenece al usuario de
- * {@code X-User-Id} (inyectada por el Gateway); sin esa cabecera la escritura se rechaza con 400.
- *
- * <p>Una escritura sin {@code Idempotency-Key} pasa sin tocar (la cabecera es opcional, "acepta" en el ADR). Las rutas que
- * el servicio declara públicas (el {@code bypass} del constructor: login, aceptar invitación) ignoran la cabecera aunque
- * venga: no tienen {@code X-User-Id}, así que no hay a quién atribuir la clave, y pasan sin tocar, sin 400 ni almacenamiento.
- * Solo se guarda el cuerpo de respuestas JSON; el de otro tipo se replica vacío.
- */
 public class IdempotencyFilter extends OncePerRequestFilter {
 
     public static final String IDEMPOTENCY_KEY_HEADER = "Idempotency-Key";
@@ -88,7 +63,6 @@ public class IdempotencyFilter extends OncePerRequestFilter {
         this(store, transactionManager, objectMapper, clock, retention, request -> false);
     }
 
-    /** @param bypass peticiones (rutas públicas) a las que no se aplica la idempotencia aunque traigan la cabecera */
     public IdempotencyFilter(IdempotencyStorePort store, PlatformTransactionManager transactionManager,
                              ObjectMapper objectMapper, Clock clock, Duration retention,
                              Predicate<HttpServletRequest> bypass) {
@@ -123,14 +97,9 @@ public class IdempotencyFilter extends OncePerRequestFilter {
         HttpServletRequest cachedRequest;
         String requestHash;
         if (isMultipart(request)) {
-            // El separador (boundary) cambia en cada intento del cliente aunque los archivos sean los mismos: el hash se calcula
-            // sobre las PARTES (nombre del campo, nombre del archivo, tipo y bytes). Las pide el contenedor, que las deja en la
-            // petición para que el controlador las reutilice: no se copia el cuerpo (puede pesar decenas de MB)
             try {
                 requestHash = hashParts(request);
             } catch (IOException | ServletException | RuntimeException unreadable) {
-                // El contenedor no pudo leerlo (tamaño excedido, cuerpo roto): el controlador responde ese mismo error y, como
-                // un rechazo nunca se guarda, no hay nada que proteger con la clave
                 chain.doFilter(request, response);
                 return;
             }
@@ -163,7 +132,6 @@ public class IdempotencyFilter extends OncePerRequestFilter {
         }
     }
 
-    /** Se ejecuta dentro de la transacción. Devuelve {@code null} si la petición se ejecutó y su respuesta está en el búfer. */
     private Reply process(TransactionStatus tx, String key, String userId, String requestHash,
                           HttpServletRequest request, ContentCachingResponseWrapper response, FilterChain chain) {
         Reply existing = reserveOrReply(key, userId, requestHash);
@@ -191,7 +159,7 @@ public class IdempotencyFilter extends OncePerRequestFilter {
             }
             Optional<IdempotencyRecord> found = store.find(key);
             if (found.isEmpty()) {
-                continue; // la limpieza la borró entre el insert y la lectura
+                continue;
             }
             IdempotencyRecord record = found.get();
             if (record.createdAt().plus(retention).isBefore(clock.instant())) {
@@ -228,11 +196,6 @@ public class IdempotencyFilter extends OncePerRequestFilter {
         return contentType != null && contentType.toLowerCase(Locale.ROOT).startsWith("multipart/");
     }
 
-    /**
-     * Hash de una petición {@code multipart/form-data}: método, URI y query, y por cada parte, en orden, nombre del campo, nombre
-     * del archivo, tipo y bytes. Cada dato lleva su longitud por delante, así que no hay dos peticiones distintas con el mismo
-     * hash por la forma de pegar los campos. El separador no entra.
-     */
     private static String hashParts(HttpServletRequest request) throws IOException, ServletException {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -300,7 +263,6 @@ public class IdempotencyFilter extends OncePerRequestFilter {
     private record Reply(int status, String body) {
     }
 
-    /** Lleva una excepción comprobada de la cadena a través del callback de la transacción (que provoca el rollback). */
     private static class ChainFailure extends RuntimeException {
         ChainFailure(Exception cause) {
             super(cause);

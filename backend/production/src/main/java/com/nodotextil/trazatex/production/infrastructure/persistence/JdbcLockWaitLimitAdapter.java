@@ -6,7 +6,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 
-/** {@code SET LOCAL lock_timeout}: vale solo para la transacción en curso. */
 @Component
 class JdbcLockWaitLimitAdapter implements LockWaitLimitPort {
 
@@ -18,7 +17,6 @@ class JdbcLockWaitLimitAdapter implements LockWaitLimitPort {
 
     @Override
     public void limit(Duration wait) {
-        // SET no admite parámetros: el valor es un entero que sale de una Duration, no de la petición
         jdbc.sql("SET LOCAL lock_timeout = '" + Math.max(1, wait.toMillis()) + "ms'").update();
     }
 }

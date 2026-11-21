@@ -18,7 +18,6 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.time.Clock;
 
-/** Adaptadores de sistemas externos (Chequea.pe y HIBP) con timeout y Resilience4j; cada uno detrás de su puerto. */
 @Configuration
 @EnableConfigurationProperties({ChequeaProperties.class, HibpProperties.class})
 class ExternalServicesConfig {

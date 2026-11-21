@@ -11,7 +11,6 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
-/** Todo estado final deja {@code body = ''} (también lo exige un CHECK de la tabla): un correo de invitación lleva un token de un solo uso. */
 @Repository
 public class JdbcDeferredEmailStoreAdapter implements DeferredEmailStorePort {
     private final JdbcClient jdbc;

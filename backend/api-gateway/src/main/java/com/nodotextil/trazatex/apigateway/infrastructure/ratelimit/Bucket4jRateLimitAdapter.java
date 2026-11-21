@@ -15,11 +15,6 @@ import java.time.Duration;
 import java.util.EnumMap;
 import java.util.Map;
 
-/**
- * Un cubo de Bucket4j por (ámbito, clave), en memoria y sin bloqueos. Cada ámbito tiene su propia caché Caffeine con expiración
- * por inactividad y tope de entradas: la memoria no crece sin límite. Reposición "greedy" (los permisos vuelven de a poco, no
- * todos de golpe al final de la ventana). {@code Ticker} y {@code TimeMeter} se inyectan para poder probar el paso del tiempo.
- */
 public class Bucket4jRateLimitAdapter implements RateLimitPort {
 
     private final Map<RateLimitScope, Cache<String, Bucket>> caches = new EnumMap<>(RateLimitScope.class);
@@ -31,7 +26,7 @@ public class Bucket4jRateLimitAdapter implements RateLimitPort {
             caches.put(scope, Caffeine.newBuilder()
                     .expireAfterAccess(idleExpiry)
                     .maximumSize(maxEntries)
-                    .executor(Runnable::run)   // la limpieza en el mismo hilo: acotada y determinista
+                    .executor(Runnable::run)
                     .ticker(ticker)
                     .build());
         }
@@ -52,18 +47,16 @@ public class Bucket4jRateLimitAdapter implements RateLimitPort {
     public void refund(RateLimitScope scope, String key, RateLimit limit) {
         Bucket bucket = caches.get(scope).getIfPresent(key);
         if (bucket != null) {
-            bucket.addTokens(1);   // Bucket4j nunca pasa de la capacidad
+            bucket.addTokens(1);
         }
     }
 
-    /** Cubos vivos de un ámbito (para pruebas y diagnóstico). */
     public long size(RateLimitScope scope) {
         Cache<String, Bucket> cache = caches.get(scope);
         cache.cleanUp();
         return cache.estimatedSize();
     }
 
-    /** Permisos que le quedan a un cubo, sin gastar ninguno (para pruebas); {@code -1} si no existe. */
     public long availableTokens(RateLimitScope scope, String key) {
         Bucket bucket = caches.get(scope).getIfPresent(key);
         return bucket == null ? -1 : bucket.getAvailableTokens();

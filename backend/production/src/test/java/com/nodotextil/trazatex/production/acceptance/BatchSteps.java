@@ -20,7 +20,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** US12 (registrar), US13 (buscar), US14 (consultar por QR) y US15 (dividir). */
 public class BatchSteps extends StepSupport {
 
     private static final String TRACEABILITY_ID = "^TT-[0-9A-HJKMNP-TV-Z]{10}$";
@@ -34,8 +33,6 @@ public class BatchSteps extends StepSupport {
         world.body = body;
         world.pending = () -> api.post(world.operatorA, "/api/batches", world.body);
     }
-
-    // ---- US12 esc. 1 ----
 
     @Dado("^que el operario completa la información obligatoria$")
     public void theOperatorFillsInTheRequiredInformation() {
@@ -68,23 +65,18 @@ public class BatchSteps extends StepSupport {
         assertThat(first.path("traceabilityId").asString()).matches(TRACEABILITY_ID);
         assertThat(first.path("qrCode").asString()).matches(QR_CODE);
         assertThat(first.path("qrCode").asString()).as("el QR no es el Traceability ID").isNotEqualTo(first.path("traceabilityId").asString());
-        // único: otro lote con los mismos datos recibe otros códigos
         JsonNode second = registerLot(lotBody(100));
         assertThat(second.path("traceabilityId").asString()).isNotEqualTo(first.path("traceabilityId").asString());
         assertThat(second.path("qrCode").asString()).isNotEqualTo(first.path("qrCode").asString());
-        // y es lo que se publica para los demás servicios
         List<Outbox.Event> registered = outbox.ofType("BatchRegistered", first.path("id").asString());
         assertThat(registered).hasSize(1);
         assertCatalogKeys(registered.get(0).payload(), "batchId", "traceabilityId", "qrCode", "companyId", "name", "materialType", "composition",
                 "quantityKg", "origin", "supplierName", "receptionCharacteristics", "createdAt");
-        // name (agregado en V2): el que envió el operario y el que guarda el lote
         assertThat(registered.get(0).payload().path("name").asString()).isEqualTo(world.body.get("name")).isEqualTo(first.path("name").asString());
         assertThat(registered.get(0).payload().path("traceabilityId").asString()).isEqualTo(first.path("traceabilityId").asString());
         assertThat(registered.get(0).payload().path("qrCode").asString()).isEqualTo(first.path("qrCode").asString());
         assertThat(registered.get(0).topic()).isEqualTo("production.batch");
     }
-
-    // ---- US12 esc. 2 ----
 
     @Dado("^que el operario no conoce el nombre del proveedor$")
     public void theOperatorDoesNotKnowTheSupplier() {
@@ -99,8 +91,6 @@ public class BatchSteps extends StepSupport {
         assertThat(world.last.field("supplierName") == null || world.last.field("supplierName").isNull()).isTrue();
         assertThat(lot(world.operatorA, world.last.body()).path("phase").asString()).isEqualTo("AVAILABLE");
     }
-
-    // ---- US12 esc. 3 ----
 
     @Dado("^que los porcentajes no suman 100 %$")
     public void thePercentagesDoNotAddUpTo100() {
@@ -123,8 +113,6 @@ public class BatchSteps extends StepSupport {
         assertThat(world.last.message()).contains("composición no es válida");
     }
 
-    // ---- US13 ----
-
     private record Search(String label, String query, Set<UUID> expected) {
     }
 
@@ -138,7 +126,6 @@ public class BatchSteps extends StepSupport {
         JsonNode a = registerLot(fiber);
         JsonNode b = registerLot(yarn);
         JsonNode c = registerLot(fabric);
-        // y uno de otra empresa, que nunca debe aparecer
         Reply foreign = api.post(world.operatorB, "/api/batches", lotBody(10));
         assertThat(foreign.status()).isEqualTo(201);
         world.notes.put("foreign", foreign.body());
@@ -194,8 +181,6 @@ public class BatchSteps extends StepSupport {
         assertThat(api.get(new Who(UUID.randomUUID(), "LICENSE_OWNER", null), "/api/batches").status()).as("el Dueño de Licencia no opera lotes").isEqualTo(403);
     }
 
-    // ---- US14 ----
-
     @Dado("^que existe un lote registrado con un código QR asociado$")
     public void aBatchWithAQrExists() {
         world.batch = registerLot(40);
@@ -218,13 +203,11 @@ public class BatchSteps extends StepSupport {
 
     @Y("^muestra la información autorizada\\.$")
     public void itShowsTheAuthorizedInformation() {
-        // la empresa dueña ve todo
         JsonNode own = world.last.field("batch");
         assertThat(own.path("composition")).hasSize(2);
         assertThat(own.path("origin").asString()).isEqualTo("Piura");
         assertThat(own.path("supplierName").asString()).isEqualTo("Textiles del Norte");
         assertThat(own.path("createdBy").asString()).isEqualTo(world.operatorA.userId().toString());
-        // otra empresa ve solo lo siempre compartido: sin operario, proveedor, composición ni datos comerciales
         Reply other = api.get(world.operatorB, "/api/batches/qr/" + world.batch.path("qrCode").asString());
         assertThat(other.status()).isEqualTo(200);
         assertThat(other.text("access")).isEqualTo("SHARED");
@@ -252,7 +235,6 @@ public class BatchSteps extends StepSupport {
         assertThat(world.last.status()).isEqualTo(404);
         assertThat(world.last.field("batch")).isNull();
         assertThat(world.last.raw()).doesNotContain("traceabilityId").doesNotContain("composition");
-        // un código mal formado se trata igual: no revela nada
         Reply malformed = api.get(world.operatorA, "/api/batches/qr/no-es-un-codigo");
         assertThat(malformed.status()).isEqualTo(404);
         assertThat(malformed.code()).isEqualTo("QR_NOT_FOUND");
@@ -263,8 +245,6 @@ public class BatchSteps extends StepSupport {
         assertThat(world.last.code()).isEqualTo("QR_NOT_FOUND");
         assertThat(world.last.message()).contains("Código no encontrado");
     }
-
-    // ---- US15 ----
 
     @Dado("^que existe un lote habilitado$")
     public void anEnabledBatchExists() {
@@ -301,7 +281,6 @@ public class BatchSteps extends StepSupport {
             assertThat(qrCodes.add(stored.path("qrCode").asString())).as("QR nuevo").isTrue();
             assertThat(stored.path("originType").asString()).isEqualTo("SPLIT");
         }
-        // y los demás servicios los conocen por BatchSplit
         List<Outbox.Event> split = outbox.ofType("BatchSplit", id(world.batch).toString());
         assertThat(split).hasSize(1);
         assertCatalogKeys(split.get(0).payload(), "parentBatchId", "companyId", "children");
@@ -310,7 +289,6 @@ public class BatchSteps extends StepSupport {
             JsonNode published = split.get(0).payload().path("children").get(i);
             assertCatalogKeys(published, "batchId", "traceabilityId", "qrCode", "name", "materialType", "quantityKg", "composition", "origin",
                     "supplierName", "receptionCharacteristics", "qualityStatus", "createdAt");
-            // name (agregado en V2): el que el operario dio a ese hijo y el que guarda el hijo
             @SuppressWarnings("unchecked")
             Object requestedName = ((List<Map<String, Object>>) world.body.get("children")).get(i).get("name");
             assertThat(published.path("name").asString()).isEqualTo(requestedName).isEqualTo(lot(world.operatorA, children.get(i)).path("name").asString());

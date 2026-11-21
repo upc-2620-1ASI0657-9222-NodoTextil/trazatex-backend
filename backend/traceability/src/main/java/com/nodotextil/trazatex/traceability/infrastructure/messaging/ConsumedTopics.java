@@ -4,11 +4,6 @@ import com.nodotextil.trazatex.sharedmessaging.consumer.TopicWatcher;
 
 import java.util.List;
 
-/**
- * Tópicos que consume traceability (docs/architecture/communication.md). Son de otros servicios: traceability declara solo sus
- * {@code .DLT} y <b>nunca</b> los crea. Cada uno se lee con su propio grupo y su propio contenedor, que no arranca hasta que el
- * tópico existe (ver {@link TopicWatcherJob}).
- */
 public final class ConsumedTopics {
 
     public static final String ORGACCESS_COMPANY = "orgaccess.company";

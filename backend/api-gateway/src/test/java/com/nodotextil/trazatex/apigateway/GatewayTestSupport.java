@@ -14,11 +14,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 
-/**
- * Base de las pruebas con el Gateway levantado: cada servicio (organization-access, production, traceability, quality, notification, analytics) y el JWKS son WireMock que viven toda la JVM (los
- * contextos de Spring se reutilizan entre clases, así que sus puertos no pueden cambiar). {@link #client} ya envía un token
- * válido de operario; {@link #anonymous} no envía ninguno.
- */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient
 @TestPropertySource(properties = {
@@ -29,10 +24,7 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMoc
         "trazatex.gateway.services.notification-url=http://localhost:${test.notification.port}",
         "trazatex.gateway.services.analytics-url=http://localhost:${test.analytics.port}",
         "trazatex.jwt.jwks-uri=http://localhost:${test.jwks.port}" + GatewayTestSupport.JWKS_PATH,
-        // Sin Kafka salvo en las pruebas de revocación, que lo encienden con @DynamicPropertySource
         "trazatex.revocation.enabled=false",
-        // Límites muy altos: estas suites hacen cientos de peticiones con el mismo usuario e IP. Las pruebas de rate limiting
-        // los sobrescriben con los suyos
         "trazatex.rate-limit.login.permits=1000000", "trazatex.rate-limit.invitation.permits=1000000",
         "trazatex.rate-limit.user.permits=1000000", "trazatex.rate-limit.company.permits=1000000",
         "trazatex.rate-limit.auth-failure.permits=1000000"})
@@ -49,7 +41,6 @@ public abstract class GatewayTestSupport {
     protected static final WireMockServer JWKS = start();
 
     static {
-        // Los puertos entran por propiedades inline: una subclase puede sobrescribirlas con su propio @TestPropertySource
         System.setProperty("test.org-access.port", String.valueOf(ORG_ACCESS.port()));
         System.setProperty("test.production.port", String.valueOf(PRODUCTION.port()));
         System.setProperty("test.traceability.port", String.valueOf(TRACEABILITY.port()));

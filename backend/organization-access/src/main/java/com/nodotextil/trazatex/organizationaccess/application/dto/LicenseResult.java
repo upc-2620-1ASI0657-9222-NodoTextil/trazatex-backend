@@ -5,7 +5,6 @@ import com.nodotextil.trazatex.organizationaccess.domain.model.LicenseUsage;
 import java.util.List;
 import java.util.UUID;
 
-/** US01: límites contratados, empresas usadas y, por empresa, los cupos de usuario ocupados (ACTIVE + invitaciones PENDING vigentes). */
 public record LicenseResult(
         int maxCompanies,
         int maxUsersPerCompany,

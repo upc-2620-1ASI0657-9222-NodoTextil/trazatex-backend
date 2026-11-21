@@ -7,7 +7,6 @@ import time
 import urllib.error
 import urllib.request
 
-
 def request(url, data=None, token=None, credentials=None, method=None):
     headers={"Content-Type":"application/json"}
     if token:
@@ -15,11 +14,9 @@ def request(url, data=None, token=None, credentials=None, method=None):
     if credentials:
         headers["Authorization"]="Basic "+base64.b64encode((credentials[0]+":"+credentials[1]).encode()).decode()
     req=urllib.request.Request(url,data=None if data is None else json.dumps(data).encode(),headers=headers,method=method)
-    # El certificado propio de Portainer se acepta solo para su DNS interno fijo.
     context=ssl._create_unverified_context() if url.startswith("https://portainer:9443/") else None
     with urllib.request.urlopen(req,context=context,timeout=10) as response:
         return json.load(response)
-
 
 def neo4j_user():
     target=os.environ.get("NEO4J_USER","neo4j")
@@ -45,7 +42,6 @@ def neo4j_user():
     if target!="neo4j":
         query(target,"DROP USER neo4j IF EXISTS")
 
-
 def portainer_user():
     target=os.environ.get("ADMIN_USERNAME","admin")
     password=os.environ["PORTAINER_PASSWORD"]
@@ -63,7 +59,6 @@ def portainer_user():
     current=next(user for user in users if user["Username"]=="admin")
     request(url+"/users/"+str(current["Id"]),{"Username":target,"Role":1},token=token,method="PUT")
     login(target)
-
 
 if __name__=="__main__":
     for configure in (neo4j_user,portainer_user):

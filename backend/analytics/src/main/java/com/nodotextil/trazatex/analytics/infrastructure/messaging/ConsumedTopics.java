@@ -3,12 +3,6 @@ package com.nodotextil.trazatex.analytics.infrastructure.messaging;
 import com.nodotextil.trazatex.sharedmessaging.consumer.TopicWatcher;
 import java.util.List;
 
-/**
- * Tópicos que consume Analytics (docs/architecture/communication.md). Son de Production y Quality: Analytics declara solo sus {@code .DLT} y
- * <b>nunca</b> los crea. Cada tópico tiene su propio grupo y su propio contenedor, que no arranca hasta que el tópico existe (ver
- * {@link TopicWatcherJob}): un mensaje en reintento en un tópico no frena a los demás. Los grupos son los que se reinician para reconstruir
- * Analytics (docs/operations/analytics-rebuild.md).
- */
 public final class ConsumedTopics {
     public static final String PRODUCTION_BATCH = "production.batch";
     public static final String PRODUCTION_TRANSFORMATION = "production.transformation";

@@ -13,7 +13,6 @@ import {
 import { IconComponent } from './icon.component';
 import { DialogFocusDirective } from './dialog-focus.directive';
 
-                             
 export function paginar<T>(list: T[], page: number, size: number): T[] {
   const pages = Math.max(1, Math.ceil(list.length / size));
   const p = Math.min(Math.max(0, page), pages - 1);
@@ -26,15 +25,9 @@ export interface SubnavItem {
   count?: number;
 }
 
-                                                                       
-/** Identificadores del patrón de pestañas: el mismo cálculo para la pestaña, su `aria-controls` y el `aria-labelledby` del panel. */
 export const tabId = (panel: string, id: string) => 'tab-' + panel + '-' + id.replace(/[^A-Za-z0-9_-]/g, '-');
 export const panelId = (panel: string) => 'panel-' + panel;
 
-/**
- * Pestañas ARIA completas: cada pestaña tiene `id`, `aria-selected` y `aria-controls` (el panel `panelId(panel)`), solo la activa está en el
- * orden de tabulación y las flechas, Inicio y Fin mueven la selección. El panel lo marca {@link TabPanelDirective} con el mismo `panel`.
- */
 @Component({
   selector: 'app-subnav',
   imports: [],
@@ -55,7 +48,6 @@ export class SubnavComponent {
   readonly items = input.required<SubnavItem[]>();
   readonly active = model.required<string>();
   readonly label = input('Subnavegación');
-  /** Nombre del panel que controlan estas pestañas; debe coincidir con `appTabPanel` del contenido. */
   readonly panel = input.required<string>();
   protected readonly tabId = tabId;
   protected readonly panelId = panelId;
@@ -77,7 +69,6 @@ export class SubnavComponent {
   }
 }
 
-/** El contenido que gobiernan las pestañas de `app-subnav`: `role="tabpanel"` etiquetado por la pestaña activa. */
 @Directive({
   selector: '[appTabPanel]',
   host: {
@@ -94,7 +85,6 @@ export class TabPanelDirective {
   protected readonly panelId = panelId;
 }
 
-                                                       
 @Component({
   selector: 'app-pager',
   imports: [IconComponent],
@@ -136,7 +126,6 @@ export class PagerComponent {
   }
 }
 
-                                                                          
 @Component({
   selector: 'app-fold',
   imports: [IconComponent],
@@ -160,7 +149,6 @@ export class FoldComponent {
   readonly open = model(false);
 }
 
-                                                                    
 @Component({
   selector: 'app-drawer',
   imports: [IconComponent, DialogFocusDirective],
@@ -187,7 +175,6 @@ export class DrawerComponent {
   readonly closed = output<void>();
 }
 
-                                                            
 @Component({
   selector: 'app-stepper',
   imports: [IconComponent],
@@ -206,7 +193,6 @@ export class StepperComponent {
   readonly current = input.required<number>();
 }
 
-                                                                                           
 @Component({
   selector: 'app-carousel',
   imports: [IconComponent],
@@ -227,7 +213,6 @@ export class CarouselComponent {
   }
 }
 
-                                                                            
 @Component({
   selector: 'app-more-filters',
   imports: [IconComponent],
@@ -242,7 +227,6 @@ export class MoreFiltersComponent {
   readonly open = output<void>();
 }
 
-/** Marcador de posición mientras llegan los datos de una lista, para no mostrar un falso «Sin … en esta vista» (FE-M11). */
 @Component({
   selector: 'app-skeleton',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -7,10 +7,8 @@ import tools.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.UUID;
 
-/** Lee la tabla {@code outbox}: es el contrato con los demás servicios (los eventos del catálogo salen de ahí hacia Kafka). */
 public class Outbox {
 
-    /** {@code envelope} es el sobre completo; {@code payload}, el del catálogo. */
     public record Event(UUID id, String type, String aggregateId, String topic, JsonNode envelope) {
 
         public JsonNode payload() {

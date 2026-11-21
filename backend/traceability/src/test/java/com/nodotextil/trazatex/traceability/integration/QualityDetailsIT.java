@@ -25,11 +25,6 @@ import java.util.UUID;
 import static com.nodotextil.trazatex.traceability.integration.GraphBuilder.id;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Los detalles de calidad (valores de las pruebas y causa de falla) por el puerto de entrada {@link ApplyQualityDetailsUseCase} y su adaptador de Neo4j: se guardan
- * en el lote, gana el evento más reciente y la genealogía los muestra a la dueña y, a otra empresa, solo si se compartió {@code QUALITY_TEST_VALUES} o
- * {@code FAILURE_CAUSE}.
- */
 class QualityDetailsIT extends IntegrationTestBase {
 
     static final UUID A = UUID.fromString("00000000-0000-0000-0000-0000000000a1");
@@ -70,7 +65,6 @@ class QualityDetailsIT extends IntegrationTestBase {
                 .filter(b -> b.id().equals(id(batch))).findFirst().orElseThrow();
     }
 
-    /** Lo que la genealogía devuelve de esas pruebas. */
     private static List<VisibleQualityTest> visible(ApplyQualityTestsCommand.TestValue... values) {
         return java.util.Arrays.stream(values).map(t -> new VisibleQualityTest(t.criterionName(), t.expectedValue(), t.obtainedValue(), t.unit(), t.testResult())).toList();
     }
@@ -79,7 +73,6 @@ class QualityDetailsIT extends IntegrationTestBase {
         details.applyTests(new ApplyQualityTestsCommand(UUID.randomUUID(), id(batch), at, List.of(values)));
     }
 
-    /** Una causa de una falla confirmada: la única que el grafo muestra. */
     private void cause(String batch, Instant at, String cause) {
         cause(batch, at, "CONFIRMED", cause);
     }
@@ -108,7 +101,6 @@ class QualityDetailsIT extends IntegrationTestBase {
         assertThat(seen("L1", B).failureCause()).isEqualTo("Fibra corta");
     }
 
-    /** I15: una causa solo es visible mientras la falla está confirmada; abierta o resuelta, ni la propia empresa ni otra la ven. */
     @Test
     void theCauseIsOnlyShownWhileTheFailureIsConfirmed() {
         graph.batch("L1", A);

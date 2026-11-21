@@ -20,16 +20,13 @@ demo/.local/
 **/*.log
 docs/.informe-extraido.txt
 
-# Material de exposición y entrega a socios: nunca se versiona
 datos-exposicion/
 ARCHIVOS_SHA256.json
 INICIO_SOCIO.md
 
-# Archivos de sistema y de editores
 .DS_Store
 .idea/
 .vscode/
 *.iml
 
-# Capturas de interfaz generadas localmente
 frontend/capturas-ui*/

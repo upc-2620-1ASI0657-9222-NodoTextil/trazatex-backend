@@ -23,15 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Cuántas consultas hace a Neo4j una petición de genealogía, para que un N+1 (una consulta por nodo en vez de dos por nivel) se note sin depender del
- * tiempo: la cantidad depende de los <b>niveles</b> recorridos —2 por nivel (por división y por transformación) y un máximo de 10 niveles más una sonda— y de
- * un número fijo (el lote de partida, los nombres, la privacidad ajena y el historial), <b>nunca de la cantidad de nodos ni de empresas</b>. Se cuenta cada
- * llamada a {@code Neo4jClient.query(...)} de la petición (cada una es una consulta).
- *
- * <p>Desglose del tope (por dirección: 2 por nivel × (10 niveles + 1 sonda de lo que hay más allá) = 22) más lo fijo: {@code findBatch} (1),
- * {@code businessNames} (1), {@code privacyOf} (1, solo si hay empresas ajenas) y, solo en la vista completa, {@code transfersOf} (1).
- */
 @Import(QueryCounting.Config.class)
 class LineageQueryCountIT extends IntegrationTestBase {
 
@@ -74,7 +65,6 @@ class LineageQueryCountIT extends IntegrationTestBase {
         QueryCounting.reset();
     }
 
-    /** Las consultas que hace una petición HTTP de genealogía (la ruta es {@code ancestors}, {@code descendants} o {@code lineage}), como la llama el Gateway. */
     private long queriesOf(String route, String batch, UUID requester) throws Exception {
         return queriesOf(route, id(batch), requester);
     }
@@ -90,11 +80,8 @@ class LineageQueryCountIT extends IntegrationTestBase {
         return route.equals("lineage") ? 2L * QUERIES_PER_LEVEL * LEVELS_PLUS_PROBE + FIXED_BOTH_DIRECTIONS : (long) QUERIES_PER_LEVEL * LEVELS_PLUS_PROBE + FIXED_ONE_DIRECTION;
     }
 
-    // ---- no depende de cuántos nodos ----
-
     @Test
     void theNumberOfQueriesDependsOnTheLevelsAndNotOnTheNumberOfNodes() throws Exception {
-        // ancho: una raíz con 60 hijos y cada hijo con 3 hijos (241 nodos, 2 niveles); estrecho: una cadena de 2 niveles (3 nodos). Ambos de B, quien consulta es A
         graph.batch("WIDE", B);
         List<String> children = new ArrayList<>();
         for (int i = 0; i < 60; i++) {
@@ -116,7 +103,6 @@ class LineageQueryCountIT extends IntegrationTestBase {
 
     @Test
     void aMixOfManyInputsIsStillOneLevelAndNeitherManyBatchesNorManyCompaniesAddQueries() throws Exception {
-        // 40 entradas de 6 empresas distintas se mezclan en una salida (1 nivel hacia atrás); contra una mezcla de 2 entradas de una sola empresa
         UUID[] companies = new UUID[6];
         List<String> inputs = new ArrayList<>();
         for (int c = 0; c < companies.length; c++) {
@@ -136,11 +122,9 @@ class LineageQueryCountIT extends IntegrationTestBase {
         assertThat(many).as("40 entradas de 6 empresas contra 2 de una: mismas consultas (la privacidad ajena es una sola consulta)").isEqualTo(few);
     }
 
-    // ---- 2 por nivel, con un tope ----
-
     @Test
     void eachExtraLevelCostsAtMostTwoQueriesAndTheCountStopsGrowingAtTheTenLevelLimit() throws Exception {
-        graph.chain("c", B, 16); // c0 → c1 → … → c15
+        graph.chain("c", B, 16);
         List<Long> byDepth = new ArrayList<>();
         for (int depth = 0; depth <= 15; depth++) {
             byDepth.add(queriesOf("ancestors", "c" + depth, A));
@@ -157,8 +141,6 @@ class LineageQueryCountIT extends IntegrationTestBase {
         }
         assertThat(byDepth.get(10)).isEqualTo(byDepth.get(15));
     }
-
-    // ---- el grafo de RNF-04 ----
 
     @Test
     void aGenealogyOfTheFiveHundredNodeDiamondStaysWithinTheCapInEveryDirection() throws Exception {

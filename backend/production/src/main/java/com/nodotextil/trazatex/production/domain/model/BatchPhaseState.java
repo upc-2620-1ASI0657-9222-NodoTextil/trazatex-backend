@@ -3,11 +3,6 @@ package com.nodotextil.trazatex.production.domain.model;
 import com.nodotextil.trazatex.production.domain.exception.ErrorCodes;
 import com.nodotextil.trazatex.sharedkernel.exception.ConflictException;
 
-/**
- * Patrón State de la fase del lote (informe 4.1.13). Cada fase decide qué operaciones admite y a qué fase lleva;
- * cualquier otra se rechaza con 409. Los métodos solo <b>calculan</b> la fase siguiente (o lanzan): quien aplica el
- * cambio es {@link Batch}. La tabla de transiciones está en docs/domain/production.md.
- */
 interface BatchPhaseState {
 
     BatchPhase phase();
@@ -48,7 +43,6 @@ interface BatchPhaseState {
         throw refuse("descartar");
     }
 
-    /** Activar o quitar la retención por calidad solo se admite sobre un lote {@code AVAILABLE}. */
     default void ensureCanChangeQualityHold(Batch batch) {
         throw refuse("cambiar la retención por calidad de");
     }

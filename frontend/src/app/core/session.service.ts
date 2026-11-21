@@ -22,6 +22,11 @@ export function mapUser(user: ApiUser): Usuario {
     estado: user.status === 'ACTIVE' ? 'Activo' : 'Inactivo',
   };
 }
+export class RolNoCoincide extends Error {
+  constructor(readonly rolElegido: Rol) {
+    super(`Esta cuenta no tiene el rol ${rolElegido}. Selecciona el rol de tu cuenta y vuelve a ingresar.`);
+  }
+}
 @Injectable({ providedIn: 'root' })
 export class SessionService {
   private readonly api = inject(ApiService);
@@ -31,7 +36,6 @@ export class SessionService {
   readonly loggedIn = computed(
     () => !!this.state() && Date.parse(this.state()!.expiresAt) > Date.now(),
   );
-  /** Por qué terminó la sesión sin que la persona la cerrara (401 del Gateway). El login lo muestra y lo borra al entrar. */
   readonly endNotice = signal('');
   readonly token = computed(() => (this.loggedIn() ? this.state()!.token : null));
   readonly rol = computed<Rol>(() =>
@@ -66,7 +70,7 @@ export class SessionService {
         Math.max(0, Date.parse(this.state()!.expiresAt) - Date.now()),
       );
   }
-  async login(email: string, password: string): Promise<void> {
+  async login(email: string, password: string, rolEsperado?: Rol): Promise<void> {
     const result = await this.api.request<LoginResult>('POST', '/auth/login', { email, password });
     if (
       !roleLabels[result.user.role] ||
@@ -75,6 +79,7 @@ export class SessionService {
     ) {
       throw new Error('El servidor devolvió una sesión inválida.');
     }
+    if (rolEsperado && roleLabels[result.user.role] !== rolEsperado) throw new RolNoCoincide(rolEsperado);
     this.state.set(result);
     this.endNotice.set('');
     this.scheduleExpiry();
@@ -90,7 +95,6 @@ export class SessionService {
       sessionStorage.removeItem(KEY);
       localStorage.removeItem('trazatex.session');
     } catch {}
-    // FE-M5: los borradores (con fotos) no sobreviven a la sesión. Si IndexedDB no está disponible no hay nada que borrar.
     void this.drafts.clearDrafts().catch(() => undefined);
   }
   expire(notice = 'Tu sesión venció. Inicia sesión de nuevo.') {

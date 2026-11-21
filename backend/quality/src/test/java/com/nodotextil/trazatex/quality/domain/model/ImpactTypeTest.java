@@ -9,10 +9,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * {@code impactType} se deduce de {@code commonAncestorBatchId}, que Traceability define como el punto de partida (el lote fallado u
- * uno de sus antecesores) más cercano al lote fallado desde el que se llega al afectado.
- */
 class ImpactTypeTest {
 
     private final UUID failed = UUID.randomUUID();

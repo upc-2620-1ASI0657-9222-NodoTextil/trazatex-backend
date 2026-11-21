@@ -14,10 +14,6 @@ import static com.nodotextil.trazatex.traceability.application.dto.EventFields.n
 import static com.nodotextil.trazatex.traceability.application.dto.EventFields.positiveKg;
 import static com.nodotextil.trazatex.traceability.application.dto.EventFields.required;
 
-/**
- * {@code TransformationCompleted}: crea la transformación y las salidas; las entradas ya existen (no cambia su fase, llega con
- * su {@code BatchPhaseChanged}). {@code machineName}, {@code machineType} y {@code wasteReason} son opcionales.
- */
 public record ApplyTransformationCompletedCommand(
         UUID eventId,
         UUID transformationId,
@@ -51,7 +47,6 @@ public record ApplyTransformationCompletedCommand(
             boolean finalProduct) {
         this(batchId, traceabilityId, qrCode, materialType, quantityKg, composition, finalProduct, null);
     }
-
 
         public Output {
             required(batchId, "outputs.batchId");

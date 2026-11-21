@@ -11,7 +11,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.any;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Con una ventana corta (3 permisos por 2 s) se ve que Retry-After es verdad: pasado ese tiempo, se vuelve a poder. */
 @TestPropertySource(properties = {"trazatex.rate-limit.login.permits=3", "trazatex.rate-limit.login.window=PT2S", "test.case=rate-limit-recovery"})
 class RateLimitRecoveryTest extends GatewayTestSupport {
 

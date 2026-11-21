@@ -10,7 +10,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** Cada servicio expone su OpenAPI (springdoc); aquí se comprueba que describe las rutas de docs/architecture/api.md. */
 class OpenApiIT extends ApiTestBase {
 
     @Test

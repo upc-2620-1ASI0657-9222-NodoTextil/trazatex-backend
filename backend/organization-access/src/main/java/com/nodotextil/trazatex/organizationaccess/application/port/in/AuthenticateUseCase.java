@@ -5,6 +5,5 @@ import com.nodotextil.trazatex.organizationaccess.application.dto.LoginResult;
 
 public interface AuthenticateUseCase {
 
-    /** US05. */
     LoginResult login(LoginCommand command);
 }

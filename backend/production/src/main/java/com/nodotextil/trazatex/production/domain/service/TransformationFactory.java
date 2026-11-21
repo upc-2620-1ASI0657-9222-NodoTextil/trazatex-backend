@@ -13,11 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Factory Method de ADR-003: elige la {@link TransformationStrategy} del tipo y crea o reconstruye la
- * {@link Transformation}. Exige una estrategia por cada {@link TransformationType} al construirse, así que un tipo nuevo
- * sin su estrategia falla al arrancar y no en producción (RNF-09).
- */
 public final class TransformationFactory {
 
     private final Map<TransformationType, TransformationStrategy> strategies = new EnumMap<>(TransformationType.class);

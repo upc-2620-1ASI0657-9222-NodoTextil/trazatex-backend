@@ -47,7 +47,6 @@ class BatchController {
         return batches.register(request, actor);
     }
 
-    /** US13. {@code size} máximo 100 (si piden más se usa 100); orden: {@code createdAt} descendente, luego {@code id}. */
     @GetMapping
     @RequiresRole({Role.OPERATOR, Role.COMPANY_ADMIN})
     PageResult<BatchSummaryResult> search(@RequestParam(required = false) String traceabilityId,
@@ -82,7 +81,6 @@ class BatchController {
         return batches.split(batchId, request, actor);
     }
 
-    /** Reemplaza los datos comerciales del producto final por los enviados (los omitidos quedan vacíos). */
     @PutMapping("/{id}/commercial-data")
     @RequiresRole(Role.OPERATOR)
     BatchResult updateCommercialData(@PathVariable UUID id, @RequestBody CommercialDataInput request, Actor actor) {

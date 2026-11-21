@@ -15,7 +15,6 @@ class NotificationController {
     private final NotificationInboxService inbox;
     NotificationController(NotificationInboxService inbox) { this.inbox=inbox; }
 
-    /** Página de la bandeja (más recientes primero). {@code unread=true|false} filtra por lectura; {@code type} por código. */
     @GetMapping NotificationPage list(@RequestParam(required=false) Boolean unread,@RequestParam(required=false) String type,
             @RequestParam(defaultValue="0") int page,@RequestParam(defaultValue="20") int size,HttpServletRequest request) {
         return inbox.list(actor(request),unread,type,page,size);

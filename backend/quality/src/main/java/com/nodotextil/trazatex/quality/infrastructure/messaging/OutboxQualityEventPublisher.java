@@ -11,11 +11,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.Clock;
 
-/**
- * Escribe el evento en el outbox, en la transacción del caso de uso (ADR-004). Tópicos del catálogo
- * ({@code docs/architecture/communication.md}): {@code QualityControlCompleted} y {@code QualityStatusChanged} en {@code quality.control},
- * {@code FailureConfirmed} en {@code quality.failure}. Un evento sin ruta es un error de programación y falla en el momento.
- */
 @Component
 class OutboxQualityEventPublisher implements QualityEventPublisherPort {
 

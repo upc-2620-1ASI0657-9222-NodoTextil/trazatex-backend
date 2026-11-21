@@ -7,7 +7,6 @@ import com.nodotextil.trazatex.traceability.application.port.out.QualityDetailsP
 import com.nodotextil.trazatex.traceability.domain.model.graph.QualityTestValue;
 import org.springframework.stereotype.Service;
 
-/** Guarda en el grafo los valores de las pruebas y la causa de falla que llegan de Quality; la política decide después quién los ve. */
 @Service
 class QualityDetailsService implements ApplyQualityDetailsUseCase {
 

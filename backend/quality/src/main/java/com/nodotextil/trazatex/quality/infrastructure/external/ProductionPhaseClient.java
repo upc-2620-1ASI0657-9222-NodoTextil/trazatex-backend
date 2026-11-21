@@ -20,24 +20,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
 
-/**
- * {@code POST /internal/batches/{batchId}/phase-transitions} (ADR-009, docs/architecture/communication.md). Orden de las defensas, de afuera
- * hacia adentro: <b>Retry</b> (2 intentos en total, solo ante 5xx, timeout o error de red) → <b>Circuit Breaker</b> → llamada con timeout.
- * Cada intento usa el mismo {@code requestId}, y por eso repetir es seguro: Production es idempotente por {@code (batchId, requestId,
- * operation)}.
- *
- * <p>Qué cuenta como fallo para el circuit breaker: lo que no es una respuesta de Production (5xx, timeout, sin conexión). Un 409, 404 o
- * 400 es Production respondiendo con normalidad: no abre el circuito ni se reintenta.
- *
- * <p><b>No hay fallback que simule éxito</b>: si Production no responde el resultado es {@link PhaseCommandOutcome.Unavailable}, y quien
- * llama decide (el control sigue {@code STARTING} y el job lo repite). {@code Retry-After} del 503 no se usa: el retry de la petición
- * espera lo configurado y el job tiene su propia espera creciente.
- */
 public class ProductionPhaseClient implements ProductionPhasePort {
 
     private static final int MAX_BODY_BYTES = 64 * 1024;
 
-    /** Production no respondió con una decisión: se puede reintentar con el mismo {@code requestId}. */
     private static final class TransientProductionException extends RuntimeException {
         TransientProductionException(String message, Throwable cause) {
             super(message, cause);
@@ -100,7 +86,6 @@ public class ProductionPhaseClient implements ProductionPhasePort {
         return mapper.writeValueAsString(json);
     }
 
-    /** La tabla «Respuestas y cómo debe reaccionar Quality» de communication.md. */
     private PhaseCommandOutcome interpret(int status, String body) {
         if (status == 200) {
             return confirmed(body);
@@ -114,7 +99,6 @@ public class ProductionPhaseClient implements ProductionPhasePort {
         if (status >= 400) {
             return new PhaseCommandOutcome.Defective(status, errorCode(body, "HTTP_" + status), errorMessage(body, status));
         }
-        // 1xx, 3xx u otro 2xx: no es una respuesta del contrato y no se sabe si se aplicó
         throw new TransientProductionException("respuesta inesperada HTTP " + status, null);
     }
 
@@ -128,7 +112,6 @@ public class ProductionPhaseClient implements ProductionPhasePort {
         }
     }
 
-    /** El {@code ApiError.code} del cuerpo, acotado a lo que cabe en {@code quality_control.cancel_reason}. */
     private String errorCode(String body, String fallback) {
         String code = text(body, "code");
         if (code == null || code.isBlank()) {

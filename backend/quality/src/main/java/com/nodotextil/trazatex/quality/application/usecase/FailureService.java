@@ -22,10 +22,6 @@ import java.time.Clock;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * US26: completar la información y enviar a reevaluación (sin llamar a Production: el lote sigue retenido). El descarte (US27) sí llama a
- * Production y vive aparte, en {@link FailureDiscardService}, que no es transaccional.
- */
 @Service
 class FailureService implements ManageFailuresUseCase {
 

@@ -11,4 +11,3 @@ public class AnalyticsApplication {
         SpringApplication.run(AnalyticsApplication.class, args);
     }
 }
-

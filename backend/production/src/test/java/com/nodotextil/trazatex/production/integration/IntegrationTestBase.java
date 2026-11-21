@@ -37,11 +37,6 @@ import static com.nodotextil.trazatex.production.domain.Fixtures.COMPANY;
 import static com.nodotextil.trazatex.production.domain.Fixtures.OPERATOR;
 import static com.nodotextil.trazatex.production.domain.Fixtures.composition;
 
-/**
- * Base de las pruebas de integración: Spring completo + PostgreSQL real (Testcontainers, una sola instancia para toda la
- * corrida) y reloj controlable. Cada prueba parte de una base vacía. Sin broker por defecto (`trazatex.messaging.enabled=false`); las pruebas con Kafka real lo encienden.
- */
-// CLOUDINARY_URL vacía a propósito: aunque el entorno de quien corre las pruebas la tenga definida, nada sube a un Cloudinary real
 @SpringBootTest(properties = {"trazatex.messaging.enabled=false", "trazatex.cloudinary.url=", "trazatex.evidence.upload.enabled=false"})
 @AutoConfigureMockMvc
 @Import(IntegrationTestBase.TestBeans.class)
@@ -57,7 +52,6 @@ abstract class IntegrationTestBase {
         registry.add("spring.datasource.username", POSTGRES::getUsername);
         registry.add("spring.datasource.password", POSTGRES::getPassword);
         registry.add("trazatex.idempotency.cleanup-job-delay", () -> "PT24H");
-        // Captura las sentencias SQL reales que genera Hibernate (para comprobarlas con EXPLAIN)
         registry.add("spring.jpa.properties.hibernate.session_factory.statement_inspector", CapturingStatementInspector.class::getName);
     }
 
@@ -102,8 +96,6 @@ abstract class IntegrationTestBase {
         clock.advance(java.time.Duration.between(clock.instant(), START));
     }
 
-    // ---- Transacciones: cada bloque es una transacción (y un contexto de persistencia) distinta ----
-
     protected TransactionTemplate tx() {
         return new TransactionTemplate(transactionManager);
     }
@@ -116,14 +108,11 @@ abstract class IntegrationTestBase {
         tx().executeWithoutResult(status -> work.run());
     }
 
-    // ---- Datos de partida (por el dominio y los puertos reales) ----
-
     protected BatchFactory.Registration registration(String kg) {
         return new BatchFactory.Registration("Algodón Pima", "Fibra", composition("Algodón", "70", "Poliéster", "30"),
                 Quantity.ofKg(kg), "Piura", "Textiles del Norte", "Fibra limpia");
     }
 
-    /** Registra y guarda un lote de {@link com.nodotextil.trazatex.production.domain.Fixtures#COMPANY}. */
     protected Batch savedBatch(String kg) {
         return savedBatch(COMPANY, kg, START);
     }
@@ -157,10 +146,6 @@ abstract class IntegrationTestBase {
         inTx(() -> companies.save(CompanyProjection.of(companyId, "Empresa " + companyId.toString().substring(30), status, START)));
     }
 
-    /**
-     * Inserta {@code n} lotes registrados de la empresa por SQL (rápido: para volumen), del más reciente al más antiguo
-     * (un segundo de diferencia), con Traceability ID y QR de dígitos y una composición 100 % algodón.
-     */
     protected void bulkInsertBatches(UUID companyId, int n, int firstNumber) {
         jdbc.sql("""
                 INSERT INTO batches (id, traceability_id, qr_code, company_id, name, material_type, quantity_kg, current_stage,

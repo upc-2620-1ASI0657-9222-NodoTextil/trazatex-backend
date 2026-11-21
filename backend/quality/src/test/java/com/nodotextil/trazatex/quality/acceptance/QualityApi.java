@@ -17,14 +17,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
-/** El servicio por HTTP real (Tomcat en un puerto aleatorio), con la identidad que inyecta el Gateway. Los pasos solo hablan con Quality por aquí. */
 public class QualityApi {
 
     private final Environment environment;
     private final ObjectMapper json;
     private final HttpClient http = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build();
 
-    /** El puerto aleatorio se conoce cuando el servidor ya arrancó: se lee en el primer uso. */
     public QualityApi(Environment environment, ObjectMapper json) {
         this.environment = environment;
         this.json = json;
@@ -46,7 +44,6 @@ public class QualityApi {
         return send(jsonBody(identity(HttpRequest.newBuilder(URI.create(baseUrl() + path)), who), body, "PUT"));
     }
 
-    /** Una parte de un formulario multipart: un campo de texto (sin {@code filename}) o un archivo. */
     public record Part(String name, String filename, String contentType, byte[] content) {
         public static Part field(String name, Object value) {
             return new Part(name, null, null, value.toString().getBytes(StandardCharsets.UTF_8));

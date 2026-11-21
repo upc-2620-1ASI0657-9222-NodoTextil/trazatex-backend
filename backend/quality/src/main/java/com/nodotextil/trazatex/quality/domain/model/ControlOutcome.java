@@ -4,11 +4,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * El resultado de un control <b>finalizado</b>. Solo lo produce {@link QualityControl#finish}: el constructor no es público, así que
- * lo que cambia el estado de calidad del lote ({@link BatchProjection#apply}) y {@code everControlled} viene siempre de un control
- * que llegó a {@code FINISHED}; ni iniciar ni cancelar un control pasan por aquí.
- */
 public final class ControlOutcome {
 
     private final UUID controlId;
@@ -60,7 +55,6 @@ public final class ControlOutcome {
         return finishedAt;
     }
 
-    /** Las pruebas fallidas: la falla que se genera queda ligada al lote, al control y a estas pruebas. */
     public List<UUID> failedTestIds() {
         return failedTestIds;
     }
@@ -69,12 +63,10 @@ public final class ControlOutcome {
         return overallResult == TestResult.CONFORMING;
     }
 
-    /** El estado de calidad en que deja al lote (US25, US28, US34). */
     public QualityStatus newQualityStatus() {
         return conforming() ? QualityStatus.CONFORMING : QualityStatus.FAILED;
     }
 
-    /** {@code RELEASE} fija la retención en el mismo cambio: {@code false} si salió conforme, {@code true} si salió con falla. */
     public boolean qualityHold() {
         return !conforming();
     }

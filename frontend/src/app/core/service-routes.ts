@@ -1,25 +1,13 @@
-/**
- * Catálogo de TODAS las rutas `/api/**` que exponen los servicios (sin el prefijo `/api`), con la clase de plazo que
- * debe tener cada una según `timeouts.ts`. Solo lo usan las pruebas y `scripts/check-routes.mjs`; no entra en el bundle.
- *
- * - `npm test` comprueba que cada ruta cae en la clase indicada y que ninguna regla de `timeouts.ts` queda sin uso.
- * - `npm run check:routes` compara este catálogo con los controladores de `../backend` y falla si el backend tiene una
- *   ruta que no está aquí (es decir, una ruta nueva que nadie ha clasificado).
- *
- * Mantén una entrada por línea y con este formato exacto: el script la lee con una expresión regular.
- */
 export type ClasePlazo = 'estandar' | 'subida' | 'alta-empresa' | 'pdf' | 'quality';
 
 export interface RutaServicio {
   readonly method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   readonly path: string;
   readonly clase: ClasePlazo;
-  /** La petición lleva `FormData`. */
   readonly multipart?: true;
 }
 
 export const SERVICE_ROUTES: readonly RutaServicio[] = [
-  // organization-access
   { method: 'POST', path: '/auth/login', clase: 'estandar' },
   { method: 'GET', path: '/admin-requests', clase: 'estandar' },
   { method: 'POST', path: '/admin-requests', clase: 'estandar' },
@@ -38,7 +26,6 @@ export const SERVICE_ROUTES: readonly RutaServicio[] = [
   { method: 'PUT', path: '/privacy-settings', clase: 'estandar' },
   { method: 'GET', path: '/users', clase: 'estandar' },
   { method: 'PATCH', path: '/users/{id}/status', clase: 'estandar' },
-  // production
   { method: 'GET', path: '/batches', clase: 'estandar' },
   { method: 'POST', path: '/batches', clase: 'estandar' },
   { method: 'GET', path: '/batches/qr/{qrCode}', clase: 'estandar' },
@@ -65,12 +52,10 @@ export const SERVICE_ROUTES: readonly RutaServicio[] = [
   { method: 'GET', path: '/transformations/{id}/evidence', clase: 'estandar' },
   { method: 'POST', path: '/transformations/{id}/evidence', clase: 'subida', multipart: true },
   { method: 'DELETE', path: '/transformations/{id}/evidence/{evidenceId}', clase: 'estandar' },
-  // traceability
   { method: 'GET', path: '/traceability/lineages', clase: 'estandar' },
   { method: 'GET', path: '/traceability/batches/{batchId}/ancestors', clase: 'estandar' },
   { method: 'GET', path: '/traceability/batches/{batchId}/descendants', clase: 'estandar' },
   { method: 'GET', path: '/traceability/batches/{batchId}/lineage', clase: 'estandar' },
-  // quality
   { method: 'GET', path: '/quality/batches', clase: 'estandar' },
   { method: 'POST', path: '/quality/batches/{batchId}/controls', clase: 'quality' },
   { method: 'GET', path: '/quality/controls', clase: 'estandar' },
@@ -88,13 +73,10 @@ export const SERVICE_ROUTES: readonly RutaServicio[] = [
   { method: 'POST', path: '/quality/failures/{failureId}/reevaluation', clase: 'quality' },
   { method: 'GET', path: '/quality/failures/{id}/evidence', clase: 'estandar' },
   { method: 'DELETE', path: '/quality/failures/{id}/evidence/{evidenceId}', clase: 'quality' },
-  // notification
   { method: 'GET', path: '/notifications', clase: 'estandar' },
   { method: 'PUT', path: '/notifications/read-all', clase: 'estandar' },
   { method: 'GET', path: '/notifications/unread-count', clase: 'estandar' },
-  // una inexistente o ajena responde 404 `NOTIFICATION_NOT_FOUND` (ver API_ERROR en api-models.ts)
   { method: 'PATCH', path: '/notifications/{id}/read', clase: 'estandar' },
   { method: 'PUT', path: '/notifications/{id}/read', clase: 'estandar' },
-  // analytics
   { method: 'GET', path: '/analytics/summary', clase: 'estandar' },
 ];

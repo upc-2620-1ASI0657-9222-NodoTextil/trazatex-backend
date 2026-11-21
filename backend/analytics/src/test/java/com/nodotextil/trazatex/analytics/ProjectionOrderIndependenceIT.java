@@ -14,10 +14,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * I9: el resultado no depende del orden en que lleguen los eventos entre tópicos ni del reloj. Se entrega el mismo conjunto de eventos en 30
- * órdenes distintos (con una entrega repetida de cada uno) y el resumen tiene que ser siempre el mismo.
- */
 class ProjectionOrderIndependenceIT extends AnalyticsIntegrationTest {
     final UUID a = UUID.randomUUID(), b = UUID.randomUUID(), c = UUID.randomUUID();
     static final Instant T = Instant.parse("2026-10-10T10:00:00Z");
@@ -27,10 +23,9 @@ class ProjectionOrderIndependenceIT extends AnalyticsIntegrationTest {
         UUID lot1 = UUID.randomUUID(), lot2 = UUID.randomUUID(), transfer = UUID.randomUUID();
         events.add(envelope("BatchRegistered", lot1, Map.of("batchId", lot1, "companyId", a), T));
         events.add(envelope("BatchRegistered", lot2, Map.of("batchId", lot2, "companyId", a), T));
-        // lot1 pasa a b (v4) y luego a c (v7); las horas están al revés a propósito: v7 con la hora MÁS temprana
         events.add(phase(lot1, b, 4, T.plusSeconds(500)));
         events.add(phase(lot1, c, 7, T.plusSeconds(400)));
-        events.add(phase(lot1, a, 2, T.plusSeconds(900)));                         // v2 con el reloj más adelantado
+        events.add(phase(lot1, a, 2, T.plusSeconds(900)));
         events.add(envelope("QualityStatusChanged", lot1, Map.of("batchId", lot1, "companyId", a, "newStatus", "CONFORMING"), T.plusSeconds(60)));
         events.add(envelope("QualityStatusChanged", lot2, Map.of("batchId", lot2, "companyId", a, "newStatus", "FAILED"), T.plusSeconds(61)));
         events.add(envelope("TransferInitiated", transfer, Map.of("fromCompanyId", a, "toCompanyId", b), T));
@@ -67,18 +62,17 @@ class ProjectionOrderIndependenceIT extends AnalyticsIntegrationTest {
         for (int round = 0; round < 30; round++) {
             jdbc.sql("TRUNCATE analytics_event,batch_birth,batch_owner,batch_quality").update();
             List<String> shuffled = new ArrayList<>(events);
-            shuffled.addAll(events.subList(0, 4));                                      // entregas repetidas
+            shuffled.addAll(events.subList(0, 4));
             Collections.shuffle(shuffled, random);
             shuffled.forEach(projection::consume);
             String current = snapshot();
             if (expected == null) expected = current; else assertThat(current).as("orden %s", round).isEqualTo(expected);
         }
-        // y el dueño del lote 1 es «c» (v7), no «a» (v2, el reloj más adelantado) ni «b» (v4)
         Map<String, Long> ofA = new LinkedHashMap<>(), ofC = new LinkedHashMap<>();
         summary(a, "2026-10-01", "2026-10-31").path("quality").forEach(row -> ofA.put(row.path("status").asString(), row.path("count").asLong()));
         summary(c, "2026-10-01", "2026-10-31").path("quality").forEach(row -> ofC.put(row.path("status").asString(), row.path("count").asLong()));
-        assertThat(ofA).containsExactly(Map.entry("FAILED", 1L), Map.entry("NOT_REVIEWED", 1L));         // lot2 y la salida de la transformación; lot1 ya no es de «a»
-        assertThat(ofC).containsExactly(Map.entry("CONFORMING", 1L));                                     // lot1: v7
+        assertThat(ofA).containsExactly(Map.entry("FAILED", 1L), Map.entry("NOT_REVIEWED", 1L));
+        assertThat(ofC).containsExactly(Map.entry("CONFORMING", 1L));
         assertThat(summary(b, "2026-10-01", "2026-10-31").path("quality")).isEmpty();
     }
 }

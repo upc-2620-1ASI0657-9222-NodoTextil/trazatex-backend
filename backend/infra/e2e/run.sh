@@ -1,10 +1,7 @@
 #!/usr/bin/env bash
-# Cierre e2e de 06c en un stack AISLADO (proyecto `trazatex-e2e-final-api`): Kafka, PostgreSQL y Neo4j propios + Production, Traceability y Quality reales.
-# Nunca toca el docker-compose.yml de la raíz ni sus datos. Sin secretos en el repo: las contraseñas se generan en cada corrida y viven solo
-# en el entorno de esta ejecución. Uso: infra/e2e/run.sh [all | guard-test | down]   (ver README.md)
 set -euo pipefail
 
-PROJECT="trazatex-e2e-final-api"          # fijo: ningún argumento ni variable lo cambia
+PROJECT="trazatex-e2e-final-api"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 COMPOSE_FILE="$HERE/docker-compose.yml"
@@ -12,9 +9,6 @@ COMPOSE_FILE="$HERE/docker-compose.yml"
 compose() { docker compose -p "$PROJECT" -f "$COMPOSE_FILE" "$@"; }
 refuse() { echo "RECHAZADO: $*" >&2; exit 2; }
 
-# ---------------------------------------------------------------------------------------------------------------------------------------
-# El ÚNICO camino que borra volúmenes. Se niega para cualquier proyecto que no sea trazatex-e2e y comprueba que todo lo que va a borrar
-# pertenece a ese proyecto (etiqueta com.docker.compose.project de cada contenedor).
 safe_down() {
   local project="${1:-}"
   [[ "$project" == "trazatex-e2e-final-api" ]] || refuse "'down -v' solo se permite en el proyecto trazatex-e2e-final-api, no en '${project}'"
@@ -30,7 +24,6 @@ safe_down() {
 }
 
 if [[ "${1:-all}" == "guard-test" ]]; then
-  # Comprueba la guarda sin tocar Docker: debe rechazar el proyecto real y cualquier otro
   for other in trazatex trazatex-e2e trazatex-e2e-final "" otro-proyecto "trazatex-e2e-final-api-2"; do
     if (safe_down "$other") 2>/dev/null; then echo "FALLA: aceptó borrar volúmenes en '$other'"; exit 1; fi
   done
@@ -44,7 +37,6 @@ if [[ "${1:-all}" == "down" ]]; then
 fi
 [[ "${1:-all}" == "all" ]] || refuse "uso: run.sh [all | guard-test | down]"
 
-# ---------------------------------------------------------------------------------------------------------------------------------------
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/trazatex-e2e-final-api.XXXXXX")"
 PIDS=()
 STARTED=0
@@ -67,12 +59,11 @@ cleanup() {
 trap cleanup EXIT
 mkdir -p "$WORK/logs"
 
-# Contraseñas de esta corrida: aleatorias, solo en memoria
 E2E_PG_PASSWORD="$(openssl rand -hex 16)"; E2E_NEO4J_PASSWORD="$(openssl rand -hex 16)"
 export E2E_PG_PASSWORD E2E_NEO4J_PASSWORD
 
 check() { if [[ "$2" == "$3" ]]; then echo "  OK    $1: $2"; OK=$((OK+1)); else echo "  FALLA $1: esperado '$3', fue '$2'"; BAD=$((BAD+1)); fi; }
-wait_for() {  # descripción, comando que imprime lo observado, valor esperado, segundos
+wait_for() {
   local desc="$1" cmd="$2" want="$3" limit="${4:-60}" got="" end
   end=$((SECONDS+limit))
   while (( SECONDS < end )); do got="$(eval "$cmd" 2>/dev/null || true)"; [[ "$got" == "$want" ]] && break; sleep 1; done
@@ -88,17 +79,15 @@ kcmd() { compose exec -T kafka "$@"; }
 kcmd /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:29092 --create --topic orgaccess.company --partitions 1 --replication-factor 1 >/dev/null
 
 JAVA_COMMON=(env -i PATH="$PATH" HOME="$HOME" KAFKA_BOOTSTRAP_SERVERS=localhost:39092 CLOUDINARY_URL="")
-start_service() {  # nombre, puerto, variables...
+start_service() {
   local name="$1" port="$2" counter n; shift 2
-  # un log por arranque: reiniciar un servicio no pisa el log del anterior (bash 3.2 de macOS: sin arreglos asociativos)
   counter="STARTS_$name"; n=$(( ${!counter:-0} + 1 )); printf -v "$counter" '%s' "$n"
   "${JAVA_COMMON[@]}" SERVER_PORT="$port" "$@" java -jar "$ROOT/$name/target/$name-0.1.0-SNAPSHOT-exec.jar" >"$WORK/logs/$name-$n.log" 2>&1 &
   PIDS+=("$!")
 }
-wait_up() {  # puerto
+wait_up() {
   for _ in $(seq 1 90); do [[ "$(curl -s -o /dev/null -w '%{http_code}' "localhost:$1/api/none" 2>/dev/null)" != "000" ]] && return 0; sleep 1; done
 }
-# Retraso del grupo de consumo (suma de LAG); "sin-grupo" si aún no hay offsets confirmados
 group_lag() { kcmd /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server localhost:29092 --describe --group "$1" 2>/dev/null \
   | awk 'NR>1 && $6 ~ /^[0-9]+$/ {s+=$6; n++} END {if (n>0) print s; else print "sin-grupo"}'; }
 echo "== Arrancando Production (38082), Traceability (38084) y Quality (38083)"
@@ -118,10 +107,9 @@ start_quality() {
 start_quality
 for p in 38082 38083 38084; do wait_up "$p"; done
 
-# ---- identidades (el Gateway las inyectaría; aquí se mandan directo a cada servicio) ----
 A=00000000-0000-0000-0000-0000000000a1; B=00000000-0000-0000-0000-0000000000b1
 OP_A=00000000-0000-0000-0000-00000000a0a1; ADMIN_A=00000000-0000-0000-0000-00000000a0ad; ADMIN_B=00000000-0000-0000-0000-00000000b0ad
-call() {  # servicio-puerto método ruta usuario rol empresa [cuerpo]
+call() {
   local port="$1" method="$2" path="$3" user="$4" role="$5" company="$6" body="${7:-}"
   curl -s -w '\n%{http_code}' -X "$method" "localhost:$port$path" -H "X-User-Id: $user" -H "X-User-Role: $role" -H "X-Company-Id: $company" \
     -H 'Content-Type: application/json' ${body:+-d "$body"}
@@ -211,8 +199,6 @@ check "  es una Evaluación (nunca fue controlado)" "$(echo "$R" | body_of | py 
 K3="$(echo "$R" | body_of | py "['id']")"
 quality_as_admin POST "/api/quality/controls/$K3/tests" '{"criterionName":"Humedad","expectedValue":"8","obtainedValue":"7","unit":"%","testResult":"CONFORMING"}' >/dev/null
 check "finalizar conforme" "$(quality_as_admin POST "/api/quality/controls/$K3/finish" | code_of)" 200
-# Ronda 5b: en el primer intento esta comprobación síncrona vio «CONFORMING true» aunque Production ya había liberado el lote; se espera hasta 30 s
-# a la proyección de Quality (consistencia eventual). Si tarda, sigue siendo un hallazgo a revisar (ver PENDIENTES_E2E.md).
 SECONDS_BEFORE=$SECONDS
 wait_for "D3: Quality lo ve Conforme y sin retención" "db quality_db \"SELECT quality_status || ' ' || quality_hold FROM batch_projection WHERE batch_id='$D3'\"" "CONFORMING false" 30
 echo "  (la proyección de D3 tardó $((SECONDS-SECONDS_BEFORE)) s en reflejar el desbloqueo)"

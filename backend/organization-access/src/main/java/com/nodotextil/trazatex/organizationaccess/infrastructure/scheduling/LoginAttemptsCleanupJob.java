@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-/** Limpia {@code login_attempts}: sin esto la tabla crecería con cada correo inexistente que alguien pruebe. */
 @Component
 class LoginAttemptsCleanupJob {
 

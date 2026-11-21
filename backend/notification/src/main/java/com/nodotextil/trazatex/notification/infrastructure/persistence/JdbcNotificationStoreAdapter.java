@@ -20,7 +20,6 @@ import java.util.UUID;
 
 @Repository
 public class JdbcNotificationStoreAdapter implements NotificationStorePort {
-    /** Las notificaciones de este destinatario: su rol y empresa, y las dirigidas a él o a todos. */
     private static final String SCOPE = """
             n.recipient_role = :role AND n.company_id IS NOT DISTINCT FROM CAST(:company AS uuid)
             AND (n.recipient_user_id IS NULL OR n.recipient_user_id = :user)

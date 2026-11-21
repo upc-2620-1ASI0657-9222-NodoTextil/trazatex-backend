@@ -36,13 +36,6 @@ class EvidenceDeletionService implements DeleteEvidenceUseCase {
             audit.record(actor.userId(), actor.companyId(), "EVIDENCE_DELETED", "Evidence", evidenceId.toString(), java.util.Map.of("ownerId", ownerId.toString()));
         });
     }
-    /**
-     * M5: <b>sin red dentro de una transacción</b>. Tres pasos: elegir la siguiente (transacción corta), borrar la imagen en Cloudinary
-     * (sin transacción: puede tardar hasta el timeout y pasa por el circuit breaker) y quitar las referencias (otra transacción corta).
-     * Si la red falla para una evidencia, esa fila queda marcada y se aplaza ({@code deferPurge}: 10 s, 20 s ... hasta 5 min) y <b>se sigue con las
-     * demás</b>; el job la repite cuando vence la espera. Borrar es idempotente ({@code not found} cuenta como hecho), así que si dos
-     * instancias eligen la misma a la vez, ambas borran y la segunda no encuentra nada que purgar: no hay daño, solo una llamada de más.
-     */
     private static final Logger log=LoggerFactory.getLogger(EvidenceDeletionService.class);
     @Override
     public int purgeDeleted() {
@@ -54,7 +47,6 @@ class EvidenceDeletionService implements DeleteEvidenceUseCase {
             try {
                 storage.delete(id.toString());
             } catch (RuntimeException error) {
-                // una evidencia que falla no frena a las demás: se aplaza con espera creciente (en su propia transacción corta) y se sigue
                 log.warn("No se pudo borrar la imagen de una evidencia; se reintenta más tarde ({})", error.getClass().getSimpleName());
                 transaction.executeWithoutResult(status -> deletions.deferPurge(id, clock.instant()));
                 continue;

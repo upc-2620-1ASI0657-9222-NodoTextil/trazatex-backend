@@ -13,7 +13,6 @@ import com.nodotextil.trazatex.production.application.dto.SplitResult;
 
 import java.util.UUID;
 
-/** US12 registrar, US13 buscar, US14 consultar por QR, US15 dividir, US20 datos comerciales. */
 public interface ManageBatchesUseCase {
 
     BatchResult register(RegisterBatchCommand command, Actor actor);

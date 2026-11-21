@@ -13,12 +13,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * {@code BatchPhaseChanged.batchVersion} (docs/architecture/communication.md): el {@code @Version} del lote tras el cambio.
- * Traceability ordena con él los cambios de un lote que llegan por tópicos distintos, así que debe crecer en cada
- * {@code BatchPhaseChanged} del mismo lote <b>aunque entre medias llegue un {@code QualityStatusChanged}</b>, que sube la
- * versión sin publicar este evento (habrá saltos, nunca retrocesos ni repeticiones).
- */
 class BatchVersionOrderingIT extends ApiTestBase {
 
     @Autowired

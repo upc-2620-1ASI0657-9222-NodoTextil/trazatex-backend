@@ -21,11 +21,6 @@ import static com.nodotextil.trazatex.production.domain.Fixtures.availableBatch;
 import static com.nodotextil.trazatex.production.domain.Fixtures.batch;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * La regla de communication.md: todo cambio de fase o de retención por calidad queda anotado, sea cual sea la operación
- * (y solo ese): cada operación contra cada fase y cada valor de la retención, más una comprobación por reflexión de que
- * ninguna operación de {@link Batch} queda fuera de la tabla.
- */
 class BatchPhaseChangeTest {
 
     private enum Operation {
@@ -159,9 +154,6 @@ class BatchPhaseChangeTest {
         assertThat(finalProduct.hasPhaseChanges()).isFalse();
     }
 
-    // ---- completitud: ninguna operación de Batch queda fuera de la tabla ----
-
-    /** Métodos públicos de Batch que no son transiciones: lecturas, validaciones y datos que no tocan fase ni retención. */
     private static final Set<String> NOT_TRANSITIONS = Set.of("ensureEnabled", "ensurePhase", "updateCommercialData",
             "showQualityStatus", "isEnabled", "isFinalProduct", "qualityHold", "hasPhaseChanges");
 

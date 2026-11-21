@@ -8,10 +8,6 @@ import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
-/**
- * Base de las pruebas de integración: Spring completo + Neo4j real (Testcontainers, una sola instancia para toda la corrida).
- * Cada prueba parte de un grafo vacío; las restricciones (que crea el servicio al arrancar) se conservan.
- */
 @SpringBootTest(properties = "trazatex.messaging.enabled=false")
 @AutoConfigureMockMvc
 abstract class IntegrationTestBase {

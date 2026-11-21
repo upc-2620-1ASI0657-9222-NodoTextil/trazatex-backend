@@ -15,10 +15,6 @@ import static com.nodotextil.trazatex.traceability.application.usecase.FakeLinea
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * La búsqueda (US30): el QR es exacto para cualquiera; el Traceability ID es por prefijo solo sobre los lotes de la propia empresa y, en
- * los de otra, solo exacto (un prefijo como {@code TT-} no lista lotes ajenos).
- */
 class LineageSearchTest {
 
     private final FakeLineageReadPort graph = new FakeLineageReadPort();
@@ -27,8 +23,6 @@ class LineageSearchTest {
     private static List<String> traceabilityIds(VisibleBatchPage page) {
         return page.items().stream().map(VisibleBatchSummary::traceabilityId).toList();
     }
-
-    // ---- QR ----
 
     @Test
     void aQrCodeFindsABatchOfAnyCompanyByExactMatch() {
@@ -48,14 +42,12 @@ class LineageSearchTest {
 
     @Test
     void whatIsTypedByHandIsNormalizedLowercaseAndTheConfusableLetters() {
-        graph.batch("B011", COMPANY_B); // el Traceability ID TT-B011 y su QR QR-B011 (los códigos reales no tienen O, I ni L)
+        graph.batch("B011", COMPANY_B);
 
         assertThat(service.search(COMPANY_A, "qr-b0il", null, null, null).items()).as("minúsculas, I→1 y L→1").hasSize(1);
         assertThat(service.search(COMPANY_A, "QR-BOIL", null, null, null).items()).as("O→0, I→1 y L→1").hasSize(1);
         assertThat(service.search(COMPANY_A, null, "tt-bo1l", null, null).items()).as("Traceability ID exacto de otra empresa, con O→0 y L→1").hasSize(1);
     }
-
-    // ---- Traceability ID ----
 
     @Test
     void aPrefixListsTheOwnBatchesAndNeverThoseOfAnotherCompany() {
@@ -104,14 +96,12 @@ class LineageSearchTest {
     void incompleteBatchesNeverAppearInASearch() {
         graph.batch("AAA1", COMPANY_A).provisional("AAA2");
         graph.replace("AAA2", new com.nodotextil.trazatex.traceability.domain.model.graph.BatchData(FakeLineageReadPort.id("AAA2"), "TT-AAA2", "QR-AAA2", COMPANY_A, "Algodón",
-                null, null, false, false, FakeLineageReadPort.T0, null, null, null, null, null, false)); // le falta la fase
+                null, null, false, false, FakeLineageReadPort.T0, null, null, null, null, null, false));
 
         assertThat(traceabilityIds(service.search(COMPANY_A, null, "TT-AAA", null, null))).containsExactly("TT-AAA1");
         assertThat(service.search(COMPANY_A, "QR-AAA2", null, null, null).items()).isEmpty();
         assertThat(service.search(COMPANY_B, null, "TT-AAA2", null, null).items()).isEmpty();
     }
-
-    // ---- criterios y paginación ----
 
     @Test
     void aSearchWithoutAnyCriterionIsRejected() {
@@ -150,7 +140,6 @@ class LineageSearchTest {
 
     @Test
     void theForeignExactMatchTakesTheFirstSlotAndThePagesOfTheOwnBatchesFollowWithoutGapsOrRepeats() {
-        // "TT-A1" es el exacto de la otra empresa; mis lotes TT-A1x, TT-A2.. comparten el prefijo "TT-A1"? no: el prefijo propio es "TT-A1"
         graph.batch("A1", COMPANY_B);
         for (int i = 0; i < 5; i++) {
             graph.batch("A1" + i, COMPANY_A);

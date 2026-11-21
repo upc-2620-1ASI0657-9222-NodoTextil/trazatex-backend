@@ -26,10 +26,6 @@ import static com.nodotextil.trazatex.traceability.application.usecase.FakeLinea
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * El análisis de impacto de una falla confirmada (US33): la familia del lote fallado, qué se marca y su {@code commonAncestorBatchId}, sin Neo4j. Incluye una prueba
- * diferencial contra una implementación ingenua (un recorrido por punto de partida) en grafos aleatorios con semilla.
- */
 class ImpactAnalyzerTest {
 
     private final FakeLineageReadPort graph = new FakeLineageReadPort();
@@ -41,7 +37,6 @@ class ImpactAnalyzerTest {
 
     private final Map<UUID, String> registered = new HashMap<>();
 
-    /** Los afectados como {@code lote → antecesor común}, por nombre, para leerlos. */
     private Map<String, String> affected(ImpactResult result) {
         Map<String, String> out = new TreeMap<>();
         for (AffectedBatch batch : result.affected()) {
@@ -50,18 +45,14 @@ class ImpactAnalyzerTest {
         return out;
     }
 
-    /** Registra los nombres de los lotes para poder leer los resultados. */
     private void register(String... names) {
         for (String name : names) {
             registered.put(id(name), name);
         }
     }
 
-    // ---- el lote fallado sin antecesores ----
-
     @Test
     void aRegisteredBatchWithoutParentsThatWasSplitAndTransformedStillFindsItsDerivatives() {
-        // F no tiene padres. Se dividió en F1 y F2; F1 se mezcló con X (de otro origen) y dio U
         graph.batch("F", "F1", "F2", "X", "U").split("F", "F1", "F2").transform("T", List.of("F1", "X"), List.of("U"));
         graph.phase("F", BatchPhase.SPLIT).phase("F1", BatchPhase.PROCESSED).phase("X", BatchPhase.PROCESSED);
         register("F", "F1", "F2", "X", "U");
@@ -80,11 +71,8 @@ class ImpactAnalyzerTest {
         assertThat(affected(analyze("F"))).containsOnlyKeys("H1");
     }
 
-    // ---- hacia atrás y la misma familia ----
-
     @Test
     void aSiblingIsFoundThroughAHistoricAncestorAndTheAncestorItselfIsNotReturned() {
-        // G (dividido, histórico) → S (el fallado, descartado) y T (disponible)
         graph.batch("G", "S", "T").split("G", "S", "T");
         graph.phase("G", BatchPhase.SPLIT).phase("S", BatchPhase.DISCARDED);
         register("G", "S", "T");
@@ -119,8 +107,6 @@ class ImpactAnalyzerTest {
         assertThat(affected(analyze("S")).containsKey("X")).isEqualTo(phase == BatchPhase.AVAILABLE);
     }
 
-    // ---- qué estados de calidad cuentan (decisión del usuario: la regla literal) ----
-
     @ParameterizedTest
     @EnumSource(QualityStatus.class)
     void everyQualityStatusIsMarkedExceptFailed(QualityStatus status) {
@@ -139,11 +125,8 @@ class ImpactAnalyzerTest {
         assertThat(affected(analyze("S"))).as("la retención no excluye, y una segunda falla confirmada es información nueva").containsOnlyKeys("H", "P", "R");
     }
 
-    // ---- commonAncestorBatchId ----
-
     @Test
     void theNearestAncestorToTheFailedBatchWinsAndTheFailedBatchItselfIsTheClosestOfAll() {
-        // A2 → A1 → S; X desciende de A2 (por otra rama), de A1 y de S
         graph.batch("A2", "A1", "S", "X", "Y").split("A2", "A1").split("A1", "S");
         graph.transform("TX", List.of("A2", "A1", "S"), List.of("X"));
         graph.split("A2", "Y");
@@ -155,7 +138,6 @@ class ImpactAnalyzerTest {
 
     @Test
     void whenTwoAncestorsAreEquallyCloseTheSmallerBatchIdWins() {
-        // P y Q son las dos entradas (nivel 1) de la transformación que produjo S; X sale de mezclar P y Q
         graph.batch("P", "Q", "S", "X").transform("TS", List.of("P", "Q"), List.of("S")).transform("TX", List.of("P", "Q"), List.of("X"));
         graph.phase("P", BatchPhase.PROCESSED).phase("Q", BatchPhase.PROCESSED).phase("S", BatchPhase.DISCARDED);
         register("P", "Q", "S", "X");
@@ -166,7 +148,6 @@ class ImpactAnalyzerTest {
 
     @Test
     void theLevelIsTheDistanceBackwardsFromTheFailedBatchNotTheDistanceToTheAffected() {
-        // A1 (nivel 1) llega a X por una cadena larga; A2 (nivel 2) llega directo: gana A1 aunque esté más lejos de X
         graph.batch("A2", "A1", "S", "X", "m1", "m2", "m3").split("A2", "A1").split("A1", "S").split("A1", "m1").split("m1", "m2").split("m2", "m3").split("m3", "X");
         graph.split("A2", "X");
         graph.phase("A2", BatchPhase.SPLIT).phase("A1", BatchPhase.SPLIT).phase("S", BatchPhase.DISCARDED).phase("m1", BatchPhase.SPLIT).phase("m2", BatchPhase.SPLIT)
@@ -178,7 +159,6 @@ class ImpactAnalyzerTest {
 
     @Test
     void anAncestorThatIsStillAvailableBelongsToTheFamilyAndIsItsOwnCommonAncestor() {
-        // un dato atrasado deja a un antecesor como AVAILABLE
         graph.batch("A", "S").split("A", "S");
         graph.phase("S", BatchPhase.DISCARDED);
         register("A", "S");
@@ -198,8 +178,6 @@ class ImpactAnalyzerTest {
         assertThat(first).hasSize(5);
     }
 
-    // ---- sin filtro B2B ----
-
     @Test
     void batchesOfEveryCompanyAreSeenAndReportedWithTheirOwnCompany() {
         graph.batch("S", COMPANY_A).batch("B1", COMPANY_B).batch("A1", COMPANY_A).split("S", "B1", "A1");
@@ -211,11 +189,9 @@ class ImpactAnalyzerTest {
         assertThat(result.affected().stream().filter(a -> a.batchId().equals(id("B1"))).findFirst().orElseThrow().companyId()).isEqualTo(COMPANY_B);
     }
 
-    // ---- límite de niveles ----
-
     @Test
     void tenLevelsForwardFromTheFailedBatchAreReviewedAndTheEleventhIsNotAndSaysSo() {
-        graph.chain("n", 13); // n0 → … → n12; el fallado es n0
+        graph.chain("n", 13);
         for (int i = 0; i <= 12; i++) {
             register("n" + i);
         }
@@ -241,7 +217,6 @@ class ImpactAnalyzerTest {
 
     @Test
     void tenLevelsBackwardAreStartingPointsAndTheEleventhIsNotButItsDescendantsOfTheLimitAreStillReachedFromTheNearerOnes() {
-        // a0 → a1 → … → a12 = el fallado; cada ai (i < 12) también tiene una hoja li
         graph.chain("a", 13);
         for (int i = 0; i < 12; i++) {
             graph.batch("l" + i).split("a" + i, "l" + i);
@@ -257,12 +232,9 @@ class ImpactAnalyzerTest {
 
         ImpactResult result = analyze("a12");
 
-        // los antecesores a2…a11 (niveles 10…1) son puntos de partida: sus hojas salen. a1 y a0 (niveles 11 y 12) no
         assertThat(affected(result).keySet()).contains("l2", "l11").doesNotContain("l0", "l1");
         assertThat(result.truncated()).as("había antecesores más allá de 10 niveles").isTrue();
     }
-
-    // ---- nodos incompletos ----
 
     @Test
     void aProvisionalBatchInTheFamilyForwardMakesTheAnalysisRetryableAndNamesIt() {
@@ -309,7 +281,6 @@ class ImpactAnalyzerTest {
 
     @Test
     void anIncompleteNodeOutsideTheFamilyDoesNotBlockTheAnalysis() {
-        // U se mezcla con Z, que nadie conoce (provisional): Z no desciende de nada de la familia ni es su antecesor
         graph.batch("S", "X", "U").split("S", "X").provisional("Z").transform("T", List.of("X", "Z"), List.of("U"));
         register("S", "X", "U");
 
@@ -332,8 +303,6 @@ class ImpactAnalyzerTest {
         assertThat(ImpactAnalysisIncompleteException.class.getSuperclass()).isEqualTo(RuntimeException.class);
     }
 
-    // ---- sin familia ----
-
     @Test
     void aFailedBatchWithNoRelativesHasNoAffected() {
         graph.batch("S");
@@ -348,11 +317,8 @@ class ImpactAnalyzerTest {
         assertThat(analyze("S").affected()).isEmpty();
     }
 
-    // ---- costo: no enumera caminos ni hace una pasada por antecesor ----
-
     @Test
     void theNumberOfLevelCallsDoesNotGrowWithTheNumberOfAncestorsOrNodes() {
-        // 60 antecesores directos (entradas de una mezcla que produjo S), cada uno con 3 hijos: más de 240 nodos
         List<String> ancestors = new ArrayList<>();
         graph.batch("S");
         for (int i = 0; i < 60; i++) {
@@ -364,7 +330,6 @@ class ImpactAnalyzerTest {
         ImpactResult result = analyze("S");
 
         assertThat(result.affected()).hasSize(60 + 180);
-        // hacia atrás: 2 niveles (el de las entradas y el vacío); hacia adelante: 2 niveles. Nunca una llamada por antecesor
         assertThat(graph.levelCalls()).as("llamadas de nivel").isLessThanOrEqualTo(2 * (10 + 1));
     }
 
@@ -391,9 +356,6 @@ class ImpactAnalyzerTest {
         assertThat(result.affected()).extracting(AffectedBatch::batchId).containsExactlyInAnyOrder(id("A"), id("B"));
     }
 
-    // ---- prueba diferencial contra una implementación ingenua ----
-
-    /** Un grafo aleatorio por capas que se carga en el Fake y se resuelve aparte con el oráculo. */
     private static final class RandomGraph {
         final Map<String, Set<String>> children = new LinkedHashMap<>();
         final Map<String, BatchPhase> phase = new LinkedHashMap<>();
@@ -479,7 +441,6 @@ class ImpactAnalyzerTest {
 
             ImpactResult actual = analyzer.analyze(id(failed));
 
-            // el oráculo, aparte: un recorrido por punto de partida, sin atajos
             Map<String, Set<String>> parents = new LinkedHashMap<>();
             random.children.forEach((parent, kids) -> kids.forEach(kid -> parents.computeIfAbsent(kid, key -> new HashSet<>()).add(parent)));
             Map<String, Integer> backward = distances(parents, failed, 10);
@@ -504,7 +465,6 @@ class ImpactAnalyzerTest {
                     expected.put(node, start);
                 }
             });
-            // truncado: quedaba un antecesor más allá de 10 niveles o un nodo que un punto de partida alcanzaría en el nivel 11 y mejoraría lo que ya se sabe
             boolean truncated = distances(parents, failed, 11).containsValue(11);
             for (String start : backward.keySet()) {
                 Map<String, Integer> deep = distances(random.children, start, 11);

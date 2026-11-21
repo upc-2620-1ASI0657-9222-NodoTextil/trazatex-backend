@@ -9,7 +9,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** ADR-005: el Gateway toma de aquí las claves públicas (y las guarda en caché) para validar los JWT. */
 class JwksApiIT extends IntegrationTestBase {
 
     @Test

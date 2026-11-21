@@ -29,7 +29,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
-/** El generador de PDF real (Thymeleaf + OpenHTMLtoPDF): su contenido, el escape, que NO carga nada de afuera, el tiempo máximo y el tope de generaciones. */
 class OpenHtmlToPdfAdapterTest {
 
     static WireMockServer outside;
@@ -90,8 +89,6 @@ class OpenHtmlToPdfAdapterTest {
         }
     }
 
-    // ---- contenido ----
-
     @Test
     void theReportCarriesTheControlTheBatchTheDatesInLimaAndEveryTestWithItsRemarks() throws IOException {
         String content = rendered(report(test("Resistencia a la tracción", "dentro del rango"),
@@ -99,7 +96,7 @@ class OpenHtmlToPdfAdapterTest {
 
         assertThat(content).contains("Reporte de control de calidad").contains("11111111-2222-3333-4444-555555555555").contains("TT-ABCDEFGHJK")
                 .contains("Evaluación").contains("Con falla")
-                .contains("23/10/2026 07:00").contains("23/10/2026 08:30")      // UTC-5
+                .contains("23/10/2026 07:00").contains("23/10/2026 08:30")
                 .contains("24/10/2026 10:05")
                 .contains("Resistencia a la tracción").contains("52,3").contains("dentro del rango")
                 .contains("Humedad").contains("Conforme").contains("no se almacena");
@@ -123,8 +120,6 @@ class OpenHtmlToPdfAdapterTest {
         assertThat(OpenHtmlToPdfAdapter.clean(null)).isEmpty();
     }
 
-    // ---- lo que escribe el usuario nunca es marcado ----
-
     @Test
     void whatTheUserWritesIsTextEvenIfItLooksLikeMarkupAndNothingIsRequestedFromOutside() throws IOException {
         String hostile = "<img src=\"" + outside.baseUrl() + "/espia.png\"/> <script>alert(1)</script> <a href=\"" + outside.baseUrl() + "\">clic</a>";
@@ -135,8 +130,6 @@ class OpenHtmlToPdfAdapterTest {
         assertThat(outside.getAllServeEvents()).as("ninguna petición a la red").isEmpty();
         assertThat(adapter.blockedFetches()).isZero();
     }
-
-    // ---- el generador no puede cargar recursos externos ----
 
     private static String xhtml(String head, String body) {
         return "<html xmlns=\"http://www.w3.org/1999/xhtml\"><head><title>t</title>" + head + "</head><body>" + body + "</body></html>";
@@ -160,7 +153,6 @@ class OpenHtmlToPdfAdapterTest {
                 byte[] pdf = adapter.renderWithinLimits(document);
                 assertThat(new String(pdf, 0, 5)).isEqualTo("%PDF-");
             } catch (PdfGenerationException tolerated) {
-                // rechazarlo también es válido: lo que no puede pasar es salir a la red
             }
         }
 
@@ -178,8 +170,6 @@ class OpenHtmlToPdfAdapterTest {
 
         assertThat(outside.getAllServeEvents()).isEmpty();
     }
-
-    // ---- límites ----
 
     @Test
     void aGenerationThatTakesTooLongFailsAndCanBeRetried() throws IOException {

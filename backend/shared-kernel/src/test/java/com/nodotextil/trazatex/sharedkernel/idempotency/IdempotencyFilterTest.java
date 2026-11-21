@@ -53,8 +53,6 @@ class IdempotencyFilterTest {
         executions = new AtomicInteger();
     }
 
-    // --- Lo que el filtro no toca ---------------------------------------------------------------------------------
-
     @Test
     void lecturasPasanSinTransaccionNiAlmacen() throws Exception {
         MockHttpServletRequest request = request("GET", "/batches", KEY, USER, "");
@@ -120,8 +118,6 @@ class IdempotencyFilterTest {
         assertThat(executions).hasValue(0);
     }
 
-    // --- Rechazos antes de ejecutar ---------------------------------------------------------------------------------
-
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = {"   "})
@@ -149,8 +145,6 @@ class IdempotencyFilterTest {
         assertThat(errorCode(response)).isEqualTo(IdempotencyFilter.INVALID_IDEMPOTENCY_KEY);
         assertThat(executions).hasValue(0);
     }
-
-    // --- Camino feliz y repetición ---------------------------------------------------------------------------------
 
     @Test
     void claveNuevaEjecutaUnaVezGuardaLaRespuestaYConfirma() throws Exception {
@@ -224,8 +218,6 @@ class IdempotencyFilterTest {
         assertThat(replay.getContentAsByteArray()).isEmpty();
     }
 
-    // --- Claves reutilizadas con otra petición ---------------------------------------------------------------------------------
-
     @Test
     void mismaClaveConOtroCuerpoDevuelve422YConservaLaRespuestaOriginal() throws Exception {
         send("POST", "/batches", KEY, USER, "{\"kg\":10}", respondingWith(201, CREATED));
@@ -258,8 +250,6 @@ class IdempotencyFilterTest {
         assertThat(conflict.getContentAsString()).doesNotContain("b-1");
         assertThat(executions).hasValue(1);
     }
-
-    // --- Rollback por código de estado y por excepción ---------------------------------------------------------------------------------
 
     @ParameterizedTest
     @ValueSource(ints = {302, 400, 404, 409, 422, 500})
@@ -315,7 +305,7 @@ class IdempotencyFilterTest {
         FilterChain useCaseSwallowingFailure = (req, res) -> {
             executions.incrementAndGet();
             new TransactionTemplate(transactionManager).execute(tx -> {
-                tx.setRollbackOnly(); // el caso de uso se une a la transacción del filtro y la marca rollback-only
+                tx.setRollbackOnly();
                 return null;
             });
             res.setContentType("application/json");
@@ -337,8 +327,6 @@ class IdempotencyFilterTest {
         assertThat(executions).hasValue(2);
     }
 
-    // --- Caducidad ---------------------------------------------------------------------------------
-
     @Test
     void antesDe24HorasSeRepiteLaRespuestaYDespuesSeEjecutaDeNuevo() throws Exception {
         send("POST", "/batches", KEY, USER, "{}", respondingWith(201, CREATED));
@@ -354,8 +342,6 @@ class IdempotencyFilterTest {
         assertThat(afterExpiry.getContentAsString()).isEqualTo("{\"id\":\"b-2\"}");
         assertThat(store.stored(KEY).orElseThrow().responseBody()).isEqualTo("{\"id\":\"b-2\"}");
     }
-
-    // --- Concurrencia: la PK serializa las peticiones con la misma clave ---------------------------------------------------------------------------------
 
     @Test
     void dosPeticionesSimultaneasConLaMismaClaveEjecutanUnaSolaVez() throws Exception {
@@ -410,14 +396,9 @@ class IdempotencyFilterTest {
         assertThat(store.size()).isEqualTo(1);
     }
 
-    // --- Ayudas ---------------------------------------------------------------------------------
-
-    // --- multipart: el hash es de las partes, no del cuerpo crudo --------------------------------------------------
-
     private static MockHttpServletRequest multipart(String uri, String boundary, String key, String user, Part... parts) {
         MockHttpServletRequest request = new MockHttpServletRequest("POST", uri);
         request.setContentType("multipart/form-data; boundary=" + boundary);
-        // el cuerpo crudo cambia con el separador; las partes no
         request.setContent(("--" + boundary + "--").getBytes(StandardCharsets.UTF_8));
         request.addHeader("Idempotency-Key", key);
         request.addHeader("X-User-Id", user);
@@ -484,7 +465,6 @@ class IdempotencyFilterTest {
 
     @Test
     void elContenidoDeUnaParteNoSePuedeConfundirConElNombreDeLaSiguiente() throws Exception {
-        // "ab" + "c" frente a "a" + "bc": sin longitudes por delante darían el mismo hash
         filter.doFilter(multipart("/x", "A", KEY, USER, photo("ab", "f", "text/plain", "c")), new MockHttpServletResponse(), respondingWith(201, CREATED));
         MockHttpServletResponse response = new MockHttpServletResponse();
 
@@ -580,7 +560,6 @@ class IdempotencyFilterTest {
     private record Call(Thread thread, CompletableFuture<MockHttpServletResponse> response) {
     }
 
-    /** Lanza la petición en su propio hilo para poder observar si queda bloqueada esperando la clave. */
     private Call start(FilterChain chain) {
         CompletableFuture<MockHttpServletResponse> response = new CompletableFuture<>();
         Thread thread = new Thread(() -> {

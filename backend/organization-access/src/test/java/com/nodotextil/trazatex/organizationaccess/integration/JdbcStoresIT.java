@@ -21,10 +21,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * El contrato SQL de los puertos del shared-kernel contra PostgreSQL real (deuda de la fase 01):
- * {@code ON CONFLICT DO NOTHING} con bloqueo de la PK y {@code FOR UPDATE SKIP LOCKED}.
- */
 class JdbcStoresIT extends IntegrationTestBase {
 
     @Autowired
@@ -37,8 +33,6 @@ class JdbcStoresIT extends IntegrationTestBase {
     TransactionTemplate tx() {
         return new TransactionTemplate(transactionManager);
     }
-
-    // ---- idempotency_keys ----
 
     @Test
     void reserveCompleteFindAndDelete() {
@@ -131,8 +125,6 @@ class JdbcStoresIT extends IntegrationTestBase {
             pool.shutdownNow();
         }
     }
-
-    // ---- outbox ----
 
     private OutboxMessage message(int n) {
         return new OutboxMessage(UUID.randomUUID(), "Company", "agg-" + n, "CompanyRegistered", "orgaccess.company",

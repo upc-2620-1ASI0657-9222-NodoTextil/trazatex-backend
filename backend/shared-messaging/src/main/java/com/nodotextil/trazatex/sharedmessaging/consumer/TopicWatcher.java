@@ -11,22 +11,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Los tópicos que un servicio consume pero no es dueño (los de otros servicios) pueden no existir todavía: el broker no crea tópicos
- * solos (ver docs/conventions.md) y el dueño puede arrancar después, o llegar en otro sprint. Un consumidor suscrito a un tópico ausente
- * escribe un {@code UNKNOWN_TOPIC_OR_PARTITION} cada segundo, sin parar. Por eso esos contenedores se declaran con
- * {@code autoStartup = "false"} y este vigilante pregunta con <b>una</b> llamada {@code listTopics} por pasada cuáles existen y
- * arranca los contenedores de los que ya están; no consulta nada cuando todos ya arrancaron. Los grupos son nuevos, así que leen desde
- * el principio ({@code earliest}).
- *
- * <p>No programa nada por sí mismo (como {@code OutboxRelay}): cada servicio crea el bean con sus {@link Source} y llama a
- * {@link #startConsumersWhoseTopicExists()} desde su {@code @Scheduled}, con el intervalo que quiera.
- */
 public class TopicWatcher {
 
     private static final Logger log = LoggerFactory.getLogger(TopicWatcher.class);
 
-    /** Un contenedor ({@code @KafkaListener(id = ...)}) y el tópico ajeno que lee. */
     public record Source(String listenerId, String topic) {
     }
 
@@ -40,7 +28,6 @@ public class TopicWatcher {
         this.sources = List.copyOf(sources);
     }
 
-    /** Una pasada: arranca los contenedores detenidos cuyo tópico ya existe. Sin contenedores detenidos no llama al broker. */
     public void startConsumersWhoseTopicExists() {
         boolean anyStopped = sources.stream().anyMatch(source -> isStopped(registry.getListenerContainer(source.listenerId())));
         if (!anyStopped) {

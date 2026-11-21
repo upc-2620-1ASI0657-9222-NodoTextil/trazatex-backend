@@ -15,13 +15,10 @@ headers {
 }
 
 script:pre-request {
-  // La invitación sale a Kafka cuando el relay del outbox la publica (~1 s tras el commit): sin esta espera se encontraría el enlace
-  // de una ejecución anterior para el mismo correo
   await bru.sleep(2000);
 }
 
 script:post-response {
-  // Kafka UI entrega los mensajes como eventos SSE ("data: {...}"). Se toma el ÚLTIMO InvitationCreated de ese correo
   const wanted = (bru.getEnvVar("operatorBEmail") || "").toLowerCase();
   let found = null;
   String(res.body).split("\n").forEach(function (line) {

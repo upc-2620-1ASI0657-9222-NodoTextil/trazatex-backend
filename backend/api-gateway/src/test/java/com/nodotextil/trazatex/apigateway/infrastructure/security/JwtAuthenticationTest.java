@@ -24,7 +24,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** 03b: rutas protegidas exigen un JWT RS256 válido (clave del JWKS por kid); las tres públicas no. */
 class JwtAuthenticationTest extends GatewayTestSupport {
 
     private static final String PROTECTED = "/api/companies";
@@ -145,8 +144,6 @@ class JwtAuthenticationTest extends GatewayTestSupport {
         return org.junit.jupiter.params.provider.Arguments.of(description, claims);
     }
 
-    // ---- rutas públicas
-
     @Test
     void lasTresRutasPublicasPasanSinToken() {
         anonymous.post().uri("/api/auth/login").contentType(MediaType.APPLICATION_JSON).bodyValue("{}").exchange().expectStatus().isOk();
@@ -158,7 +155,6 @@ class JwtAuthenticationTest extends GatewayTestSupport {
 
     @Test
     void lasRutasPublicasPasanTambienConUnTokenInvalido() {
-        // El token de una sesión vencida no debe impedir iniciar sesión de nuevo ni aceptar una invitación
         anonymous.post().uri("/api/auth/login").header(HttpHeaders.AUTHORIZATION, "Bearer basura").contentType(MediaType.APPLICATION_JSON)
                 .bodyValue("{}").exchange().expectStatus().isOk();
     }
@@ -209,7 +205,6 @@ class JwtAuthenticationTest extends GatewayTestSupport {
 
     @Test
     void rutasSinServicioNoSeDelatanComo401() {
-        // Sin ruta no hay filtros: 404 aunque no haya token (no se revela nada y no hay nada que proteger)
         anonymous.get().uri("/api/no-registrado/resource").exchange().expectStatus().isNotFound();
         anonymous.get().uri("/internal/batches/11111111-1111-1111-1111-111111111111/phase-transitions")
                 .exchange().expectStatus().isNotFound();

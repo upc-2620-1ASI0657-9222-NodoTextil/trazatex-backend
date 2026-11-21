@@ -7,7 +7,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Los nombres son los del glosario y de {@code organization-access.md}: si alguien los cambia, esta prueba lo nota. */
 class DomainEnumsTest {
 
     private static List<String> names(Enum<?>[] values) {

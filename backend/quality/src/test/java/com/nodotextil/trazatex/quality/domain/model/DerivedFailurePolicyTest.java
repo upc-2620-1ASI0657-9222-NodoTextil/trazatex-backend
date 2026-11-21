@@ -16,10 +16,7 @@ import static com.nodotextil.trazatex.quality.domain.Fixtures.id;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** US34 / RF-060 (decisión del usuario, 2026-10-23): POTENTIAL_DERIVED_FAILURE implica qualityHold = true. */
 class DerivedFailurePolicyTest {
-
-    // ---- los casos A, B y C ----
 
     @Test
     void caseA_anAvailableBatchWithoutHoldIsHeldNowAndTheAlertStartsPending() {
@@ -88,8 +85,6 @@ class DerivedFailurePolicyTest {
         assertThat(sending).isEqualTo(1);
     }
 
-    // ---- ImpactedBatch ----
-
     @Test
     void theAlertIsAlwaysRecordedWithItsImpactTypeAndTheDecisionsLockStatus() {
         UUID failure = id();
@@ -123,21 +118,12 @@ class DerivedFailurePolicyTest {
         }
     }
 
-    // ---- Una transferencia en curso (decisión del usuario, 2026-10-23) ----
-
-    /**
-     * El lote está en una transferencia en curso cuando llega el aviso: no se retiene ni cambia su calidad (POTENTIAL_DERIVED_FAILURE
-     * exige retención). Al aceptarse, Production publica BatchPhaseChanged → AVAILABLE con la empresa receptora; entonces se vuelve
-     * a decidir, se manda el HOLD y recién con su confirmación cambia la calidad: el lote queda retenido en la empresa receptora.
-     * (El flujo completo con Production y Kafka reales se prueba en 06c.)
-     */
     @Test
     void aBatchInTransferIsHeldInTheReceivingCompanyOnceTheTransferIsAccepted() {
         UUID failure = id();
         UUID source = id();
         BatchProjection batch = BatchProjection.restore(id(), COMPANY, BatchPhase.IN_TRANSFER, false, QualityStatus.CONFORMING, true, 3, NOW);
 
-        // 1. llega el aviso con el lote en transferencia
         DerivedFailureDecision first = DerivedFailurePolicy.decide(batch);
         ImpactedBatch alert = ImpactedBatch.detect(failure, source, batch.batchId(), source, first);
         assertThat(first).isEqualTo(DerivedFailureDecision.WAIT_FOR_AVAILABLE);
@@ -145,12 +131,10 @@ class DerivedFailurePolicyTest {
         assertThat(batch.qualityStatus()).as("la calidad no cambia sin retención").isEqualTo(QualityStatus.CONFORMING);
         assertThat(batch.qualityHold()).isFalse();
 
-        // 2. se acepta la transferencia: el lote vuelve a AVAILABLE, ahora en la empresa receptora
         assertThat(batch.applyPhaseChanged(OTHER_COMPANY, BatchPhase.AVAILABLE, false, 4, NOW.plusSeconds(30))).isTrue();
         DerivedFailureDecision second = DerivedFailurePolicy.decide(batch);
         assertThat(second).isEqualTo(DerivedFailureDecision.HOLD_NOW);
 
-        // 3. el HOLD (requestId = failureId) se confirma: recién ahí cambia la calidad y el aviso queda aplicado
         QualityStatusChange change = batch.applyConfirmedDerivedHold(NOW.plusSeconds(31));
         alert.markApplied();
 
@@ -163,7 +147,7 @@ class DerivedFailurePolicyTest {
     @Test
     void aBatchInTransferThatTheTransferLeavesAlreadyRetainedNeedsNoHold() {
         BatchProjection batch = BatchProjection.restore(id(), COMPANY, BatchPhase.IN_TRANSFER, false, QualityStatus.NOT_REVIEWED, false, 3, NOW);
-        batch.applyPhaseChanged(OTHER_COMPANY, BatchPhase.AVAILABLE, true, 4, NOW);   // otra falla lo retuvo mientras tanto
+        batch.applyPhaseChanged(OTHER_COMPANY, BatchPhase.AVAILABLE, true, 4, NOW);
 
         assertThat(DerivedFailurePolicy.decide(batch)).isEqualTo(DerivedFailureDecision.ALREADY_RETAINED);
     }

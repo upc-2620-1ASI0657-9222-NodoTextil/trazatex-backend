@@ -19,7 +19,6 @@ import java.util.UUID;
 
 import static com.nodotextil.trazatex.quality.infrastructure.messaging.ProductionEventListeners.require;
 
-/** {@code production.transformation}: {@code TransformationCompleted} da a conocer las salidas (no llevan {@code BatchRegistered}). */
 @Component
 @ConditionalOnProperty(name = "trazatex.messaging.enabled", havingValue = "true", matchIfMissing = true)
 class TransformationEventsListener {

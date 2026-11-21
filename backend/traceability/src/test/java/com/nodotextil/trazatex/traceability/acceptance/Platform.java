@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Lo que los escenarios hacen con el mundo exterior: publicar como los demás servicios y mirar el grafo. */
 public class Platform {
 
     private static final ObjectMapper MAPPER = JsonMapper.builder().build();
@@ -34,7 +33,6 @@ public class Platform {
         this.neo4j = neo4j;
     }
 
-    /** Publica los mensajes en sus tópicos, en este orden, y espera a que traceability los haya procesado todos. */
     public void publishAndAwait(List<Message> messages) {
         for (Message message : messages) {
             try {
@@ -52,10 +50,6 @@ public class Platform {
                         .bind(eventIds.stream().map(Object::toString).toList()).to("ids").fetch().one().orElseThrow().get("n")).isEqualTo((long) eventIds.size()));
     }
 
-    /**
-     * Lo que traceability publicó en {@code traceability.impact} para esta falla (la clave del mensaje es el {@code failureId}): espera a que el relay del outbox lo
-     * entregue y devuelve el sobre completo. Falla si en un minuto no aparece.
-     */
     public JsonNode awaitImpact(UUID failureId) {
         try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(Map.<String, Object>of(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, AcceptanceKafka.CONTAINER.getBootstrapServers(),
                 ConsumerConfig.GROUP_ID_CONFIG, "escenario-" + UUID.randomUUID(), ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest", ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false,
@@ -77,7 +71,6 @@ public class Platform {
         }
     }
 
-    /** Un escenario empieza con el grafo vacío. */
     public void emptyGraph() {
         neo4j.query("MATCH (n) DETACH DELETE n").run();
     }

@@ -12,7 +12,6 @@ import { SHARED, UiService } from '../shared/ui';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page page--privacidad">
-      
 
       <app-subnav panel="privacidad" [items]="vistas()" [(active)]="vista" label="Categorías de privacidad" />
       <div appTabPanel="privacidad" [tabActive]="vista()">
@@ -104,4 +103,3 @@ export class PrivacidadPage {
     this.ui.toast(`${ETIQUETA_CAMPO[c]}: ${v}`);
   }
 }
-

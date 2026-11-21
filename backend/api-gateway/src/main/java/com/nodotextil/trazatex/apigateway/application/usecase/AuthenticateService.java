@@ -12,7 +12,6 @@ import reactor.core.publisher.Mono;
 public class AuthenticateService implements AuthenticateUseCase {
 
     private static final String BEARER = "Bearer ";
-    /** Un JWT de este sistema mide ~400 caracteres; más de esto no se intenta ni parsear. */
     static final int MAX_TOKEN_LENGTH = 8192;
 
     private final TokenVerifierPort tokenVerifier;
@@ -35,11 +34,9 @@ public class AuthenticateService implements AuthenticateUseCase {
         if (token.isEmpty() || token.length() > MAX_TOKEN_LENGTH) {
             return Mono.error(new AuthenticationFailedException(Reason.INVALID_TOKEN));
         }
-        // Primero la validez del token: uno inválido es siempre 401, esté o no cargada la lista de usuarios inactivos
         return tokenVerifier.verify(token).flatMap(this::ensureActive);
     }
 
-    /** Un token bueno de un usuario inactivado (RF-012) no sirve; y sin saber quién lo está (arranque) no se deja pasar a nadie. */
     private Mono<AuthenticatedUser> ensureActive(AuthenticatedUser user) {
         if (!revokedUsers.isLoaded()) {
             return Mono.error(new AuthenticationUnavailableException("Lista de usuarios inactivos aún sin cargar"));

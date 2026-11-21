@@ -16,11 +16,6 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Los escenarios ejecutables (RNF-10) son el texto exacto de {@code docs/domain/user-stories.md}: título y cada paso. Si alguien edita un
- * {@code .feature} a mano, cambia la historia sin regenerar, o falta algún escenario de US29–US32, esta prueba falla. Las
- * pruebas de abajo comprueban la prueba: aplican cada tipo de cambio a una copia y exigen que se note.
- */
 class FeaturesMatchUserStoriesTest {
 
     private static final Path DOCS = Path.of("..", "docs", "domain", "user-stories.md");
@@ -54,8 +49,6 @@ class FeaturesMatchUserStoriesTest {
         return UserStoriesComparator.differences(DOCS, copy);
     }
 
-    // ---- lo real ----
-
     @Test
     void theFeaturesAreExactlyTheScenariosOfEveryStory() throws IOException {
         assertThat(UserStoriesComparator.differences(DOCS, FEATURES)).isEmpty();
@@ -75,8 +68,6 @@ class FeaturesMatchUserStoriesTest {
         }
     }
 
-    // ---- lo mismo para cada historia nueva: la prueba de la prueba no se hizo solo para US29 ----
-
     @ParameterizedTest
     @ValueSource(strings = {"US30", "US31", "US32", "US33", "US36"})
     void aChangedWordInAnyStepOfTheOtherStoriesIsNoticed(String id) throws IOException {
@@ -92,7 +83,6 @@ class FeaturesMatchUserStoriesTest {
     void aMissingStepAndAMissingScenarioOfTheOtherStoriesAreNoticed(String id) throws IOException {
         assertThat(differencesAfter(id, text -> text.substring(0, text.indexOf("  Escenario: 1:")).stripTrailing() + "\n"))
                 .anyMatch(d -> d.startsWith(id + ": falta el Escenario 1:"));
-        // se quita el primer paso «Dado» (el primero del primer escenario): el último paso de ese escenario queda sin su pareja
         assertThat(differencesAfter(id, text -> {
             String given = text.lines().filter(line -> line.trim().startsWith("Dado ")).findFirst().orElseThrow();
             return text.replace(given + "\n", "");
@@ -109,8 +99,6 @@ class FeaturesMatchUserStoriesTest {
 
         assertThat(UserStoriesComparator.differences(docs, FEATURES)).anyMatch(d -> d.startsWith(id + " Escenario 1, paso 3")).noneMatch(d -> d.startsWith("US29"));
     }
-
-    // ---- la prueba de la prueba ----
 
     @Test
     void aMissingScenarioIsNoticed() throws IOException {
@@ -196,7 +184,6 @@ class FeaturesMatchUserStoriesTest {
         String original = "    Entonces el sistema registra la relación padre-hijo.";
         String text = Files.readString(file);
         assertThat(text).contains(original);
-        // espacios de más, un espacio de no separación y el texto en forma NFD (la palabra clave del paso queda intacta)
         String changed = "      Entonces   el sistema\u00A0registra la " + Normalizer.normalize("relación", Normalizer.Form.NFD) + " padre-hijo.  ";
         Files.writeString(file, text.replace(original, changed));
 

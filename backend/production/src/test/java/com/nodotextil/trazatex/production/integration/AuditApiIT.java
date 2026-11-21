@@ -10,7 +10,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** RNF-11: toda operación sobre lotes, transformaciones y transferencias deja (usuario, empresa, fecha, acción, entidad, cambios). */
 class AuditApiIT extends ApiTestBase {
 
     private record Row(UUID userId, UUID companyId, String action, String entityType, String entityId, String changes, java.time.Instant at) {

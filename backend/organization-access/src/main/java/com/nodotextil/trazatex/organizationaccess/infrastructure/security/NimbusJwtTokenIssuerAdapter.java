@@ -15,10 +15,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 
-/**
- * JWT RS256 (ADR-005): {@code sub} = userId, {@code role}, {@code companyId} (ausente para el Dueño), {@code iat} y
- * {@code exp}; el {@code kid} del encabezado apunta a la clave publicada en el JWKS. Dura {@code ttl} (8 h, sin refresh token).
- */
 public class NimbusJwtTokenIssuerAdapter implements TokenIssuerPort {
 
     private final JwtKeyMaterial keys;

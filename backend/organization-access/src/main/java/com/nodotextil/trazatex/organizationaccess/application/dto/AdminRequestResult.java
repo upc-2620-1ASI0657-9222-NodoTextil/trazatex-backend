@@ -6,7 +6,6 @@ import com.nodotextil.trazatex.organizationaccess.domain.model.AdminRequestStatu
 import java.time.Instant;
 import java.util.UUID;
 
-/** {@code invitationId} solo viene al aprobar. */
 public record AdminRequestResult(
         UUID id,
         UUID companyId,

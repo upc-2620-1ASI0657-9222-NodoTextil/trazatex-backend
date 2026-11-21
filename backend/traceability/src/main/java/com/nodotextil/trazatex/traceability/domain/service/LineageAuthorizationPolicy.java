@@ -26,28 +26,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Privacidad B2B (ADR-006, RNF-07): <b>la única forma de convertir lo que hay en el grafo en algo que se puede devolver</b>. Es la única
- * clase que construye los tipos de {@code domain.model.view}; una regla de ArchUnit lo exige, de modo que ninguna respuesta de consulta
- * sale sin pasar por aquí. El filtro se aplica en el servidor, nunca en el frontend.
- * <ul>
- *   <li>Los nodos de la <b>propia</b> empresa salen completos (incluido {@code qualityHold}).</li>
- *   <li>De los nodos de <b>otra</b> empresa salen los campos siempre compartidos y, de los configurables, solo los que esa empresa marcó
- *       {@code SHARED}; lo que no se configuró es {@code PRIVATE}. {@code qualityHold} <b>nunca</b>.</li>
- *   <li>{@code name} (el nombre libre del lote) sale <b>solo</b> en los lotes de la propia empresa ({@code OWN}): no es un campo
- *       configurable, así que ninguna configuración de privacidad lo destapa en una vista {@code SHARED}.</li>
- *   <li>Las aristas y el historial de transferencias siempre salen.</li>
- * </ul>
- */
 public final class LineageAuthorizationPolicy {
 
     public VisibleLineage view(Lineage lineage, UUID requesterCompanyId) {
         Map<UUID, String> names = lineage.companyNames();
         Map<UUID, CompanyPrivacy> privacy = lineage.companyPrivacy();
         List<VisibleNode> nodes = new ArrayList<>();
-        // el nodo consultado primero (nivel 0), luego por nivel
         for (Lineage.LeveledBatch leveled : lineage.batches()) {
-            // En la vista completa todo lote lleva su historial (vacío si nunca se transfirió); en las demás no hay historial: nulo y no sale en el JSON
             List<TransferEntry> history = lineage.direction() == LineageDirection.BOTH
                     ? transferEntries(lineage.transfers().getOrDefault(leveled.data().batchId(), List.of()), names) : null;
             nodes.add(batch(leveled.data(), leveled.level(), requesterCompanyId, names, privacy, history));
@@ -68,7 +53,6 @@ public final class LineageAuthorizationPolicy {
                 batch.phase(), batch.qualityStatus(), batch.createdAt(), batch.finalProduct(), accessOf(batch.companyId(), requesterCompanyId));
     }
 
-    /** Una página de resultados de búsqueda: cada lote pasa por {@link #summary}; la página la arma también la política, nunca el servicio. */
     public VisibleBatchPage page(List<BatchData> batches, Map<UUID, String> companyNames, UUID requesterCompanyId, int page, int size, long totalElements) {
         List<VisibleBatchSummary> items = batches.stream().map(batch -> summary(batch, companyNames.get(batch.companyId()), requesterCompanyId)).toList();
         return new VisibleBatchPage(items, page, size, totalElements, (int) ((totalElements + size - 1) / size));
@@ -78,7 +62,6 @@ public final class LineageAuthorizationPolicy {
         return ownerCompanyId.equals(requesterCompanyId) ? Access.OWN : Access.SHARED;
     }
 
-    /** Lo que la empresa dueña tiene configurado AHORA (el mapa que llegó en su último {@code CompanyPrivacyUpdated}): vale para todos sus nodos, también los antiguos. Sin configuración, todo es privado. */
     private static CompanyPrivacy privacyOf(Map<UUID, CompanyPrivacy> privacy, UUID owner) {
         return privacy.getOrDefault(owner, CompanyPrivacy.ALL_PRIVATE);
     }

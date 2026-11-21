@@ -5,7 +5,6 @@ import com.nodotextil.trazatex.organizationaccess.domain.model.CompanyStatus;
 
 import java.util.UUID;
 
-/** Tópico {@code orgaccess.company}, clave companyId. Lo consume production. */
 public record CompanyStatusChanged(UUID companyId, CompanyStatus status) implements OrganizationEvent {
 
     public static final String TYPE = "CompanyStatusChanged";

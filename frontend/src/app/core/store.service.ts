@@ -33,7 +33,6 @@ import {
 } from './models';
 import { SessionService } from './session.service';
 
-/** Texto neutro que sustituye al `name` de un lote que no es de la empresa que consulta. */
 export const NOMBRE_OCULTO = '—';
 
 export function ahora(): string {
@@ -49,7 +48,6 @@ export interface Disponibilidad {
   tono: 'ok' | 'warn' | 'fail' | 'hist' | 'busy';
 }
 
-/** Consulta de la bandeja: `type` es un `CodigoNotificacion` (vacío = todos) y `page` empieza en 0. */
 export interface NotificationQuery { unread: boolean; type: string; page: number; size: number }
 
 export type Resultado = { ok: true; id?: string } | { ok: false; error: string };
@@ -82,34 +80,25 @@ export class StoreService {
     this.empresa(id)?.razonSocial ?? this.companyNames()[id ?? ''] ?? (id ? 'Empresa ' + this.referencia(id) : '—');
   referencia(id: string): string {
     if (!/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(id)) return id;
-    const ids = [...this.procesos().map(p => p.id), ...this.transferencias().map(t => t.id), ...this.controles().map(c => c.id), ...Object.keys(this.companyNames()), ...this.usuarios().map(u => u.id), ...this.solicitudes().map(s => s.id), ...this.invitaciones().map(i => i.id)];
+    const ids = [...this.procesos().map(p => p.id), ...this.transferencias().map(t => t.id), ...this.controles().map(c => c.id), ...this.fallas().map(f => f.id), ...Object.keys(this.companyNames()), ...this.usuarios().map(u => u.id), ...this.solicitudes().map(s => s.id), ...this.invitaciones().map(i => i.id)];
     let size = 8;
     while (size < id.length && ids.some(other => other !== id && other.startsWith(id.slice(0, size)))) size += 2;
     return id.slice(0, size).toUpperCase();
   }
   codigoLote(id: string): string { return this.batchCode(id); }
-  /** Título legible de un control: «Evaluación · nombre del lote». El UUID largo no es un título; su forma corta va en `title`. */
   tituloControl(control: Pick<ControlCalidad, 'tipo' | 'loteId'>): string {
     return control.tipo + ' · ' + this.nombreLote(control.loteId);
   }
-  /** Texto de `title`/`aria-label` con el id corto del control. */
   refControl(control: Pick<ControlCalidad, 'id'>): string { return 'Control ' + this.referencia(control.id); }
-  /** Texto de `title`/`aria-label` con el id corto de la transferencia. */
   refTransferencia(id: string): string { return 'Transferencia ' + this.referencia(id); }
-  /** `name` es un dato OWN (ADR-006, decisión 2026-11-03): solo la empresa dueña lo ve. */
   esPropio(lote: Pick<Lote, 'empresaId'> | undefined): boolean {
     const empresa = this.session.empresaId();
     return !!lote && !!empresa && lote.empresaId === empresa;
   }
-  /** Nombre libre del lote; en un lote ajeno o desconocido, el texto neutro «—». */
   nombreLote(id: string): string {
     const lote = this.lote(this.batchCode(id));
     return this.esPropio(lote) ? (lote?.nombre ?? this.referencia(this.batchCode(id))) : NOMBRE_OCULTO;
   }
-  /**
-   * Única excepción a la regla anterior: `GET /api/transfers/{id}` entrega `name` a la empresa origen y a la destino
-   * (decisión 2026-11-03). Sin ese detalle cargado se muestra el Traceability ID, que no es privado.
-   */
   nombreEnTransferencia(id: string): string {
     const code = this.batchCode(id);
     return this.transferSummaries()[code]?.name ?? this.nombreVisible(code);
@@ -127,10 +116,6 @@ export class StoreService {
     const u = this.usuario(id);
     return u ? `${u.nombres} ${u.apellidos}` : '—';
   };
-  /**
-   * Responsable de un proceso DE LA PROPIA EMPRESA (llamar solo tras comprobar `puedeVerPrivado`). `GET /users` es solo del administrador,
-   * así que el operario no tiene a sus compañeros: se muestra su propio nombre o «Otro miembro de tu empresa», nunca «—» (FE-M14).
-   */
   nombreResponsable = (id?: string) => {
     const u = this.usuario(id);
     if (u) return `${u.nombres} ${u.apellidos}`;
@@ -159,10 +144,8 @@ export class StoreService {
   readonly misTransferencias = computed(() =>
     this.transferencias().filter((t) => this.enAlcance(t.origenId) || this.enAlcance(t.destinoId)),
   );
-  /** Filtro y página de la bandeja que se pide al servidor; `refreshNotifications()` (sondeo, marcar leída) repite la última consulta. */
   private notificationQuery: NotificationQuery = { unread: false, type: '', page: 0, size: 6 };
   readonly notificacionesTotal = signal(0);
-  /** Total sin filtrar, mientras se haya consultado así; `null` si aún no se sabe. */
   readonly notificacionesTodas = signal<number | null>(null);
   readonly misNotificaciones = computed(() => {
     const rol = this.session.rol();
@@ -171,7 +154,6 @@ export class StoreService {
       .filter((n) => n.para === rol && (rol === 'Dueño de Licencia' || n.empresaId === emp))
       .sort((a, b) => b.fecha.localeCompare(a.fecha));
   });
-  /** Las no leídas según el servidor (no las de la página cargada). */
   readonly noLeidas = computed(() => this.unreadCount());
 
   totalEntrada = (p: Proceso) => p.entradas.reduce((s, e) => s + e.cantidadKg, 0);
@@ -228,12 +210,20 @@ export class StoreService {
   esHistorico = (l: Lote) =>
     ['Procesado', 'Dividido', 'Descartado'].includes(l.fase) || l.productoFinal;
 
+  private motivoRetencion(l: Lote): string {
+    const falla = this.fallaAbiertaDe(l.id);
+    if (falla) return `Retenido por calidad: la falla ${this.referencia(falla.id)} espera la decisión del administrador (reevaluar o descartar).`;
+    if (l.calidad === 'Con falla') return 'Retenido por calidad: su último control registró pruebas Con falla y espera la decisión del administrador.';
+    if (l.calidad === 'Por reevaluar') return 'Retenido por calidad hasta que se finalice su Reevaluación.';
+    if (l.calidad === 'Posible falla derivada') return 'Retenido por calidad: un lote relacionado en su genealogía tiene una falla confirmada.';
+    return 'Este lote está bloqueado por calidad. Revisa su control o la falla asociada antes de continuar.';
+  }
   disponibilidad(l: Lote): Disponibilidad {
     if (l.qualityHold)
       return {
         bloqueado: true,
         etiqueta: 'Bloqueo de calidad',
-        motivo: 'Este lote está bloqueado por calidad. Revisa su control o la falla asociada antes de continuar.',
+        motivo: this.motivoRetencion(l),
         tono: 'fail',
       };
     if (l.fase === 'Descartado')
@@ -243,18 +233,23 @@ export class StoreService {
         motivo: 'Lote descartado: no participa en producción.',
         tono: 'hist',
       };
-    if (l.fase === 'Procesado' || l.fase === 'Dividido')
+    if (l.fase === 'Procesado' || l.fase === 'Dividido') {
+      const hijos = l.fase === 'Dividido' ? this.divisionDe(l.id)?.lotesHijosIds.length : undefined;
       return {
         bloqueado: true,
         etiqueta: 'Histórico',
-        motivo: `Lote ${l.fase.toLowerCase()}: se conserva para trazabilidad.`,
+        motivo: l.fase === 'Dividido'
+          ? `Lote dividido${hijos ? ' en ' + hijos + ' lotes hijos' : ''}: se conserva para trazabilidad.`
+          : 'Lote procesado: ya se consumió en una transformación y se conserva para trazabilidad.',
         tono: 'hist',
       };
-    if (this.controlActivo(l.id))
+    }
+    const control = this.controlActivo(l.id);
+    if (control)
       return {
         bloqueado: true,
         etiqueta: 'Control en curso',
-        motivo: 'Hay un control de calidad activo. Producción temporalmente no disponible.',
+        motivo: `Tiene una ${control.tipo} de calidad en curso. No puede usarse en producción hasta que se finalice.`,
         tono: 'busy',
       };
     if (l.calidad === 'Con falla')
@@ -278,20 +273,30 @@ export class StoreService {
         motivo: 'Relacionado con una falla confirmada en su genealogía.',
         tono: 'warn',
       };
-    if (l.fase === 'En transformación')
+    if (l.fase === 'En transformación') {
+      const proceso = this.procesosConsumidores(l.id).find((p) => !p.fin);
       return {
         bloqueado: true,
         etiqueta: 'En transformación',
-        motivo: 'El lote está siendo usado en un proceso.',
+        motivo: proceso
+          ? `Es entrada de la transformación «${this.nombreProceso(proceso)}», que aún no se finaliza.`
+          : 'El lote está siendo usado en una transformación.',
         tono: 'busy',
       };
-    if (l.fase === 'En transferencia')
+    }
+    if (l.fase === 'En transferencia') {
+      const t = this.transferenciaPendienteDe(l.id);
       return {
         bloqueado: true,
         etiqueta: 'En transferencia',
-        motivo: 'Esperando la decisión de la empresa destino.',
+        motivo: !t
+          ? 'Esperando la decisión de la empresa destino.'
+          : this.enAlcance(t.destinoId)
+            ? `Transferencia de ${this.nombreEmpresa(t.origenId)} pendiente de que tu empresa la acepte o rechace.`
+            : `Transferencia a ${this.nombreEmpresa(t.destinoId)} pendiente de aceptación.`,
         tono: 'busy',
       };
+    }
     if (l.productoFinal)
       return {
         bloqueado: true,
@@ -321,11 +326,9 @@ export class StoreService {
   private readonly ui = inject(UiService);
   readonly loading = signal(false);
   readonly saving = signal(false);
-  /** Porcentaje enviado de la subida en curso (0–100), o `null` si lo que se guarda no es una subida. */
   readonly uploadProgress = signal<number | null>(null);
   readonly error = signal('');
   readonly notificationError = signal('');
-  /** No leídas según el servidor (`GET /notifications/unread-count`); alimenta el contador del shell en cualquier pantalla. */
   readonly unreadCount = signal(0);
   readonly unreadBadge = computed(() => (this.unreadCount() > 99 ? '99+' : String(this.unreadCount())));
   readonly licenseUsage = signal<A.ApiLicense | null>(null);
@@ -416,7 +419,6 @@ export class StoreService {
   private batchCode(id: string) {
     return this.batchCodes.get(id) ?? id;
   }
-  /** `access` solo llega en Traceability y en la búsqueda por QR; sin él se decide por la empresa del lote. */
   private remember(b: A.ApiBatch, access?: 'OWN' | 'SHARED'): Lote {
     this.batchIds.set(b.traceabilityId, b.id);
     this.batchCodes.set(b.id, b.traceabilityId);
@@ -424,7 +426,6 @@ export class StoreService {
     return {
       id: b.traceabilityId,
       qr: b.qrCode,
-      // Defensa en profundidad: aunque el servidor enviara `name` en un lote ajeno, no se guarda.
       nombre: own ? (b.name ?? b.materialType) : undefined,
       empresaId: b.companyId,
       material: b.materialType as TipoMaterial,
@@ -924,7 +925,6 @@ export class StoreService {
     const path = type === 'lote' ? '/batches/' + this.batchId(id) : type === 'proceso' ? '/transformations/' + id : '/quality/' + (type === 'control' ? 'controls/' : 'failures/') + id;
     return this.mutate('DELETE', path + '/evidence/' + evidenceId);
   }
-  /** Los campos configurables que la empresa dueña comparte se deducen de cuáles llegan en la vista SHARED. */
   private markVisibleFields(b: Pick<A.VisibleBatch, 'companyId' | 'supplierName' | 'origin' | 'quantityKg' | 'composition' | 'receptionCharacteristics' | 'failureCause' | 'qualityTests'>) {
     const fields: CampoConfigurable[] = [];
     if (b.supplierName !== undefined) fields.push('proveedor');
@@ -936,7 +936,6 @@ export class StoreService {
     if (b.qualityTests !== undefined) fields.push('valoresControl');
     this.visibleFields.update((old) => ({ ...old, [b.companyId]: fields }));
   }
-  /** Incorpora un lote encontrado por QR o por enlace. Un lote ajeno entra solo con su vista compartida (FE-C1: sin nombre). */
   private acceptLot(batch: A.ApiBatch, access: 'OWN' | 'SHARED', businessName?: string): string {
     const mapped = this.remember(batch, access);
     if (access === 'OWN') {
@@ -947,18 +946,12 @@ export class StoreService {
       return mapped.id;
     }
     if (businessName) this.companyNames.update(names => ({ ...names, [batch.companyId]: businessName }));
-    // Un lote ajeno ya conocido (p. ej. por la genealogía, con más campos compartidos) no se degrada a la vista mínima,
-    // ni sus campos visibles tampoco.
     if (!this.lotes().some(item => item.id === mapped.id)) {
       this.markVisibleFields(batch);
       this.lotes.update(items => [...items, mapped]);
     }
     return mapped.id;
   }
-  /**
-   * Búsqueda por Traceability ID **exacto** (US30, nunca por nombre): el backend la permite también con lotes de otra
-   * empresa, y entonces devuelve su vista compartida. Deja registrado el identificador interno del lote.
-   */
   private async resolveByTraceabilityId(traceabilityId: string): Promise<string> {
     const page = await this.api.request<ApiPage<A.ApiLineageHit>>('GET', '/traceability/lineages?traceabilityId=' + encodeURIComponent(traceabilityId) + '&size=100');
     const hit = page.items.find(item => item.traceabilityId.toUpperCase() === traceabilityId.toUpperCase());
@@ -969,12 +962,6 @@ export class StoreService {
       phase: hit.phase, qualityStatus: hit.qualityStatus, finalProduct: hit.finalProduct, createdAt: hit.createdAt,
     }, 'SHARED', hit.businessName);
   }
-  /**
-   * Resuelve un QR leído por la cámara y devuelve el Traceability ID del lote.
-   * - Enlace `/lotes/<Traceability ID>`: búsqueda exacta por ese ID (US30), nunca por nombre; el lote puede ser de otra empresa.
-   * - Código `qrCode` del sistema: `GET /batches/qr/{qr}` → `{access, batch}`.
-   * Un lote de otra empresa entra con su vista compartida (SHARED), no como error.
-   */
   async resolveLotQr(value: string): Promise<string> {
     const raw = value.trim();
     if (!raw || raw.length > 2048) throw new Error('El código QR no corresponde a un lote de TrazaTex.');
@@ -985,7 +972,6 @@ export class StoreService {
       if (url.origin !== window.location.origin || !match) throw new Error('El código QR no corresponde a esta plataforma TrazaTex.');
       const traceabilityId = match[1];
       if (/^TT-/i.test(traceabilityId)) return this.resolveByTraceabilityId(traceabilityId);
-      // Enlace con el identificador interno del lote: solo un lote propio puede abrirse por él.
       const detail = await this.api.request<A.ApiBatch>('GET', '/batches/' + this.batchId(traceabilityId));
       return this.acceptLot(detail, 'OWN');
     }
@@ -996,8 +982,6 @@ export class StoreService {
   requestLineage(code: string) {
     if (this.loading() || this.requestedLineages.has(code)) return;
     this.requestedLineages.add(code);
-    // Un enlace `/lotes/<Traceability ID>` abierto directamente (cámara del teléfono, `returnUrl` tras iniciar sesión) llega con
-    // un lote que quizá no es de la empresa y cuyo identificador interno aún no se conoce: se resuelve antes por su ID exacto.
     const known = this.batchIds.has(code) || !/^TT-/i.test(code);
     void (known ? Promise.resolve() : this.resolveByTraceabilityId(code)).then(() => this.loadLineage(code)).catch(error => {
       if (this.session.token()) this.error.set(errorMessage(error));
@@ -1098,7 +1082,6 @@ export class StoreService {
     return this.licenseUsage()?.companies.find((c) => c.companyId === id)?.usedSlots ?? 0;
   }
   async searchLineages(query: string): Promise<string[]> {
-    // La búsqueda por nombre solo opera sobre lotes propios; los ajenos se buscan por Traceability ID o QR exactos.
     const byName = this.misLotes().filter(batch => this.esPropio(batch) && (batch.id.toLocaleLowerCase().startsWith(query.toLocaleLowerCase()) || batch.nombre?.toLocaleLowerCase().includes(query.toLocaleLowerCase())));
     if (byName.length) {
       const selected = byName[0];
@@ -1253,21 +1236,18 @@ export class StoreService {
     this.requestedLineages.add(code);
     return batches.map(batch => batch.traceabilityId);
   }
-  /** Sin sesión no consulta nada; si falla, conserva el último valor (el contador es informativo). */
   async refreshUnreadCount(): Promise<void> {
     const token = this.session.token();
     if (!token) return;
     try {
       const { count } = await this.api.request<{ count: number }>('GET', '/notifications/unread-count');
       if (token === this.session.token() && Number.isFinite(count)) this.unreadCount.set(Math.max(0, Math.trunc(count)));
-    } catch { /* se reintenta en el próximo sondeo */ }
+    } catch { }
   }
-  /** Cambia el filtro o la página de la bandeja y la pide al servidor. */
   async consultarNotificaciones(query: Partial<NotificationQuery>): Promise<void> {
     this.notificationQuery = { ...this.notificationQuery, ...query };
     await this.refreshNotifications().catch(() => {});
   }
-  /** `GET /notifications` con la última consulta (`unread`, `type`, `page`, `size`): el servidor filtra y pagina. */
   async refreshNotifications() {
     const token = this.session.token();
     const query = this.notificationQuery;
@@ -1297,7 +1277,6 @@ export class StoreService {
       return true;
     } catch (error) {
       if (errorCode(error) === A.API_ERROR.NOTIFICATION_NOT_FOUND) {
-        // ya no existe (la borró otra sesión o no es tuya): no es un fallo del usuario; se actualiza la bandeja y se avisa sin alarma
         await Promise.all([this.refreshNotifications().catch(() => {}), this.refreshUnreadCount()]);
         this.ui.toast('Esa notificación ya no está disponible. Se actualizó la bandeja.');
         return false;

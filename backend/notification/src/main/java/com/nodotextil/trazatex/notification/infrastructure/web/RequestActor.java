@@ -25,4 +25,3 @@ public record RequestActor(UUID userId, UUID companyId, String role) {
         }
     }
 }
-

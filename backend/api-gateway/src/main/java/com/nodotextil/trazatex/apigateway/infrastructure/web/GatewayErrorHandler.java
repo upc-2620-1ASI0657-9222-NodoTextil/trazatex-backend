@@ -24,11 +24,6 @@ import java.net.ConnectException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 
-/**
- * Convierte en {@link GatewayError} lo que falla en el Gateway (ruta inexistente, servicio caído o lento) para que el
- * frontend siempre reciba el mismo formato. El motivo interno (host, puerto, excepción) va al log, nunca al cliente.
- * Corre antes que el manejador por defecto de Spring Boot ({@code -1}).
- */
 @Component
 @Order(-2)
 class GatewayErrorHandler implements WebExceptionHandler {
@@ -76,7 +71,6 @@ class GatewayErrorHandler implements WebExceptionHandler {
         return exchange.getResponse().writeWith(Mono.fromSupplier(() -> body(exchange, error)));
     }
 
-    /** Un servicio al que no se pudo conectar (caído, host desconocido) es 503; uno que cortó la conexión a mitad, 502. */
     private static HttpStatusCode statusOf(Throwable ex) {
         for (Throwable t = ex; t != null; t = t.getCause()) {
             if (t instanceof ResponseStatusException rse) {

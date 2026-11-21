@@ -12,7 +12,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** Un interbloqueo de Neo4j entre consumidores se repite; cualquier otro fallo no. */
 class TransientRetryTest {
 
     private static final TransientException DEADLOCK = new TransientException("Neo.TransientError.Transaction.DeadlockDetected", "interbloqueo");

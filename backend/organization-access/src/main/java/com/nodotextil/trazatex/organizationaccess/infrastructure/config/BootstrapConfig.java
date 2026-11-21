@@ -22,7 +22,6 @@ class BootstrapConfig {
         return BootstrapSettingsFactory.create(ownerEmail, ownerName, maxCompanies, maxUsersPerCompany);
     }
 
-    /** Corre al terminar de arrancar el contexto (las migraciones Flyway ya se aplicaron). */
     @Bean
     ApplicationRunner ownerBootstrapRunner(BootstrapOwnerUseCase bootstrap) {
         Logger log = LoggerFactory.getLogger(BootstrapConfig.class);
@@ -31,7 +30,6 @@ class BootstrapConfig {
             try {
                 outcome = bootstrap.run();
             } catch (DataIntegrityViolationException concurrentInstance) {
-                // otra instancia creó la licencia en el mismo instante: se vuelve a evaluar con la licencia ya creada
                 outcome = bootstrap.run();
             }
             log.info("Bootstrap del Dueño de Licencia: {}", outcome);

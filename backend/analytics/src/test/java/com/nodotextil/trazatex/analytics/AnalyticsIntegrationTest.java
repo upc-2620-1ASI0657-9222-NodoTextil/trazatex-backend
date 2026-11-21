@@ -20,10 +20,6 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.UUID;
 
-/**
- * Base de las pruebas con PostgreSQL real y el servicio levantado (sin Kafka): los eventos entran por {@link AnalyticsProjectionService}, que es lo
- * que ejecuta el listener, y las consultas salen por HTTP como las haría el Gateway. Un solo contenedor para todas las pruebas de la JVM.
- */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "trazatex.messaging.enabled=false")
 public abstract class AnalyticsIntegrationTest {
     public static final PostgreSQLContainer DB = new PostgreSQLContainer("postgres:16.15").withPassword(UUID.randomUUID().toString());
@@ -42,12 +38,10 @@ public abstract class AnalyticsIntegrationTest {
 
     @BeforeEach void emptyTheReadModel() { jdbc.sql("TRUNCATE analytics_event,batch_birth,batch_owner,batch_quality").update(); }
 
-    /** El sobre de un evento tal como Kafka lo entrega. */
     public static String envelope(String type, Object aggregate, Object payload, Instant at) {
         return MAPPER.writeValueAsString(BaseDomainEvent.of(type, aggregate.toString(), payload, Clock.fixed(at, ZoneOffset.UTC)));
     }
 
-    /** Entrega un evento al proyector y devuelve su sobre (para poder repetirlo). */
     protected String deliver(String type, Object aggregate, Object payload, Instant at) {
         String json = envelope(type, aggregate, payload, at);
         projection.consume(json);

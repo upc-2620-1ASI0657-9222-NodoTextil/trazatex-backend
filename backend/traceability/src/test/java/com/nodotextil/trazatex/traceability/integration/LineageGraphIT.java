@@ -39,7 +39,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** Cada evento sobre el grafo (US29, RF-053), uno por uno y sobre Neo4j real. El orden entre eventos se prueba en el subpaso siguiente. */
 class LineageGraphIT extends IntegrationTestBase {
 
     static final UUID COMPANY_A = UUID.fromString("00000000-0000-0000-0000-0000000000a1");
@@ -86,8 +85,6 @@ class LineageGraphIT extends IntegrationTestBase {
         adapterLogger.detachAppender(logs);
     }
 
-    // ---- ayudas ----
-
     static UUID event() {
         return UUID.randomUUID();
     }
@@ -129,8 +126,6 @@ class LineageGraphIT extends IntegrationTestBase {
         return logs.list.stream().filter(e -> e.getLevel() == Level.ERROR).map(ILoggingEvent::getFormattedMessage).toList();
     }
 
-    // ---- BatchRegistered ----
-
     @Test
     void aRegisteredBatchBecomesAFullNodeOwnedByItsCompany() {
         registerBatch.apply(registered(L1, "TT-AAAAAAAAAA", "QR-1"));
@@ -145,8 +140,6 @@ class LineageGraphIT extends IntegrationTestBase {
         assertThat(owners(L1)).containsExactly(COMPANY_A.toString());
         assertThat(count("MATCH (c:Company) RETURN count(c) AS n")).isEqualTo(1);
     }
-
-    // ---- BatchSplit ----
 
     @Test
     void aSplitCreatesTheChildrenWithTheirDataAndLinksThemToTheParentWithoutTouchingTheParentsPhase() {
@@ -185,8 +178,6 @@ class LineageGraphIT extends IntegrationTestBase {
         assertThat(batch(L1)).containsEntry("provisional", false).containsEntry("traceabilityId", "TT-AAAAAAAAAA").containsEntry("phase", "AVAILABLE");
     }
 
-    // ---- TransformationCompleted ----
-
     private ApplyTransformationCompletedCommand completed(boolean finalProduct) {
         return new ApplyTransformationCompletedCommand(event(), T1, TransformationType.DYEING, COMPANY_A, "Cardadora", "Cardado",
                 List.of(L2, H1), List.of(new ApplyTransformationCompletedCommand.Output(OUT, "TT-DDDDDDDDDD", "QR-5", "Tela teñida", new BigDecimal("35"),
@@ -224,8 +215,6 @@ class LineageGraphIT extends IntegrationTestBase {
         Map<String, Object> node = neo4j.query("MATCH (t:Transformation) RETURN properties(t) AS p").fetch().one().map(row -> castMap(row.get("p"))).orElseThrow();
         assertThat(node).doesNotContainKeys("wasteReason", "machineName", "machineType").containsEntry("wasteKg", "0.000");
     }
-
-    // ---- BatchPhaseChanged ----
 
     @Test
     void aPhaseChangeIsAppliedOnlyWhenItsVersionIsGreaterThanTheStoredOne() {
@@ -295,8 +284,6 @@ class LineageGraphIT extends IntegrationTestBase {
                 .containsEntry("traceabilityId", "TT-BBBBBBBBBB").containsEntry("quantityKg", "40.000");
     }
 
-    // ---- QualityStatusChanged ----
-
     @Test
     void aQualityStatusReplacesTheStoredOneInTheOrderOfItsTopic() {
         registerBatch.apply(registered(L1, "TT-AAAAAAAAAA", "QR-1"));
@@ -316,8 +303,6 @@ class LineageGraphIT extends IntegrationTestBase {
 
         assertThat(batch(L1)).containsEntry("qualityStatus", "FAILED").containsEntry("provisional", false);
     }
-
-    // ---- TransferAccepted ----
 
     @Test
     void anAcceptedTransferIsHistoryOnlyAndCreatesNoBatchAndNoGenealogyEdge() {
@@ -343,8 +328,6 @@ class LineageGraphIT extends IntegrationTestBase {
         assertThat(batch(L1)).containsEntry("provisional", true).containsOnlyKeys("batchId", "provisional");
         assertThat(count("MATCH (b:Batch) WHERE b.provisional RETURN count(b) AS n")).isEqualTo(2);
     }
-
-    // ---- CompanyPrivacyUpdated ----
 
     @Test
     void thePrivacyIsStoredWithAllElevenFieldsAndTheLatestEventReplacesIt() {
@@ -372,8 +355,6 @@ class LineageGraphIT extends IntegrationTestBase {
         String stored = neo4j.query("MATCH (c:Company) RETURN c.privacy AS p").fetch().one().orElseThrow().get("p").toString();
         assertThat(stored).doesNotContain("TRACEABILITY_ID").contains("\"SUPPLIER\":\"PRIVATE\"").contains("\"QUANTITY\":\"SHARED\"");
     }
-
-    // ---- CompanyRegistered: el nombre de la empresa ----
 
     private Map<String, Object> company(UUID id) {
         return neo4j.query("MATCH (c:Company {companyId: $id}) RETURN properties(c) AS p").bind(id.toString()).to("id").fetch().one()
@@ -432,8 +413,6 @@ class LineageGraphIT extends IntegrationTestBase {
         assertThat(errors()).singleElement().satisfies(message -> assertThat(message).contains("eventId=" + eventId).contains("companyId=" + COMPANY_A)
                 .contains("campo=businessName"));
     }
-
-    // ---- datos de identidad: se completan, nunca se pisan ----
 
     @Test
     void aDifferentValueForAnIdentityFieldKeepsTheStoredOneLogsAnErrorAndStillAppliesTheRestOfTheEvent() {

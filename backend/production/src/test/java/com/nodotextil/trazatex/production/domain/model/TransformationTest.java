@@ -25,7 +25,6 @@ import static com.nodotextil.trazatex.production.domain.Fixtures.transformationF
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** US16–US19: inicio, composición, balance, desperdicio y producto final. */
 class TransformationTest {
 
     private final TransformationFactory transformations = transformationFactory();
@@ -43,8 +42,6 @@ class TransformationTest {
     private static void assertCode(Throwable thrown, String code) {
         assertThat(thrown).isInstanceOfSatisfying(TrazatexException.class, e -> assertThat(e.code()).isEqualTo(code));
     }
-
-    // --- inicio (US16) ------------------------------------------------------------------------------------------
 
     @Test
     void startingRegistersTheStartTimeAndMovesTheBatchesToInTransformation() {
@@ -125,8 +122,6 @@ class TransformationTest {
         assertThatThrownBy(() -> start(TransformationType.SPINNING, batch, batch)).satisfies(e -> assertCode(e, ErrorCodes.DUPLICATE_BATCH));
         assertThat(batch.phase()).isEqualTo(BatchPhase.AVAILABLE);
     }
-
-    // --- finalización: balance (US18) y desperdicio (US19) -------------------------------------------------------
 
     @Test
     void finalizingComputesTheShrinkageAndSetsInputsAsProcessedAndOutputsAsAvailable() {
@@ -258,8 +253,6 @@ class TransformationTest {
                 .satisfies(e -> assertCode(e, ErrorCodes.BATCHES_DO_NOT_MATCH));
     }
 
-    // --- composición (US17) --------------------------------------------------------------------------------------
-
     @Test
     void oneInputKeepsItsCompositionInEveryOutput() {
         Composition blend = composition("Algodón", "65", "Poliéster", "35");
@@ -286,8 +279,6 @@ class TransformationTest {
         assertThat(cotton.phase()).isEqualTo(BatchPhase.PROCESSED);
         assertThat(half.phase()).isEqualTo(BatchPhase.PROCESSED);
     }
-
-    // --- producto final (US20) -----------------------------------------------------------------------------------
 
     @Test
     void anOutputCanBeMarkedAsFinalProductWithCommercialData() {
@@ -320,8 +311,6 @@ class TransformationTest {
                 .satisfies(e -> assertCode(e, ErrorCodes.INVALID_COMMERCIAL_DATA));
         assertThat(input.phase()).isEqualTo(BatchPhase.IN_TRANSFORMATION);
     }
-
-    // --- reconstrucción ------------------------------------------------------------------------------------------
 
     @Test
     void restoreRebuildsTheTransformationWithTheStrategyOfItsType() {

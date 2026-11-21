@@ -22,11 +22,6 @@ import java.time.Clock;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * US44. Solo un control {@code FINISHED} de la propia empresa (otra empresa es «no existe»). El PDF se genera en memoria <b>fuera de toda transacción</b>
- * (puede tardar) y no se guarda en ningún lado; lo único que queda es una fila de auditoría ({@code REPORT_GENERATED}: quién y de qué control, no el
- * contenido), que solo se escribe si la generación salió bien.
- */
 @Service
 class ControlReportService implements GenerateControlReportUseCase {
 

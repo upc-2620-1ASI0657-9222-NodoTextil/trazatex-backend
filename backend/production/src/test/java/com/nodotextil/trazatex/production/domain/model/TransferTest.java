@@ -17,7 +17,6 @@ import static com.nodotextil.trazatex.production.domain.Fixtures.batch;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** US21 y US22. */
 class TransferTest {
 
     private static final UUID ADMIN = UUID.fromString("00000000-0000-0000-0000-0000000000ad");
@@ -31,8 +30,6 @@ class TransferTest {
     private static void assertCode(Throwable thrown, String code) {
         assertThat(thrown).isInstanceOfSatisfying(TrazatexException.class, e -> assertThat(e.code()).isEqualTo(code));
     }
-
-    // --- iniciar (US21) -----------------------------------------------------------------------------------------
 
     @Test
     void initiatingRegistersTheDepartureAndMovesTheBatchesToInTransfer() {
@@ -52,8 +49,6 @@ class TransferTest {
         assertThat(a.phase()).isEqualTo(BatchPhase.IN_TRANSFER);
         assertThat(b.phase()).isEqualTo(BatchPhase.IN_TRANSFER);
     }
-
-    // --- solo lotes completos (US21 esc. 2) ----------------------------------------------------------------------
 
     private Transfer initiateAskingFor(java.util.Map<UUID, Quantity> requested, Batch... batches) {
         return Transfer.initiate(UUID.randomUUID(), COMPANY, target, List.of(batches), requested, OPERATOR, NOW);
@@ -137,8 +132,6 @@ class TransferTest {
         assertThat(batch.phase()).isEqualTo(BatchPhase.AVAILABLE);
     }
 
-    // --- aceptar (US22 esc. 1) ----------------------------------------------------------------------------------
-
     @Test
     void acceptingMovesTheResponsibilityKeepsTheCodesAndRegistersTheReception() {
         Batch batch = availableBatch("10");
@@ -158,8 +151,6 @@ class TransferTest {
         assertThat(batch.traceabilityId()).isEqualTo(traceabilityId);
         assertThat(batch.qrCode()).isEqualTo(qr);
     }
-
-    // --- rechazar (US22 esc. 2) ---------------------------------------------------------------------------------
 
     @Test
     void rejectingReturnsTheBatchesAvailableToTheOriginCompany() {
@@ -189,8 +180,6 @@ class TransferTest {
         assertThat(transfer.status()).isEqualTo(TransferStatus.PENDING);
         assertThat(batch.phase()).isEqualTo(BatchPhase.IN_TRANSFER);
     }
-
-    // --- quién y cuándo -----------------------------------------------------------------------------------------
 
     @Test
     void onlyTheTargetCompanyCanResolve() {
@@ -243,8 +232,6 @@ class TransferTest {
         assertThat(restored.rejectionReason()).isEqualTo("motivo");
         assertThat(restored.batchIds()).containsExactly(batchId);
     }
-
-    // --- proyección de empresa (RF-003) -------------------------------------------------------------------------
 
     @Test
     void anInactiveCompanyIsRejectedByTheProjectionGuard() {

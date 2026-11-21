@@ -57,7 +57,6 @@ class NotificationApiIT {
                     .andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("NOTIFICATION_NOT_FOUND"));
             api.perform(actor(patch("/api/notifications/{id}/read",personal),user,company,"OPERATOR"))
                     .andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("NOTIFICATION_NOT_FOUND"));
-            // una ajena y una que no existe se ven exactamente igual (código y mensaje): no se revela que existe, ni con PATCH ni con PUT
             String missing=api.perform(actor(patch("/api/notifications/{id}/read",UUID.randomUUID()),user,company,"COMPANY_ADMIN"))
                     .andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("NOTIFICATION_NOT_FOUND")).andReturn().getResponse().getContentAsString();
             String foreign=api.perform(actor(patch("/api/notifications/{id}/read",colleagueNotice),user,company,"COMPANY_ADMIN"))
@@ -100,12 +99,10 @@ class NotificationApiIT {
             MockMvc api=api(jdbc);
             var company=UUID.randomUUID();
             var user=UUID.randomUUID();
-            // 25 notificaciones: la 0 es la más reciente. Las pares son TRANSFER_RECEIVED y las impares POTENTIAL_DERIVED_FAILURE.
             var ids=new UUID[25];
             for (int i=0;i<25;i++) ids[i]=notice(jdbc,company,null,"COMPANY_ADMIN",i%2==0?"TRANSFER_RECEIVED":"POTENTIAL_DERIVED_FAILURE",i);
             for (int i=0;i<25;i+=5) api.perform(actor(put("/api/notifications/{id}/read",ids[i]),user,company,"COMPANY_ADMIN")).andExpect(status().isOk());
 
-            // por defecto: página 0 de 20, más recientes primero
             api.perform(actor(get("/api/notifications"),user,company,"COMPANY_ADMIN")).andExpect(status().isOk())
                     .andExpect(jsonPath("$.page").value(0)).andExpect(jsonPath("$.size").value(20))
                     .andExpect(jsonPath("$.totalElements").value(25)).andExpect(jsonPath("$.totalPages").value(2))
@@ -114,21 +111,17 @@ class NotificationApiIT {
                     .andExpect(jsonPath("$.items[19].id").value(ids[19].toString()));
             api.perform(actor(get("/api/notifications").param("page","1"),user,company,"COMPANY_ADMIN")).andExpect(status().isOk())
                     .andExpect(jsonPath("$.items.length()").value(5)).andExpect(jsonPath("$.items[0].id").value(ids[20].toString()));
-            // más de 100 se recorta a 100 y la respuesta trae el tamaño efectivo
             api.perform(actor(get("/api/notifications").param("size","5000"),user,company,"COMPANY_ADMIN")).andExpect(status().isOk())
                     .andExpect(jsonPath("$.size").value(100)).andExpect(jsonPath("$.items.length()").value(25));
-            // no leídas: 25 - 5 leídas
             api.perform(actor(get("/api/notifications").param("unread","true").param("size","50"),user,company,"COMPANY_ADMIN")).andExpect(status().isOk())
                     .andExpect(jsonPath("$.totalElements").value(20)).andExpect(jsonPath("$.items[?(@.read == true)]").isEmpty());
             api.perform(actor(get("/api/notifications").param("unread","false"),user,company,"COMPANY_ADMIN")).andExpect(status().isOk())
                     .andExpect(jsonPath("$.totalElements").value(5)).andExpect(jsonPath("$.items[?(@.read == false)]").isEmpty());
             count(api,user,company,"COMPANY_ADMIN",20);
-            // por tipo y combinado: pares (13) menos las leídas 0,10,20 (3) = 10
             api.perform(actor(get("/api/notifications").param("type","TRANSFER_RECEIVED"),user,company,"COMPANY_ADMIN")).andExpect(status().isOk())
                     .andExpect(jsonPath("$.totalElements").value(13));
             api.perform(actor(get("/api/notifications").param("type","TRANSFER_RECEIVED").param("unread","true"),user,company,"COMPANY_ADMIN")).andExpect(status().isOk())
                     .andExpect(jsonPath("$.totalElements").value(10));
-            // forma de cada elemento: código estable y data
             api.perform(actor(get("/api/notifications").param("size","1"),user,company,"COMPANY_ADMIN")).andExpect(status().isOk())
                     .andExpect(jsonPath("$.items[0].type").value("TRANSFER_RECEIVED"))
                     .andExpect(jsonPath("$.items[0].data.transferId").value("tr-0"))
@@ -137,7 +130,6 @@ class NotificationApiIT {
                     .andExpect(jsonPath("$.items[0].role").value("COMPANY_ADMIN"))
                     .andExpect(jsonPath("$.items[0].companyId").value(company.toString()))
                     .andExpect(jsonPath("$.items[0].createdAt").value(org.hamcrest.Matchers.matchesPattern("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z")));
-            // entradas inválidas
             api.perform(actor(get("/api/notifications").param("page","-1"),user,company,"COMPANY_ADMIN")).andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value("INVALID_PAGINATION"));
             api.perform(actor(get("/api/notifications").param("size","0"),user,company,"COMPANY_ADMIN")).andExpect(status().isBadRequest())
@@ -145,7 +137,6 @@ class NotificationApiIT {
             api.perform(actor(get("/api/notifications").param("type","Transferencia entrante"),user,company,"COMPANY_ADMIN")).andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value("INVALID_PARAMETER"));
             api.perform(actor(get("/api/notifications").param("unread","quizás"),user,company,"COMPANY_ADMIN")).andExpect(status().isBadRequest());
-            // las de otra empresa no se cuelan en ninguna página
             api.perform(actor(get("/api/notifications"),user,UUID.randomUUID(),"COMPANY_ADMIN")).andExpect(status().isOk())
                     .andExpect(jsonPath("$.totalElements").value(0)).andExpect(jsonPath("$.items.length()").value(0))
                     .andExpect(jsonPath("$.totalPages").value(0));
@@ -179,10 +170,8 @@ class NotificationApiIT {
             assertThat(jdbc.sql("SELECT data->>'requestId' FROM notification WHERE resource_id='req-1'").query(String.class).single()).isEqualTo("req-1");
             assertThat(jdbc.sql("SELECT data->>'transferId' FROM notification WHERE resource_id='tr-1'").query(String.class).single()).isEqualTo("tr-1");
             assertThat(jdbc.sql("SELECT data->'batchIds'->>0 FROM notification WHERE resource_id='lote-1'").query(String.class).single()).isEqualTo("lote-1");
-            // I2: el cuerpo ya enviado se vacía; el pendiente lo conserva hasta que se envíe
             assertThat(jdbc.sql("SELECT body FROM deferred_email WHERE recipient='a@x.controlado'").query(String.class).single()).isEmpty();
             assertThat(jdbc.sql("SELECT body FROM deferred_email WHERE recipient='b@x.controlado'").query(String.class).single()).contains("token-pendiente");
-            // y la tabla ya no admite un cuerpo en un estado final
             org.junit.jupiter.api.Assertions.assertThrows(RuntimeException.class, () ->
                     jdbc.sql("UPDATE deferred_email SET status='SENT' WHERE recipient='b@x.controlado'").update());
             org.junit.jupiter.api.Assertions.assertThrows(RuntimeException.class, () ->
@@ -202,7 +191,6 @@ class NotificationApiIT {
                 """).param("type",type).param("title",title).param("resource",resource).param("id",resourceId).update();
     }
 
-    /** {@code ageIndex}: cuanto mayor, más antigua (un minuto por índice). */
     private static UUID notice(JdbcClient jdbc,UUID company,UUID user,String role,String type,int ageIndex) {
         UUID id=UUID.randomUUID();
         jdbc.sql("""

@@ -12,7 +12,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/** Dobles de Chequea.pe y HIBP para las pruebas de integración (los adaptadores reales se prueban en 02d con WireMock). */
 final class FakeExternalServices {
 
     private FakeExternalServices() {
@@ -22,7 +21,6 @@ final class FakeExternalServices {
 
         final Set<String> rejected = ConcurrentHashMap.newKeySet();
         final AtomicBoolean unavailable = new AtomicBoolean();
-        /** Si no es nulo, la prueba usa el adaptador real (contra WireMock) en lugar del doble. */
         volatile RucValidatorPort delegate;
 
         @Override

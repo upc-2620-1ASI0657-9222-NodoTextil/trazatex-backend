@@ -7,10 +7,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-/**
- * Programa el relay del outbox (~1 s). Cada pasada publica en orden las filas {@code PENDING} y marca las confirmadas por el
- * broker; lo que falla se reintenta en la pasada siguiente (se ve en {@code attempts} y {@code last_error}).
- */
 @Component
 @ConditionalOnProperty(name = "trazatex.messaging.enabled", havingValue = "true", matchIfMissing = true)
 class OutboxRelayJob {

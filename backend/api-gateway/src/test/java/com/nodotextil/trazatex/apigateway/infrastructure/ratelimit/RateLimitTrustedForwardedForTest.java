@@ -12,10 +12,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.any;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Despliegue detrás del ingress de Azure ({@code trust-forwarded-for=true}): se usa el valor que agrega el ingress (el de más a
- * la derecha). Lo que el cliente ponga a la izquierda no cambia de cubo; si la cabecera no sirve, vale la dirección de la conexión.
- */
 @TestPropertySource(properties = {"trazatex.rate-limit.login.permits=3", "trazatex.rate-limit.trust-forwarded-for=true", "trazatex.rate-limit.trusted-hops=1"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class RateLimitTrustedForwardedForTest extends GatewayTestSupport {
@@ -46,7 +42,7 @@ class RateLimitTrustedForwardedForTest extends GatewayTestSupport {
     @Test
     void whatTheClientPutsOnTheLeftNeverChangesTheBucket() {
         for (int i = 0; i < 3; i++) {
-            assertThat(login("10.0.0." + i + ", 198.51.100.1")).isEqualTo(200);   // el cliente falsifica a la izquierda; el ingress agrega la real
+            assertThat(login("10.0.0." + i + ", 198.51.100.1")).isEqualTo(200);
         }
 
         assertThat(login("6.6.6.6, 198.51.100.1")).isEqualTo(429);

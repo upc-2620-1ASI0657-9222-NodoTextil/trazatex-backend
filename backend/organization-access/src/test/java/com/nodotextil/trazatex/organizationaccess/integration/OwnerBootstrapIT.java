@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** ADR-013 y su ampliación: recuperación del Dueño. Los valores del entorno de la prueba: 4 empresas, 5 usuarios por empresa. */
 class OwnerBootstrapIT extends IntegrationTestBase {
 
     @Autowired
@@ -50,7 +49,7 @@ class OwnerBootstrapIT extends IntegrationTestBase {
         assertThat(outboxCount("InvitationCreated")).isEqualTo(1);
         assertThat(jdbc.sql("SELECT payload->'payload'->>'fullName' || '|' || (payload->'payload'->>'role') FROM outbox WHERE event_type = 'InvitationCreated'")
                 .query(String.class).single()).isEqualTo("Rosa Díaz de la Cruz|LICENSE_OWNER");
-        assertThat(count("SELECT count(*) FROM users")).isZero();   // nunca crea cuentas ni contraseñas
+        assertThat(count("SELECT count(*) FROM users")).isZero();
     }
 
     @Test
@@ -68,7 +67,6 @@ class OwnerBootstrapIT extends IntegrationTestBase {
 
     @Test
     void withAnActiveOwnerItDoesNothingAndKeepsTheExistingLimits() {
-        // el mundo de partida: licencia 3/3 y un Dueño activo
         assertThat(bootstrap.run()).isEqualTo(Outcome.NOTHING_TO_DO);
 
         assertThat(jdbc.sql("SELECT max_companies || '/' || max_users_per_company FROM license").query(String.class).single()).isEqualTo("3/3");
@@ -84,7 +82,7 @@ class OwnerBootstrapIT extends IntegrationTestBase {
 
         assertThat(ownerInvitations("PENDING")).isEqualTo(1);
         assertThat(outboxCount("InvitationCreated")).isEqualTo(1);
-        assertThat(jdbc.sql("SELECT max_companies FROM license").query(Integer.class).single()).isEqualTo(3);   // límites intactos
+        assertThat(jdbc.sql("SELECT max_companies FROM license").query(Integer.class).single()).isEqualTo(3);
         assertThat(bootstrap.run()).isEqualTo(Outcome.NOTHING_TO_DO);
         assertThat(ownerInvitations("PENDING")).isEqualTo(1);
     }
@@ -101,7 +99,7 @@ class OwnerBootstrapIT extends IntegrationTestBase {
     @Test
     void anExpiredOwnerInvitationIsReplacedAndMarkedExpired() {
         jdbc.sql("DELETE FROM users").update();
-        insertInvitation(null, OWNER_EMAIL, "LICENSE_OWNER", "PENDING", null, START.minus(Duration.ofDays(8)));   // vencida, aún PENDING
+        insertInvitation(null, OWNER_EMAIL, "LICENSE_OWNER", "PENDING", null, START.minus(Duration.ofDays(8)));
         long eventsBefore = count("SELECT count(*) FROM outbox");
 
         assertThat(bootstrap.run()).isEqualTo(Outcome.OWNER_INVITATION_REISSUED);
@@ -182,6 +180,6 @@ class OwnerBootstrapIT extends IntegrationTestBase {
         UUID owner = UUID.fromString(jwt);
         perform(GET("/api/license").header("X-User-Id", owner.toString()).header("X-User-Role", "LICENSE_OWNER"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.maxCompanies").value(4)).andExpect(jsonPath("$.maxUsersPerCompany").value(5));
-        assertThat(bootstrap.run()).isEqualTo(Outcome.NOTHING_TO_DO);   // ya hay un Dueño activo
+        assertThat(bootstrap.run()).isEqualTo(Outcome.NOTHING_TO_DO);
     }
 }

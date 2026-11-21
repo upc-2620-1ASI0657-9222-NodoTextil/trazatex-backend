@@ -11,4 +11,3 @@ import org.junit.platform.suite.api.Suite;
 @ConfigurationParameter(key="cucumber.glue",value="com.nodotextil.trazatex.analytics.acceptance")
 @ConfigurationParameter(key="cucumber.plugin",value="summary")
 public class CucumberIT { }
-
