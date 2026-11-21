@@ -54,11 +54,7 @@ Por defecto el compose usa volúmenes de nombre fijo (`trazatex-integration_*`; 
 
 ## Pruebas
 
-```bash
-cd backend && ./mvnw -B -ntp verify
-```
-
-Las imágenes se compilan con `-DskipTests`, así que esta verificación no sustituye a la construcción. Las pruebas de navegador (Playwright) están en `frontend/e2e`.
+Playwright
 
 ## Estructura
 
@@ -69,4 +65,6 @@ landing/    sitio web de presentación
 compose.yaml, .env.example, start.ps1, status.ps1, stop.ps1
 ```
 
-> El sistema inicia vacío; no incluye datos de prueba.
+# Despliegue
+
+AWS 
