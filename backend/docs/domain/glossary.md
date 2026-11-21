@@ -1,7 +1,7 @@
 # Lenguaje ubicuo y nombres en código
 
 Fuente: informe, 4.1.2 (Ubiquitous Language), 3.2 (RF) y 4.1.13 (patrón State).
-El código va en inglés (convención 5.2.3 del informe); la interfaz y los mensajes al usuario, en español. **Estos nombres son los oficiales: no inventes otros.**
+El código va en inglés (convención 5.2.3 del informe); la interfaz y los mensajes al usuario, en español. **Estos nombres son los oficiales y se usan en todo el proyecto.**
 
 ## Roles
 
@@ -44,9 +44,9 @@ Un lote está **habilitado** para dividir, transformar o transferir si: `phase =
 
 ## Nombre del lote (`name`)
 
-Texto libre y opcional que el operario da a un lote al registrarlo, en los hijos de una división y en las salidas de una transformación. **Solo lo ve la empresa dueña del lote** (`access = OWN`). No es un campo siempre compartido ni un `ConfigurableField`, así que ninguna configuración de privacidad lo muestra a otra empresa: nunca aparece en una vista `SHARED` de la genealogía. Decisión del usuario del 2026-11-03.
+Texto libre y opcional que el operario da a un lote al registrarlo, en los hijos de una división y en las salidas de una transformación. **Solo lo ve la empresa dueña del lote** (`access = OWN`). No es un campo siempre compartido ni un `ConfigurableField`, así que ninguna configuración de privacidad lo muestra a otra empresa: nunca aparece en una vista `SHARED` de la genealogía. Decisión del equipo del 2026-11-03.
 
-**Única excepción:** el detalle de una transferencia (`GET /api/transfers/{id}` de Production) muestra `name` a la empresa origen y a la destino, como dice `api.md`: lo ven las dos partes de la transferencia, aunque la destino aún no sea dueña o la origen ya no lo sea. Ninguna otra empresa ve ese detalle (404). Decisión del usuario del 2026-11-03.
+**Única excepción:** el detalle de una transferencia (`GET /api/transfers/{id}` de Production) muestra `name` a la empresa origen y a la destino, como dice `api.md`: lo ven las dos partes de la transferencia, aunque la destino aún no sea dueña o la origen ya no lo sea. Ninguna otra empresa ve ese detalle (404). Decisión del equipo del 2026-11-03.
 
 ## Otros enums
 
@@ -66,7 +66,7 @@ Texto libre y opcional que el operario da a un lote al registrarlo, en los hijos
 | Estado del control | `ControlStatus`: `STARTING` (INICIANDO), `IN_PROGRESS` (EN_CURSO), `FINISHED`, `CANCELLED` |
 | Resultado de prueba / control | `TestResult`: `CONFORMING`, `FAILED` |
 | Estado de falla | `FailureStatus`: `OPEN` (generada, sin decisión final), `CONFIRMED`, `RESOLVED` |
-| Retención pedida por un aviso de falla derivada (`ImpactedBatch.lockStatus`) | `LockStatus`: `PENDING` (falta aplicar el `HOLD`), `APPLIED` (el `HOLD` se aplicó y se confirmó), `NO_ACTION` (sin acción: lote histórico o ya retenido). Confirmados por el usuario el 2026-10-23 |
+| Retención pedida por un aviso de falla derivada (`ImpactedBatch.lockStatus`) | `LockStatus`: `PENDING` (falta aplicar el `HOLD`), `APPLIED` (el `HOLD` se aplicó y se confirmó), `NO_ACTION` (sin acción: lote histórico o ya retenido). Confirmados por el equipo el 2026-10-23 |
 | Tipo de impacto (`ImpactedBatch.impactType`) | `ImpactType`: `ANCESTOR` (el lote afectado es el antecesor común), `DESCENDANT` (el antecesor común es el lote fallado), `RELATED_BRANCH` (cualquier otro). Se deduce de `commonAncestorBatchId`, no viaja en el evento |
 
 ## Términos

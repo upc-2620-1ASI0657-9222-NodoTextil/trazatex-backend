@@ -13,7 +13,6 @@ export default defineConfig({
   use: {
     actionTimeout: 15000,
     baseURL: process.env['TRAZATEX_APP_URL'] ?? 'http://127.0.0.1:14200',
-    // Ronda 5: solo el Chrome instalado en el equipo (no se descargan navegadores de Playwright).
     channel: 'chrome',
     headless: true,
     trace: 'retain-on-failure',

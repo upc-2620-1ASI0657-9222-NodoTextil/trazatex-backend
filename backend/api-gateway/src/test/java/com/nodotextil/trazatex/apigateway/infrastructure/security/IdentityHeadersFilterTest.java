@@ -19,10 +19,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * 03b-2: el servicio solo ve la identidad que puso el Gateway (la del token). Todo {@code X-User-*} y {@code X-Company-*} que
- * mande el cliente se borra, con token o sin él, y lo demás pasa intacto.
- */
 class IdentityHeadersFilterTest extends GatewayTestSupport {
 
     private static final UUID EVIL = UUID.fromString("66666666-6666-6666-6666-666666666666");
@@ -141,7 +137,6 @@ class IdentityHeadersFilterTest extends GatewayTestSupport {
         assertThat(request.header("X-Request-Source").values()).containsExactly("web");
         assertThat(request.header("Content-Type").values()).containsExactly("application/json");
         assertThat(request.header("Authorization").isPresent()).as("el JWT se propaga (ADR-009: auditoría)").isTrue();
-        // "X-Usage" y "X-Companyless" no empiezan por "X-User-" / "X-Company-": no se tocan
         assertThat(request.header("X-Usage").values()).containsExactly("ok");
         assertThat(request.header("X-Companyless").values()).containsExactly("ok");
     }

@@ -23,12 +23,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Construye la genealogía a partir de los eventos (US29). Traceability no crea lotes, IDs ni QR ni cambia fases: refleja lo que
- * publican los demás servicios. Todas las reglas de orden y de datos inmutables viven en el contrato de {@link LineageGraphPort}
- * (se aplican de forma atómica en la base). {@code @Transactional} se une a la transacción idempotente del consumidor; llamado
- * solo, abre la suya, para que un evento nunca quede a medias.
- */
 @Service
 @Transactional
 class LineageService implements RegisterBatchUseCase, ApplyBatchSplitUseCase, ApplyTransformationCompletedUseCase,

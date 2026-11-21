@@ -14,7 +14,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** US43: la evidencia fotográfica de un control o de una falla (Cloudinary simulado con WireMock; lo subido queda asociado a su dueño). */
 public class EvidenceSteps extends StepSupport {
 
     public EvidenceSteps(World world, QualityApi api, JdbcClient jdbc, ObjectMapper json) {
@@ -40,8 +39,6 @@ public class EvidenceSteps extends StepSupport {
         assertThat(listed.field("items")).allMatch(item -> item.path("ownerId").asString().equals(owner.toString()) && !item.path("url").isNull());
     }
 
-    // ---- esc. 1: en un control ----
-
     @Dado("^que existe un control de calidad registrado$")
     public void aQualityControlExists() {
         UUID control = controlInProgress(seedBatch("NOT_REVIEWED", false, false), "CONFORMING");
@@ -58,8 +55,6 @@ public class EvidenceSteps extends StepSupport {
         assertKeptAndListed("CONTROL", world.control, "/api/quality/controls/" + world.control + "/evidence");
     }
 
-    // ---- esc. 2: en una falla ----
-
     @Dado("^que existe una Falla registrada$")
     public void aFailureExists() {
         failedBatchWithOpenFailure();
@@ -73,12 +68,6 @@ public class EvidenceSteps extends StepSupport {
         assertThat(api.get(world.adminA, "/api/quality/controls/" + world.control + "/evidence").field("items")).as("lo de la falla no se mezcla con el control").isEmpty();
     }
 
-    // ---- esc. 3: formato no soportado ----
-
-    /**
-     * El texto del informe dice «el operario», pero adjuntar es del administrador de empresa (la historia misma lo dice): el paso actúa como administrador y
-     * una prueba aparte ({@code EvidenceApiIT}) comprueba que un OPERATOR recibe 403. Probable errata del informe (quality.md).
-     */
     @Dado("^que el archivo no corresponde a una imagen válida$")
     public void theFileIsNotAValidImage() {
         UUID control = controlInProgress(seedBatch("NOT_REVIEWED", false, false), "CONFORMING");
@@ -101,7 +90,6 @@ public class EvidenceSteps extends StepSupport {
         assertThat(CloudinaryRequests.count()).as("ni se subió a Cloudinary").isZero();
     }
 
-    /** Lo que llegó al Cloudinary simulado: se lee por el mismo servidor de pruebas que atiende al servicio. */
     private static final class CloudinaryRequests {
         static int count() {
             return com.nodotextil.trazatex.quality.integration.CloudinaryStub.uploads().size();

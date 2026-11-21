@@ -21,7 +21,7 @@ class FakeApi {
 
 const LISTAS: [string, Type<unknown>, RegExp][] = [
   ['Lotes', LotesPage, /Sin lotes en esta vista/],
-  ['Procesos', ProcesosPage, /Sin procesos en esta vista/],
+  ['Transformaciones', ProcesosPage, /Sin transformaciones en esta vista/],
   ['Transferencias', TransferenciasPage, /Sin transferencias en esta vista/],
   ['Maquinaria', MaquinariaPage, /Sin maquinaria en este estado/],
   ['Empresas', EmpresasPage, /Sin empresas en esta vista/],

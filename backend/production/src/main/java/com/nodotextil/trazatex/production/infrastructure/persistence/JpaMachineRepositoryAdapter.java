@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/** Maquinaria por JPA; el historial de estados ({@code machine_status_history}) es solo-agregar y va por JDBC. */
 @Component
 class JpaMachineRepositoryAdapter implements MachineRepositoryPort {
 

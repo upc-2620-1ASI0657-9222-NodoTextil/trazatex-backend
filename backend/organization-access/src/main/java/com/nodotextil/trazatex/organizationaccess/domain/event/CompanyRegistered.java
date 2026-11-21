@@ -7,7 +7,6 @@ import com.nodotextil.trazatex.organizationaccess.domain.model.TextileActivity;
 import java.util.List;
 import java.util.UUID;
 
-/** Tópico {@code orgaccess.company}, clave companyId. Lo consume production. */
 public record CompanyRegistered(
         UUID companyId,
         String ruc,

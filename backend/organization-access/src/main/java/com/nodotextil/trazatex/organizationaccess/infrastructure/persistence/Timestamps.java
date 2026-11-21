@@ -4,7 +4,6 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
-/** El driver de PostgreSQL enlaza {@code OffsetDateTime} (no {@code Instant}) con columnas {@code timestamptz}. */
 final class Timestamps {
 
     private Timestamps() {

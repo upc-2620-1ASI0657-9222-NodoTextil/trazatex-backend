@@ -2,7 +2,6 @@ package com.nodotextil.trazatex.sharedkernel.exception;
 
 import java.util.List;
 
-/** Datos de entrada inválidos o regla de negocio incumplida. Se mapea a 400/422 según el servicio. */
 public class ValidationException extends TrazatexException {
 
     public static final String CODE = "VALIDATION_ERROR";

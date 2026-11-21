@@ -9,11 +9,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-/**
- * Adaptador Kafka de {@link EventPublisherPort}. Bloquea hasta que el broker confirma el envío (la plantilla debe
- * venir de {@link ReliableKafkaProducer}, es decir {@code acks=all} + idempotente); si no hay confirmación a tiempo
- * o hay error, lanza {@link EventPublishException} y el relay no marca la fila.
- */
 public class KafkaEventPublisher implements EventPublisherPort {
 
     public static final Duration DEFAULT_CONFIRM_TIMEOUT = Duration.ofSeconds(10);
@@ -40,8 +35,6 @@ public class KafkaEventPublisher implements EventPublisherPort {
         } catch (ExecutionException | TimeoutException e) {
             throw new EventPublishException("Kafka no confirmó la publicación en " + topic + " (key " + key + ")", e);
         } catch (RuntimeException e) {
-            // el envío falla sin llegar a devolver un futuro (p. ej. el tópico no existe y el productor agota la espera de metadatos:
-            // KafkaException "Send failed"); el contrato del puerto es EventPublishException en todos los fallos
             throw new EventPublishException("Kafka no pudo enviar a " + topic + " (key " + key + ")", e);
         }
     }

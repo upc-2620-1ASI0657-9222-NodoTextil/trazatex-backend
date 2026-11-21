@@ -4,17 +4,11 @@ import com.nodotextil.trazatex.sharedmessaging.consumer.TopicWatcher;
 
 import java.util.List;
 
-/**
- * Tópicos que consume quality (docs/architecture/communication.md). Son de Production y Traceability: quality declara solo sus {@code .DLT} y
- * <b>nunca</b> los crea. Cada uno se lee con su propio grupo y su propio contenedor, que no arranca hasta que el tópico existe
- * (ver {@link TopicWatcherJob}).
- */
 public final class ConsumedTopics {
 
     public static final String PRODUCTION_BATCH = "production.batch";
     public static final String PRODUCTION_TRANSFORMATION = "production.transformation";
     public static final String PRODUCTION_TRANSFER = "production.transfer";
-    /** De Traceability: {@code PossibleDerivedFailureDetected}. */
     public static final String TRACEABILITY_IMPACT = "traceability.impact";
 
     public static final String BATCH_LISTENER_ID = "quality-production-batch";

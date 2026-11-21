@@ -5,11 +5,6 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 
 import java.time.Duration;
 
-/**
- * Cloudinary ({@code trazatex.cloudinary.*}). {@code url} es {@code CLOUDINARY_URL}
- * ({@code cloudinary://API_KEY:API_SECRET@CLOUD_NAME}), un secreto: solo por variable de entorno y nunca en un log. Vacía =
- * sin configurar (todo va a la cola). {@code baseUrl} es la API de subida; las pruebas la apuntan a WireMock.
- */
 @ConfigurationProperties("trazatex.cloudinary")
 public record CloudinaryProperties(
         @DefaultValue("") String url,

@@ -7,9 +7,7 @@ spring:
         webflux:
           httpclient:
             connect-timeout: 2000
-            # Chequea.pe (3 s) corre dentro de "crear empresa": este tope deja margen y evita colgar al frontend
             response-timeout: 30s
-          # CORS se configura solo aquí (api.md); los servicios no lo hacen. Autenticación por cabecera Bearer: sin cookies
           globalcors:
             cors-configurations:
               '[/**]':
@@ -19,35 +17,29 @@ spring:
                 exposed-headers: Retry-After,Location
                 allow-credentials: false
                 max-age: 3600
-          # Las rutas de los seis servicios de api.md (cada URL se configura abajo, en trazatex.gateway.services).
-          # /internal/** no se enruta nunca (solo red interna). /.well-known/jwks.json no se expone: el Gateway
-          # lo lee directo de JWKS_URI.
           routes:
             - id: organization-access
               uri: ${trazatex.gateway.services.organization-access-url}
               predicates:
                 - Path=/api/auth/**,/api/license/**,/api/companies/**,/api/users/**,/api/invitations/**,/api/admin-requests/**,/api/privacy-settings/**
-            # Fase 04 (production). Las evidencias (multipart de hasta 5 × 10 MB) pasan tal cual: el Gateway no limita ni lee el cuerpo
             - id: production
-              uri: ${trazatex.gateway.services.production-url}   # PRODUCTION_URL, por defecto http://localhost:8082
+              uri: ${trazatex.gateway.services.production-url}
               predicates:
                 - Path=/api/batches/**,/api/machines/**,/api/transformations/**,/api/transfers/**
-            # Fase 05 (traceability). Todo lo que sale por esta ruta lleva Cache-Control: no-store (NoStoreWebFilter), también los errores del Gateway
             - id: traceability
-              uri: ${trazatex.gateway.services.traceability-url}   # TRACEABILITY_URL, por defecto http://localhost:8084
+              uri: ${trazatex.gateway.services.traceability-url}
               predicates:
                 - Path=/api/traceability/**
-            # Fase 06 (quality). El comando interno Quality → Production (/internal/**) no pasa por aquí: el Gateway le responde 404
             - id: quality
-              uri: ${trazatex.gateway.services.quality-url}   # QUALITY_URL, por defecto http://localhost:8083
+              uri: ${trazatex.gateway.services.quality-url}
               predicates:
                 - Path=/api/quality/**
             - id: notification
-              uri: ${trazatex.gateway.services.notification-url}   # NOTIFICATION_URL, por defecto http://localhost:8085
+              uri: ${trazatex.gateway.services.notification-url}
               predicates:
                 - Path=/api/notifications/**
             - id: analytics
-              uri: ${trazatex.gateway.services.analytics-url}   # ANALYTICS_URL, por defecto http://localhost:8086
+              uri: ${trazatex.gateway.services.analytics-url}
               predicates:
                 - Path=/api/analytics/**
 
@@ -65,32 +57,20 @@ management:
         enabled: true
       group:
         readiness:
-          # RF-012: no está listo hasta haber leído orgaccess.user completo (contributor "revocation")
           include: readinessState,revocation
 
 trazatex:
   rate-limit:
-    # Bucket4j en memoria (sin Redis). 429 con Retry-After y ApiError. Todo configurable.
-    login: {permits: 60, window: PT1M}        # POST /api/auth/login, por IP (en una planta muchos operarios comparten IP; RNF-06 ya bloquea por cuenta)
-    invitation: {permits: 30, window: PT1M}   # GET/POST de invitaciones por enlace, por IP
-    user: {permits: 120, window: PT1M}        # rutas autenticadas, por userId...
-    company: {permits: 600, window: PT1M}     # ...y por empresa, a la vez (el Dueño, sin empresa, solo usa el de usuario)
-    # Peticiones por IP a rutas protegidas SIN credencial válida (sin token o con uno que no es nuestro); pasado el límite reciben
-    # 429 en vez de 401. No cuentan token vencido ni usuario inactivo (sesiones reales) ni frenan a quien trae un token válido
+    login: {permits: 60, window: PT1M}
+    invitation: {permits: 30, window: PT1M}
+    user: {permits: 120, window: PT1M}
+    company: {permits: 600, window: PT1M}
     auth-failure: {permits: 300, window: PT1M}
-    # Los cubos inactivos se descartan (Caffeine); no puede ser menor que la ventana más larga
     idle-expiry: PT10M
-    max-entries: 100000                       # tope de cubos por ámbito
-    # La IP es la dirección de la CONEXIÓN. Un X-Forwarded-For del cliente nunca se usa. En Azure (ingress delante) poner
-    # true: se toma el valor que agrega el ingress (el de más a la derecha, o el trusted-hops-ésimo desde la derecha)
-    # Variables explícitas (el relaxed binding de Spring no cruza los guiones de rate-limit): TRAZATEX_RATE_LIMIT_TRUST_FORWARDED_FOR
-    # y TRAZATEX_RATE_LIMIT_TRUSTED_HOPS
+    max-entries: 100000
     trust-forwarded-for: ${TRAZATEX_RATE_LIMIT_TRUST_FORWARDED_FOR:false}
     trusted-hops: ${TRAZATEX_RATE_LIMIT_TRUSTED_HOPS:1}
   revocation:
-    # RF-012: el Gateway lee orgaccess.user (compactado) sin grupo, desde el inicio, y responde 401 a los tokens de usuarios
-    # INACTIVE. No está listo (readiness) ni deja pasar rutas autenticadas (503) hasta terminar de leerlo.
-    # enabled=false SOLO para pruebas sin Kafka.
     enabled: true
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     topic: orgaccess.user
@@ -99,12 +79,9 @@ trazatex:
     retry-max-backoff: PT30S
     api-timeout: PT10S
   jwt:
-    # ADR-005: claves públicas de organization-access (RS256). Caché de 5 min; ante un kid desconocido se vuelve a pedir
-    # como máximo cada 30 s; si organization-access cae se sigue con la caché hasta 8 h (la vigencia del JWT)
     jwks-uri: ${JWKS_URI:http://localhost:8081/.well-known/jwks.json}
     cache-ttl: PT5M
     min-reload-interval: PT30S
-    # Solo mientras el JWKS no se haya cargado nunca (organization-access caído al arrancar)
     failure-retry-interval: PT5S
     outage-tolerance: PT8H
     connect-timeout: PT2S

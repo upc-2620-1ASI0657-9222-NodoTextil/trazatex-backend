@@ -14,15 +14,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 
-/**
- * Contraseñas filtradas con Have I Been Pwned por k-anonymity (ADR-007): solo viajan los 5 primeros caracteres del SHA-1 de la
- * contraseña ({@code GET /range/{prefijo}}); el sufijo se compara aquí. Pide relleno ({@code Add-Padding}) para que el tamaño de la
- * respuesta no delate el prefijo. La contraseña, su hash completo y el sufijo nunca se envían ni se registran.
- *
- * <p>Timeout 2 s y circuit breaker. Si el servicio no responde (timeout, error, circuito abierto) devuelve
- * {@link Result#UNAVAILABLE}: el caso de uso acepta la contraseña y deja una advertencia en {@code audit_log}. Con
- * {@code HIBP_ENABLED=false} no consulta nada y devuelve {@link Result#CLEAN}.
- */
 public class HibpPasswordBreachCheckerAdapter implements PasswordBreachCheckerPort {
 
     private static final Logger log = LoggerFactory.getLogger(HibpPasswordBreachCheckerAdapter.class);
@@ -73,7 +64,6 @@ public class HibpPasswordBreachCheckerAdapter implements PasswordBreachCheckerPo
         }
     }
 
-    /** Líneas {@code SUFIJO:CANTIDAD}; las de relleno traen cantidad 0 y no cuentan. */
     private static boolean containsLeaked(String ranges, String suffix) {
         for (String line : ranges.split("\\r?\\n")) {
             int colon = line.indexOf(':');

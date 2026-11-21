@@ -7,7 +7,6 @@ import { SessionService } from './session.service';
 import { NOMBRE_OCULTO, StoreService } from './store.service';
 import { UiService } from '../shared/ui';
 
-/** ApiService de mentira: responde por «MÉTODO ruta» y anota las llamadas. */
 class FakeApi {
   readonly calls: string[] = [];
   readonly routes = new Map<string, unknown>();
@@ -15,7 +14,7 @@ class FakeApi {
     this.calls.push(method + ' ' + path);
     if (!this.routes.has(method + ' ' + path)) throw new Error('Ruta sin respuesta de prueba: ' + method + ' ' + path);
     const response = this.routes.get(method + ' ' + path);
-    if (response instanceof Error || response instanceof HttpErrorResponse) throw response;   // una ruta con un error simula un fallo del servidor
+    if (response instanceof Error || response instanceof HttpErrorResponse) throw response;
     return response as T;
   }
   async all<T>(path: string): Promise<T[]> {
@@ -56,7 +55,6 @@ describe('Privacidad del nombre del lote (OWN)', () => {
     api = new FakeApi();
     TestBed.configureTestingModule({ providers: [provideRouter([]), { provide: ApiService, useValue: api }] });
     store = TestBed.inject(StoreService);
-    // El efecto inicial del store limpia el estado y lanza un refresh(): se deja correr antes de cada prueba.
     TestBed.tick();
     await vi.waitFor(() => expect(api.calls).toContain('ALL /transfers/recipients'));
     await vi.waitFor(() => expect(store.loading()).toBe(false));
@@ -64,7 +62,6 @@ describe('Privacidad del nombre del lote (OWN)', () => {
   });
   afterEach(() => sessionStorage.clear());
 
-  /** Genealogía con un lote propio y uno ajeno cuyo `name` llega aunque no debería (servidor defectuoso). */
   function genealogia() {
     api.routes.set('GET /traceability/batches/own-id/lineage', {
       complete: true, truncated: false,
@@ -116,7 +113,6 @@ describe('Privacidad del nombre del lote (OWN)', () => {
     });
     expect(await store.searchLineages('algodón de')).toEqual(['TT-OWN-0001']);
     api.calls.length = 0;
-    // «secreto» solo existe como nombre ajeno: no hay coincidencia local y se consulta por ID/QR exactos.
     expect(await store.searchLineages('secreto del proveedor')).toEqual([]);
     expect(api.calls).toEqual([
       'ALL /traceability/lineages?traceabilityId=secreto%20del%20proveedor',
@@ -135,7 +131,6 @@ describe('Privacidad del nombre del lote (OWN)', () => {
     const lotesAntes = store.lotes();
     expect(store.nombreEnTransferencia('TT-FOR-0002')).toBe('Lote en tránsito');
     expect(store.nombreLote('TT-FOR-0002')).toBe(NOMBRE_OCULTO);
-    // Leer el nombre no escribe nada, y el detalle de la transferencia nunca lo copia a `lotes`.
     expect(store.lotes()).toBe(lotesAntes);
     expect(store.lote('TT-FOR-0002')?.nombre).toBeUndefined();
     expect(JSON.stringify(store.lotes())).not.toContain('Lote en tránsito');
@@ -148,7 +143,6 @@ describe('Privacidad del nombre del lote (OWN)', () => {
   });
 });
 
-/** Respuesta de `GET /notifications` (página del servidor). */
 function pagina(items: unknown[], extra: Record<string, unknown> = {}) {
   return { items, page: 0, size: 6, totalElements: items.length, totalPages: items.length ? 1 : 0, ...extra };
 }
@@ -163,13 +157,11 @@ describe('Contador de notificaciones no leídas (FE-I9)', () => {
   const unreadCalls = () => api.calls.filter(call => call === 'GET /notifications/unread-count');
   const setCount = (count: number) => api.routes.set('GET /notifications/unread-count', { count });
 
-  /** Espera con setTimeout real: `vi.waitFor` adelantaría los intervalos simulados y falsearía los 30 s. */
   async function hasta(condition: () => boolean) {
     for (let i = 0; i < 400 && !condition(); i++) await new Promise(resolve => setTimeout(resolve, 5));
     expect(condition()).toBe(true);
   }
 
-  /** Arranca el store (con o sin sesión) y deja que termine el refresh() inicial. Solo se simulan los intervalos. */
   async function arrancar(conSesion: boolean, count = 3) {
     sessionStorage.clear();
     if (conSesion) sessionFor();
@@ -370,7 +362,7 @@ describe('Lectura de QR: lote propio, lote de otra empresa y enlaces (FE-I1)', (
       expect(store.lote(code)?.nombre).toBeUndefined();
       expect(store.nombreLote(code)).toBe(NOMBRE_OCULTO);
       expect(store.nombreEmpresa(FOREIGN_COMPANY)).toBe('Hilandería Sur');
-      expect(detailCalls()).toEqual([]); // GET /batches/{id} de un lote ajeno sería un 404
+      expect(detailCalls()).toEqual([]);
     });
 
     it('no pasa por la búsqueda por nombre ni por QR: una sola consulta exacta por Traceability ID', async () => {

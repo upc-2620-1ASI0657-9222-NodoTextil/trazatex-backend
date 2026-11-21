@@ -4,10 +4,6 @@ import com.nodotextil.trazatex.production.application.port.out.Page;
 import com.nodotextil.trazatex.production.domain.exception.ErrorCodes;
 import com.nodotextil.trazatex.sharedkernel.exception.ValidationException;
 
-/**
- * Paginación (RNF-03): página desde 0, tamaño por defecto {@value Page#DEFAULT_SIZE} y <b>máximo {@value Page#MAX_SIZE}</b>:
- * si piden más, se usa el máximo. Un valor que no tiene sentido (página negativa, tamaño menor que 1) es 400.
- */
 final class Paging {
 
     private Paging() {

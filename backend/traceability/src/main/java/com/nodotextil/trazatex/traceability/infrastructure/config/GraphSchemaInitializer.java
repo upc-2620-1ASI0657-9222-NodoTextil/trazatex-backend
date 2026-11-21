@@ -10,12 +10,6 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Crea las restricciones de unicidad y los índices del grafo al iniciar, <b>antes</b> de que arranque ningún consumidor
- * (corre al terminar de crear los beans, y los listeners de Kafka arrancan después). Es idempotente ({@code IF NOT EXISTS}).
- * Si Neo4j no responde, o ya hay datos que violan una restricción, el servicio no arranca y el mensaje dice por qué:
- * sin ellas, dos consumidores concurrentes podrían crear dos nodos para el mismo lote.
- */
 @Component
 public class GraphSchemaInitializer implements SmartInitializingSingleton {
 

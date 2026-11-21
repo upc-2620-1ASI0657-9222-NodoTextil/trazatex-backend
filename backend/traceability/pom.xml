@@ -137,12 +137,10 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <!-- El jar ejecutable va aparte (-exec): Failsafe necesita el jar normal con las clases en la raíz -->
                     <classifier>exec</classifier>
                 </configuration>
             </plugin>
             <plugin>
-                <!-- Pruebas de integración (*IT): Spring completo + Neo4j real con Testcontainers (requiere Docker) -->
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <executions>

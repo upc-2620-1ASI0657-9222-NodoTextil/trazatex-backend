@@ -42,12 +42,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-/**
- * Mensajería de Quality con Kafka real: sus cuatro tópicos quedan sin borrado por tiempo y sin compactar (también uno que ya existía
- * compactado), los tópicos de Production que aún no existen no se crean ni se consumen hasta que aparecen, y la proyección de lotes
- * se alimenta de {@code production.batch}, {@code production.transformation} y {@code production.transfer} sin importar el orden, sin
- * aplicar dos veces el mismo evento y mandando lo ilegible a la DLT.
- */
 @SpringBootTest(properties = {
         "trazatex.messaging.enabled=true", "trazatex.quality.start.job-enabled=false",
         "trazatex.messaging.consumer.topic-check-interval=PT1S",
@@ -68,7 +62,6 @@ class QualityMessagingKafkaIT extends IntegrationTestBase {
 
     static {
         KAFKA.start();
-        // Estado previo de un Kafka local: quality.control ya existe, compactado y con datos; quality.failure.DLT con la configuración por defecto
         try (AdminClient admin = AdminClient.create(Map.<String, Object>of("bootstrap.servers", KAFKA.getBootstrapServers()))) {
             admin.createTopics(List.of(new NewTopic("quality.control", 1, (short) 1).configs(Map.of("cleanup.policy", "compact")),
                     new NewTopic("quality.failure.DLT", 1, (short) 1))).all().get();
@@ -94,8 +87,6 @@ class QualityMessagingKafkaIT extends IntegrationTestBase {
     com.nodotextil.trazatex.quality.application.port.out.QualityEventPublisherPort events;
     @Autowired
     org.springframework.transaction.PlatformTransactionManager transactionManager;
-
-    // ---- Kafka ----
 
     record Sent(UUID eventId, String json) {
     }
@@ -145,8 +136,6 @@ class QualityMessagingKafkaIT extends IntegrationTestBase {
         return jdbc.sql("SELECT count(*) FROM processed_events WHERE event_id = :id").param("id", eventId).query(Long.class).single();
     }
 
-    // ---- Los tópicos de Quality y los ajenos ----
-
     @Test
     @Order(1)
     void qualityTopicsAreDeclaredWithoutRetentionByTimeAndWithoutCompactionEvenWhenOneAlreadyExistedCompacted() throws Exception {
@@ -171,7 +160,7 @@ class QualityMessagingKafkaIT extends IntegrationTestBase {
         for (String listener : List.of("quality-production-batch", "quality-production-transformation", "quality-production-transfer")) {
             assertThat(running(listener)).as(listener).isFalse();
         }
-        Thread.sleep(2500);   // dos pasadas del vigilante (1 s) y siguen detenidos: no se suscribieron a un tópico ausente
+        Thread.sleep(2500);
         assertThat(running("quality-production-batch")).isFalse();
 
         createTopics(BATCH_TOPIC, TRANSFORMATION_TOPIC, TRANSFER_TOPIC);
@@ -185,8 +174,6 @@ class QualityMessagingKafkaIT extends IntegrationTestBase {
             assertThat(admin.listTopics().names().get()).contains(BATCH_TOPIC);
         }
     }
-
-    // ---- La proyección ----
 
     @Test
     @Order(3)
@@ -211,7 +198,7 @@ class QualityMessagingKafkaIT extends IntegrationTestBase {
         send(BATCH_TOPIC, batch.toString(), registered(batch, COMPANY).json());
         send(BATCH_TOPIC, batch.toString(), newest.json());
         send(BATCH_TOPIC, batch.toString(), phaseChanged(batch, COMPANY, "IN_QUALITY_CONTROL", false, 3).json());
-        send(BATCH_TOPIC, batch.toString(), newest.json());   // el mismo evento, repetido
+        send(BATCH_TOPIC, batch.toString(), newest.json());
 
         await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> assertThat(processedEvents(newest.eventId())).isEqualTo(1));
         await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> assertThat(jdbc.sql("SELECT count(*) FROM processed_events").query(Long.class).single()).isGreaterThanOrEqualTo(3));
@@ -292,8 +279,6 @@ class QualityMessagingKafkaIT extends IntegrationTestBase {
         assertThat(processedEvents(withoutCompany.eventId())).isZero();
     }
 
-    // ---- 06c: avisos de Traceability y publicación del outbox ----
-
     static Sent detected(UUID failure, UUID source, UUID... affected) {
         return envelope("PossibleDerivedFailureDetected", failure.toString(), Map.of("failureId", failure, "sourceBatchId", source,
                 "affected", java.util.Arrays.stream(affected).map(batch -> Map.of("batchId", batch, "companyId", COMPANY, "commonAncestorBatchId", source)).toList()));
@@ -312,7 +297,7 @@ class QualityMessagingKafkaIT extends IntegrationTestBase {
         Sent notice = detected(failure, source, batch);
 
         send("traceability.impact", failure.toString(), notice.json());
-        send("traceability.impact", failure.toString(), notice.json());   // el mismo evento otra vez
+        send("traceability.impact", failure.toString(), notice.json());
 
         await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> assertThat(notices.findByFailure(failure)).hasSize(1));
         assertThat(notices.findByFailure(failure).get(0).lockStatus()).isEqualTo(com.nodotextil.trazatex.quality.domain.model.LockStatus.PENDING);

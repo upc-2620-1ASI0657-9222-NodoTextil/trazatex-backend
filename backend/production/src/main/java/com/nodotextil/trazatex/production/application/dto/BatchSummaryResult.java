@@ -8,7 +8,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-/** Una fila de la búsqueda de lotes (US13); el detalle completo está en {@link BatchResult}. */
 public record BatchSummaryResult(
         UUID id,
         String traceabilityId,

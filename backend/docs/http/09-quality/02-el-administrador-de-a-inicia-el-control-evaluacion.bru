@@ -25,7 +25,6 @@ assert {
 }
 
 script:pre-request {
-  // Quality conoce el lote por el evento BatchRegistered de production.batch (relay ~1 s + consumo): sin esta espera el lote aún no estaría en su proyección
   await bru.sleep(4000);
 }
 

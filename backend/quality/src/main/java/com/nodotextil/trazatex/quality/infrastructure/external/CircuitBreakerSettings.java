@@ -5,7 +5,6 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 
 import java.time.Duration;
 
-/** Circuit breaker de un adaptador externo (Resilience4j, ADR-007). Ventana por conteo; abre al superar el umbral de fallos. */
 public record CircuitBreakerSettings(
         @DefaultValue("10") int slidingWindowSize,
         @DefaultValue("5") int minimumCalls,

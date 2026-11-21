@@ -15,10 +15,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Concurrencia de cupos (RF-013): la fila de la empresa (usuarios) y la de la licencia (empresas) se bloquean con
- * SELECT ... FOR UPDATE, de modo que dos operaciones simultáneas por el último cupo no pasan ambas.
- */
 class ConcurrentCapacityIT extends IntegrationTestBase {
 
     private static final int ROUNDS = 8;
@@ -56,7 +52,7 @@ class ConcurrentCapacityIT extends IntegrationTestBase {
     void twoSimultaneousInvitationsForTheLastSlotCreateOnlyOne() throws Exception {
         jdbc.sql("UPDATE license SET max_users_per_company = 2").update();
         UUID company = insertCompany(VALID_RUC, "Hilos SAC", "ACTIVE");
-        UUID admin = insertUser(company, "Ana", "ana@hilos.pe", "COMPANY_ADMIN", "ACTIVE");   // ocupa 1 de 2 cupos
+        UUID admin = insertUser(company, "Ana", "ana@hilos.pe", "COMPANY_ADMIN", "ACTIVE");
 
         List<Integer> statuses = concurrently(List.of(
                 () -> status(perform(body(asAdmin(POST("/api/invitations/operators"), admin, company),
@@ -73,7 +69,7 @@ class ConcurrentCapacityIT extends IntegrationTestBase {
     void manySimultaneousInvitationsNeverExceedTheLimit() throws Exception {
         jdbc.sql("UPDATE license SET max_users_per_company = 4").update();
         UUID company = insertCompany(VALID_RUC, "Hilos SAC", "ACTIVE");
-        UUID admin = insertUser(company, "Ana", "ana@hilos.pe", "COMPANY_ADMIN", "ACTIVE");   // 1 de 4
+        UUID admin = insertUser(company, "Ana", "ana@hilos.pe", "COMPANY_ADMIN", "ACTIVE");
 
         List<Callable<Integer>> calls = new ArrayList<>();
         for (int i = 0; i < 6; i++) {
@@ -101,7 +97,6 @@ class ConcurrentCapacityIT extends IntegrationTestBase {
                 () -> status(perform(body(asAdmin(POST("/api/invitations/operators"), admin, company),
                         "{\"firstName\":\"Mara\",\"lastName\":\"Paz\",\"email\":\"mara@hilos.pe\",\"position\":\"Tejedora\"}")))));
 
-        // Quien entre primero se queda con el único cupo (la reactivación da 200, la invitación 201); el otro recibe 409
         assertThat(statuses.stream().sorted().toList()).isIn(List.of(200, 409), List.of(201, 409));
         assertThat(count("SELECT count(*) FROM users WHERE company_id = ? AND status = 'ACTIVE'", company)
                 + count("SELECT count(*) FROM invitations WHERE company_id = ? AND status = 'PENDING'", company)).isEqualTo(2);
@@ -110,7 +105,7 @@ class ConcurrentCapacityIT extends IntegrationTestBase {
     @RepeatedTest(ROUNDS)
     void twoSimultaneousCompanyCreationsForTheLastCompanySlotCreateOnlyOne() throws Exception {
         insertCompany(VALID_RUC, "Una SAC", "ACTIVE");
-        insertCompany(OTHER_RUC, "Dos SAC", "ACTIVE");   // 2 de 3
+        insertCompany(OTHER_RUC, "Dos SAC", "ACTIVE");
 
         List<Integer> statuses = concurrently(List.of(
                 () -> status(perform(body(asOwner(POST("/api/companies")),

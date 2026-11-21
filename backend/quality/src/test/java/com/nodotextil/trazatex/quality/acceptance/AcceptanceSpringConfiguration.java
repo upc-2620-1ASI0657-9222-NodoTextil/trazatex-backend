@@ -9,12 +9,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
-/**
- * El contexto de los escenarios: el servicio completo en un puerto real, PostgreSQL real (Testcontainers) y reloj real, con Production simulado
- * por WireMock (el comando interno). Kafka apagado: los eventos de entrada se sustituyen sembrando {@code batch_projection} y los de salida se
- * verifican en el outbox. Sin dobles del dominio, de los casos de uso ni de los repositorios. El job de recuperación está apagado: los
- * escenarios son los del camino en que Production responde.
- */
 @CucumberContextConfiguration
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "trazatex.messaging.enabled=false", "trazatex.quality.start.job-enabled=false", "trazatex.idempotency.cleanup-job-delay=PT24H",

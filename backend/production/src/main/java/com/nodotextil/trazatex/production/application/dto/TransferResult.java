@@ -7,7 +7,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/** {@code receptionTime} solo si fue aceptada; {@code resolvedAt} es el momento de la aceptación o el rechazo. */
 public record TransferResult(
         UUID id,
         UUID originCompanyId,

@@ -31,10 +31,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * El cliente del comando interno contra un Production simulado: cada fila de la tabla «Respuestas y cómo debe reaccionar Quality»,
- * el retry acotado, el circuit breaker y que <b>jamás</b> se fabrica un éxito.
- */
 class ProductionPhaseClientTest {
 
     static final ObjectMapper MAPPER = JsonMapper.builder().build();
@@ -64,7 +60,6 @@ class ProductionPhaseClientTest {
         client = clientFor("http://localhost:" + production.port(), new CircuitBreakerSettings(10, 5, 50, Duration.ofSeconds(30), 2));
     }
 
-    /** Timeouts de la prueba más cortos que los de producción (500 ms de lectura, 10 ms entre intentos); la forma es la misma. */
     ProductionPhaseClient clientFor(String baseUrl, CircuitBreakerSettings settings) {
         breaker = CircuitBreakerRegistry.ofDefaults().circuitBreaker("production-" + UUID.randomUUID(), settings.toConfig());
         return new ProductionPhaseClient(ExternalHttpClients.restClient(baseUrl, Duration.ofMillis(500), Duration.ofMillis(500)), breaker,
@@ -86,8 +81,6 @@ class ProductionPhaseClientTest {
     List<LoggedRequest> requests() {
         return production.findAll(postRequestedFor(urlPathEqualTo(path)));
     }
-
-    // ---- 200 ----
 
     @Test
     void a200ConfirmsAndTheCommandCarriesTheControlIdAsRequestId() {
@@ -129,8 +122,6 @@ class ProductionPhaseClientTest {
         assertThat(requests()).as("se reintentó una vez").hasSize(2);
     }
 
-    // ---- 409 y 404: rechazo de negocio, sin reintento ----
-
     @ParameterizedTest
     @ValueSource(strings = {"INVALID_PHASE_TRANSITION", "BATCH_IS_FINAL_PRODUCT", "COMPANY_INACTIVE", "COMPANY_UNKNOWN"})
     void a409IsABusinessRejectionWithProductionsCodeAndIsNeverRetried(String code) {
@@ -162,8 +153,6 @@ class ProductionPhaseClientTest {
         assertThat(((PhaseCommandOutcome.Rejected) tooLong).code()).hasSize(100);
     }
 
-    // ---- 400: defecto de Quality ----
-
     @ParameterizedTest
     @ValueSource(ints = {400, 401, 403, 405, 415, 422})
     void aClientErrorThatIsNotAContractRejectionIsADefectAndIsNeverRetried(int status) {
@@ -174,8 +163,6 @@ class ProductionPhaseClientTest {
         assertThat(outcome).isEqualTo(new PhaseCommandOutcome.Defective(status, "MISSING_FIELDS", "mensaje de MISSING_FIELDS"));
         assertThat(requests()).hasSize(1);
     }
-
-    // ---- sin decisión de Production: se reintenta, con el mismo requestId ----
 
     @Test
     void a503IsRetriedOnceWithTheSameBodyAndThenIsUnavailableNotAFailure() {
@@ -224,7 +211,6 @@ class ProductionPhaseClientTest {
 
         assertThat(outcome).isInstanceOf(PhaseCommandOutcome.Unavailable.class);
         assertThat(requests()).hasSize(2);
-        // dos lecturas de 500 ms cortadas por el timeout; la respuesta tardaba 2 s cada una
         assertThat(elapsed).isBetween(Duration.ofMillis(900), Duration.ofMillis(1900));
     }
 
@@ -266,15 +252,13 @@ class ProductionPhaseClientTest {
         assertThat(start()).isNotInstanceOf(PhaseCommandOutcome.Confirmed.class);
     }
 
-    // ---- circuit breaker ----
-
     @Test
     void afterEnoughFailuresTheCircuitOpensAndNothingReachesProductionAnymore() {
         client = clientFor("http://localhost:" + production.port(), new CircuitBreakerSettings(4, 4, 50, Duration.ofSeconds(30), 1));
         stubResponse(503, apiError("TEMPORARILY_UNAVAILABLE"));
 
-        start();   // 2 intentos = 2 fallos
-        start();   // 2 fallos más: 4 de 4, el circuito abre
+        start();
+        start();
         int before = requests().size();
         PhaseCommandOutcome whileOpen = start();
 

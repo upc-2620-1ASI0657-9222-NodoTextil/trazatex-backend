@@ -15,7 +15,6 @@ import java.util.regex.Pattern;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** Traceability ID y QR (decisión 3 de la fase 04): Crockford Base32, sin O, I, L ni U. */
 class CodesTest {
 
     private static final long SEED = 20261020L;
@@ -80,7 +79,6 @@ class CodesTest {
 
     @Test
     void parseReadsWhatAPersonTypesByHand() {
-        // minúsculas, espacios alrededor y O/I/L escritas por 0/1 (Crockford): el código emitido nunca las contiene
         assertThat(TraceabilityId.parse("  tt-abcdefghjk ").value()).isEqualTo("TT-ABCDEFGHJK");
         assertThat(TraceabilityId.parse("TT-O1IL0O1ILA").value()).isEqualTo("TT-011100111A");
         assertThat(TraceabilityId.parse("TT-OOOOOOOOOO").value()).isEqualTo("TT-0000000000");

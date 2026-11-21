@@ -4,11 +4,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.time.Duration;
 
-/**
- * Validación de los JWT (ADR-005). El JWKS se lee de {@code JWKS_URI}, se guarda en caché y, si llega un {@code kid}
- * desconocido, se vuelve a pedir como máximo una vez cada {@code minReloadInterval} (30 s). Mientras no se haya podido cargar
- * nunca, un fallo se reintenta a los {@code failureRetryInterval} (5 s).
- */
 @ConfigurationProperties("trazatex.jwt")
 public record JwtProperties(
         String jwksUri,

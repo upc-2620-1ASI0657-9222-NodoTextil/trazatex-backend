@@ -194,6 +194,3 @@ export class TrazabilidadPage {
     if (n.kind === 'control') this.router.navigate(['/calidad', n.id]);
   }
 }
-
-
-

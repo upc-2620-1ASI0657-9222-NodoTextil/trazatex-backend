@@ -34,8 +34,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class BatchRepositoryIT extends IntegrationTestBase {
 
-    // ---- ida y vuelta ----
-
     @Test
     void aRegisteredBatchRoundTripsEveryField() {
         Batch saved = savedBatch("250.5");
@@ -140,8 +138,6 @@ class BatchRepositoryIT extends IntegrationTestBase {
         assertThat(loaded.composition()).isEqualTo(input.composition());
     }
 
-    // ---- actualizaciones y versión ----
-
     @Test
     void updatesChangeTheMutableFieldsAndBumpTheVersionEachTime() {
         Batch saved = savedBatch("10");
@@ -167,7 +163,6 @@ class BatchRepositoryIT extends IntegrationTestBase {
         assertThat(afterSecond.qualityHold()).isTrue();
         assertThat(afterSecond.version()).isEqualTo(2);
 
-        // lo que nunca cambia
         assertThat(afterSecond.traceabilityId()).isEqualTo(saved.traceabilityId());
         assertThat(afterSecond.qrCode()).isEqualTo(saved.qrCode());
         assertThat(afterSecond.quantity()).isEqualTo(saved.quantity());
@@ -210,7 +205,6 @@ class BatchRepositoryIT extends IntegrationTestBase {
     @Test
     void commercialDataEditsArePersisted() {
         Batch saved = savedBatch("10");
-        // un producto final solo nace de una transformación: se arma por SQL para aislar la actualización
         jdbc.sql("UPDATE batches SET final_product = TRUE WHERE id = :id").param("id", saved.id()).update();
         CommercialData data = new CommercialData("Tiendas SAC", new BigDecimal("99.90"), "USD", null, null);
 
@@ -222,8 +216,6 @@ class BatchRepositoryIT extends IntegrationTestBase {
 
         assertThat(inTx(() -> batches.findById(saved.id()).orElseThrow()).commercialData()).isEqualTo(data);
     }
-
-    // ---- bloqueo optimista ----
 
     @Test
     void aStaleWriteIsRejectedByOptimisticLocking() throws Exception {
@@ -282,8 +274,6 @@ class BatchRepositoryIT extends IntegrationTestBase {
         }
     }
 
-    // ---- consultas ----
-
     @Test
     void findsByQrCodeAndReturnsNothingForAnUnknownOne() {
         Batch saved = savedBatch("10");
@@ -314,12 +304,9 @@ class BatchRepositoryIT extends IntegrationTestBase {
         List<Batch> locked = inTx(() -> batches.findAllForUpdate(shuffled));
 
         assertThat(locked).hasSize(6);
-        // PostgreSQL ordena los uuid por bytes sin signo; UUID.compareTo de Java compara con signo, así que se compara el texto
         assertThat(locked).extracting(batch -> batch.id().toString()).isSorted();
         assertThat(inTx(() -> batches.findAllForUpdate(List.of()))).isEmpty();
     }
-
-    // ---- búsqueda ----
 
     private Batch savedWith(UUID company, String material, Instant createdAt, java.util.function.Consumer<Batch> change) {
         Batch batch = inTx(() -> {
@@ -370,13 +357,11 @@ class BatchRepositoryIT extends IntegrationTestBase {
                 .containsExactly(inQuality.id());
         assertThat(search(new BatchSearchCriteria(COMPANY, null, null, BatchPhase.SPLIT, null, null, null, 0, 50))).isEmpty();
         assertThat(search(new BatchSearchCriteria(COMPANY, null, null, null, QualityStatus.FAILED, null, null, 0, 50))).containsExactly(failed.id());
-        // [desde, hasta): el límite superior no entra
         assertThat(search(new BatchSearchCriteria(COMPANY, null, null, null, null, START.minus(Duration.ofDays(3)), START.minus(Duration.ofDays(1)), 0, 50)))
                 .containsExactly(yarn.id());
         assertThat(search(new BatchSearchCriteria(COMPANY, null, null, null, null, START.minus(Duration.ofDays(1)), null, 0, 50)))
                 .containsExactly(failed.id(), inQuality.id());
         assertThat(search(new BatchSearchCriteria(COMPANY, null, null, null, null, null, START.minus(Duration.ofDays(5)), 0, 50))).isEmpty();
-        // varios filtros a la vez
         assertThat(search(new BatchSearchCriteria(COMPANY, null, "Hilo", BatchPhase.AVAILABLE, QualityStatus.NOT_REVIEWED, null, null, 0, 50)))
                 .containsExactly(yarn.id());
     }

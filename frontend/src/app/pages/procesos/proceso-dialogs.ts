@@ -24,11 +24,16 @@ import { DENSITY } from '../../shared/density';
 import { SHARED, UiService } from '../../shared/ui';
 
 const PICK_STYLES = `
+  .tm-row { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+  .tm-row .field { align-content: start; }
+  .tm-row .select { height: 2.5rem; }
+  @media (max-width: 560px) { .tm-row { grid-template-columns: minmax(0, 1fr); } }
   .pick { list-style: none; margin: 0; padding: 0; max-height: 17rem; overflow-y: auto; border-top: 1px solid var(--hair-2); }
   .pick li { border-bottom: 1px dashed var(--hair); }
   .pick label { display: flex; gap: .55rem; align-items: center; padding: .55rem .25rem; width: 100%; }
   .pick .num { margin-left: auto; }
-  .pick li.off { opacity: .55; }
+  .pick li.off label { opacity: .55; }
+  .pick .lock-why { display: flex; gap: .35rem; align-items: baseline; padding: 0 .25rem .55rem 1.6rem; font-size: .76rem; color: var(--muted); }
 `;
 
 @Component({
@@ -38,7 +43,7 @@ const PICK_STYLES = `
   template: `
     <app-dialog [appDraft]="draft"
       title="Iniciar transformación"
-      eyebrow="Proceso"
+      eyebrow="Transformación"
       [wide]="true"
       (closed)="closed.emit()"
     >
@@ -68,6 +73,9 @@ const PICK_STYLES = `
                       <app-icon name="lock" [size]="12" />
                     }
                   </label>
+                  @if (d.bloqueado) {
+                    <small class="lock-why"><app-icon name="lock" [size]="11" /><span><b>{{ d.etiqueta }}.</b> {{ d.motivo }}</span></small>
+                  }
                 </li>
               }
             </ul>
@@ -80,7 +88,7 @@ const PICK_STYLES = `
             }
           }
           @case (1) {
-            <div class="form-grid">
+            <div class="form-grid tm-row">
               <label class="field">
                 <span>Tipo de transformación</span>
                 <select class="select" [(ngModel)]="tipo">
@@ -268,7 +276,7 @@ interface Salida {
                       <option [value]="m">{{ m }}</option>
                     }
                   </select></label>
-                  <label class="field"><span>Peso (kg)</span><input
+                  <label class="field"><span>Cantidad (kg)</span><input
                     class="input num"
                     type="number"
                     min="0"

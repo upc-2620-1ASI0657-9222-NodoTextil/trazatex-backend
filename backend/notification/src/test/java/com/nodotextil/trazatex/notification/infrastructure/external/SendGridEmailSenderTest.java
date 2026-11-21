@@ -16,7 +16,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** Contra un servidor HTTP local: nunca el servicio real de SendGrid. */
 class SendGridEmailSenderTest {
     private HttpServer server;
     private final AtomicInteger status = new AtomicInteger(202);

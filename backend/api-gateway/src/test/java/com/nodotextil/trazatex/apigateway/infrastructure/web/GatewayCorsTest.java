@@ -12,7 +12,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** CORS solo en el Gateway: el origen del frontend (TRAZATEX_FRONTEND_URL) puede llamar; cualquier otro, no. */
 @TestPropertySource(properties = "TRAZATEX_FRONTEND_URL=https://app.trazatex.test")
 class GatewayCorsTest extends GatewayTestSupport {
 

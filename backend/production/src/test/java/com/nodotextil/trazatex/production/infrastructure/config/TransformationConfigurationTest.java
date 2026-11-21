@@ -17,12 +17,6 @@ import java.math.BigDecimal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * El rendimiento mínimo de cada estrategia sale de {@code application.yml} (60 / 80 / 80) y se puede cambiar con las
- * variables de entorno {@code TRAZATEX_TRANSFORMATION_MIN_YIELD_*}. Carga el {@code application.yml} real: si el binding
- * relajado de Spring no cruzara los guiones de {@code min-yield-percent} (como ocurrió con {@code rate-limit} en el
- * Gateway), estas pruebas lo detectan.
- */
 class TransformationConfigurationTest {
 
     @Configuration

@@ -8,7 +8,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** M1 y M2: cada error HTTP es un {@code ApiError} con un código del contrato; el periodo tiene tope; la ruta es {@code /summary} (I6). */
 class AnalyticsApiIT extends AnalyticsIntegrationTest {
     final UUID user = UUID.randomUUID(), company = UUID.randomUUID();
     static final String OK = "/api/analytics/summary?from=2026-10-01&to=2026-10-31";
@@ -27,8 +26,8 @@ class AnalyticsApiIT extends AnalyticsIntegrationTest {
         error(get(OK, null, null, null), 401, "AUTHENTICATION_REQUIRED");
         error(get(OK, "no-es-un-uuid", "COMPANY_ADMIN", company), 401, "AUTHENTICATION_REQUIRED");
         error(get(OK, user.toString(), "ROL_RARO", company), 401, "AUTHENTICATION_REQUIRED");
-        error(get(OK, user.toString(), "COMPANY_ADMIN", null), 401, "AUTHENTICATION_REQUIRED");      // administrador sin empresa
-        error(get(OK, user.toString(), "LICENSE_OWNER", company), 401, "AUTHENTICATION_REQUIRED");   // dueño con empresa
+        error(get(OK, user.toString(), "COMPANY_ADMIN", null), 401, "AUTHENTICATION_REQUIRED");
+        error(get(OK, user.toString(), "LICENSE_OWNER", company), 401, "AUTHENTICATION_REQUIRED");
     }
 
     @Test void onlyTheCompanyAdministratorMayAsk() {

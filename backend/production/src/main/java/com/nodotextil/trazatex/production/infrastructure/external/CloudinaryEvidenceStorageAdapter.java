@@ -21,19 +21,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.util.HexFormat;
 
-/**
- * Subida firmada a Cloudinary ({@code POST /v1_1/{cloud}/image/upload}), con timeout y circuit breaker (ADR-007).
- *
- * <ul>
- *   <li><b>Idempotente</b>: {@code public_id} = id de la evidencia y {@code overwrite=false}; si la imagen ya existe (una subida
- *       anterior cuya respuesta se perdió) Cloudinary devuelve la existente en vez de duplicar.</li>
- *   <li>{@code allowed_formats=jpg,png,webp}: segunda barrera tras la validación por bytes.</li>
- *   <li>Clasificación: {@code 400/422} = el archivo no es una imagen válida (permanente, no cuenta para el circuito);
- *       timeout, red, {@code 5xx}, {@code 408/420/429}, {@code 401/403} (credenciales: se arregla configurando) o una respuesta
- *       que no se entiende = transitorio (cuenta para el circuito); sin credenciales o circuito abierto = no disponible.</li>
- *   <li>Nunca simula éxito: la URL sale solo de una respuesta 2xx de Cloudinary.</li>
- * </ul>
- */
 public class CloudinaryEvidenceStorageAdapter implements EvidenceStoragePort {
 
     private static final String ALLOWED_FORMATS = "jpg,png,webp";
@@ -81,7 +68,6 @@ public class CloudinaryEvidenceStorageAdapter implements EvidenceStoragePort {
         MultiValueMap<String,String> form=new LinkedMultiValueMap<>();
         form.add("public_id",publicId); form.add("timestamp",Long.toString(timestamp)); form.add("invalidate","true");
         form.add("api_key",credentials.apiKey()); form.add("signature",signature);
-        // M5 / ADR-007: borrar también pasa por el circuit breaker de Cloudinary (con el circuito abierto no se llama y se reintenta luego)
         try {
             breaker.executeRunnable(() -> {
                 try {
@@ -138,7 +124,6 @@ public class CloudinaryEvidenceStorageAdapter implements EvidenceStoragePort {
         }
     }
 
-    /** Firma de Cloudinary: SHA-1 de los parámetros firmados, en orden alfabético, más el secreto. */
     private String sign(String publicId, long timestamp) {
         String toSign = "allowed_formats=" + ALLOWED_FORMATS + "&overwrite=false&public_id=" + publicId + "&timestamp=" + timestamp
                 + credentials.apiSecret();
@@ -156,7 +141,6 @@ public class CloudinaryEvidenceStorageAdapter implements EvidenceStoragePort {
                 return url.asString();
             }
         } catch (RuntimeException ignored) {
-            // cae al fallo transitorio de abajo
         }
         throw new StorageTransientException("Cloudinary respondió 2xx sin una secure_url entendible", null);
     }
@@ -168,7 +152,6 @@ public class CloudinaryEvidenceStorageAdapter implements EvidenceStoragePort {
                 return message.asString();
             }
         } catch (RuntimeException ignored) {
-            // cuerpo que no es JSON
         }
         return "sin detalle";
     }

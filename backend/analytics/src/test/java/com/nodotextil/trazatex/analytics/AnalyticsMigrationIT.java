@@ -13,7 +13,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** V2 sobre una base con datos de la versión 1: llena empresa y fecha de negocio, saca el dueño de los BatchPhaseChanged y crea los índices de M9. */
 class AnalyticsMigrationIT {
     @Test
     void v2BackfillsCompanyBusinessDateAndOwnerVersionFromTheStoredEvents() throws Exception {
@@ -30,17 +29,14 @@ class AnalyticsMigrationIT {
             event(jdbc, phaseEvent, "BatchPhaseChanged", batch, "2026-10-11T10:00:01Z",
                     "{\"batchId\":\"" + batch + "\",\"companyId\":\"" + destination + "\",\"batchVersion\":6}");
             event(jdbc, brokenEvent, "BatchPhaseChanged", batch, "2026-10-11T10:00:02Z", "{\"batchId\":\"no-uuid\",\"companyId\":\"" + destination + "\",\"batchVersion\":\"x\"}");
-            // lo que la versión 1 guardó como dueño por TransferAccepted (sin versión) y el nacimiento
             jdbc.sql("INSERT INTO batch_owner(event_id,batch_id,company_id,occurred_at) VALUES(:e,:b,:c,'2026-10-11T10:00:00Z')").param("e", transferEvent).param("b", batch).param("c", destination).update();
 
             Flyway.configure().dataSource(database.getJdbcUrl(), database.getUsername(), database.getPassword()).load().migrate();
 
             assertThat(jdbc.sql("SELECT company_id FROM analytics_event WHERE event_id=:e").param("e", transformationEvent).query(UUID.class).single()).isEqualTo(company);
             assertThat(jdbc.sql("SELECT business_at = '2026-10-10T10:00:00Z' FROM analytics_event WHERE event_id=:e").param("e", transformationEvent).query(Boolean.class).single()).isTrue();
-            // una transferencia es de la empresa de ORIGEN y se fecha por su aceptación (I8)
             assertThat(jdbc.sql("SELECT company_id FROM analytics_event WHERE event_id=:e").param("e", transferEvent).query(UUID.class).single()).isEqualTo(company);
             assertThat(jdbc.sql("SELECT business_at = '2026-10-11T09:59:00Z' FROM analytics_event WHERE event_id=:e").param("e", transferEvent).query(Boolean.class).single()).isTrue();
-            // el dueño sale del BatchPhaseChanged con su versión; el de TransferAccepted sigue con -1 y pierde contra él; el roto no rompe la migración
             assertThat(jdbc.sql("SELECT batch_version FROM batch_owner WHERE event_id=:e").param("e", phaseEvent).query(Long.class).single()).isEqualTo(6L);
             assertThat(jdbc.sql("SELECT batch_version FROM batch_owner WHERE event_id=:e").param("e", transferEvent).query(Long.class).single()).isEqualTo(-1L);
             assertThat(jdbc.sql("SELECT count(*) FROM batch_owner WHERE event_id=:e").param("e", brokenEvent).query(Long.class).single()).isZero();
@@ -48,7 +44,6 @@ class AnalyticsMigrationIT {
                     .query(UUID.class).single()).isEqualTo(destination);
             assertThat(jdbc.sql("SELECT is_nullable FROM information_schema.columns WHERE table_name='analytics_event' AND column_name='business_at'").query(String.class).single()).isEqualTo("NO");
 
-            // M9: con el barrido secuencial desactivado, la consulta de un indicador usa el índice por empresa, tipo y fecha
             try (var connection = DriverManager.getConnection(database.getJdbcUrl(), database.getUsername(), database.getPassword());
                  var statement = connection.createStatement()) {
                 statement.execute("SET enable_seqscan = off");

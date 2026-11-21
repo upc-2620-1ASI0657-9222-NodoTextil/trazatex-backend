@@ -9,10 +9,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.Duration;
 
-/**
- * Qué se considera vencido: los bloqueos cuyos 15 minutos ya pasaron y los contadores parciales (1 o 2 fallos) sin actividad
- * durante {@code trazatex.login.attempts-retention} (24 h por defecto: pasado ese tiempo los fallos se olvidan).
- */
 @Service
 @Transactional
 class LoginAttemptsMaintenanceService implements MaintainLoginAttemptsUseCase {

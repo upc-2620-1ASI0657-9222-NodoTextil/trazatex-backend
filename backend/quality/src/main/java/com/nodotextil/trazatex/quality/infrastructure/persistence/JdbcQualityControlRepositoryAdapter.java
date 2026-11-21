@@ -28,11 +28,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * {@code quality_control} y {@code quality_test}. Las columnas del reintento ({@code attempts}, {@code next_attempt_at}, {@code last_error})
- * son operativas y no forman parte del agregado: solo las tocan {@link #insertStarting}, {@link #claimPending} y los métodos de reintento.
- * {@code next_attempt_at} solo tiene valor mientras el control está {@code STARTING} (lo exige una restricción de la tabla).
- */
 @Component
 class JdbcQualityControlRepositoryAdapter implements QualityControlRepositoryPort {
 
@@ -162,7 +157,6 @@ class JdbcQualityControlRepositoryAdapter implements QualityControlRepositoryPor
         }
     }
 
-    /** Reclama con {@code FOR UPDATE SKIP LOCKED} y arrienda en una sola sentencia: dos instancias nunca toman el mismo control. */
     private List<ClaimedStart> claim(String predicate, Instant now, int limit, Duration lease) {
         return jdbc.sql("""
                         WITH due AS (
@@ -204,7 +198,6 @@ class JdbcQualityControlRepositoryAdapter implements QualityControlRepositoryPor
         return withTests(List.of(control)).get(0);
     }
 
-    /** Las pruebas de todos los controles con <b>una</b> consulta ({@code control_id IN (...)}), sin N+1. */
     private List<QualityControl> withTests(List<QualityControl> controls) {
         if (controls.isEmpty()) {
             return controls;

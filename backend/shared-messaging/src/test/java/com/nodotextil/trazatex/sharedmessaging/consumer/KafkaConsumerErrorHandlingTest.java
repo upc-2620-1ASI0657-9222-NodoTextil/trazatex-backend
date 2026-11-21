@@ -63,7 +63,6 @@ class KafkaConsumerErrorHandlingTest {
 
     @Test
     void losDiezReintentosDeUnaFamiliaIncompletaVanDeUnSegundoASesentaYSumanCincoMinutos() {
-        // Reintentos propios del análisis de impacto de Traceability (docs/domain/traceability.md): 10, de 1 s hasta 60 s
         BackOffExecution execution = KafkaConsumerErrorHandling.backOff(new RetrySettings(10, Duration.ofSeconds(1), 2.0, Duration.ofSeconds(60))).start();
         List<Long> waits = new ArrayList<>();
         for (int i = 0; i < 11; i++) {

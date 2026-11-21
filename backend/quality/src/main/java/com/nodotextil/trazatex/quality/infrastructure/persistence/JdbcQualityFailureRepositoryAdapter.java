@@ -20,10 +20,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * {@code quality_failure}. Las columnas del reintento ({@code attempts}, {@code next_attempt_at}, {@code last_error}) son operativas: solo tienen valor mientras
- * el descarte está pendiente (lo exige una restricción de la tabla). Un lote tiene a lo sumo una falla {@code OPEN} (índice único parcial).
- */
 @Component
 class JdbcQualityFailureRepositoryAdapter implements QualityFailureRepositoryPort {
 

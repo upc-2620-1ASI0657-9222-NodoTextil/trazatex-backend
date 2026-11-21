@@ -6,7 +6,6 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-/** A qué direcciones nunca se envía correo real: dominios reservados (RFC 2606) y los que la operación bloquee ({@code TRAZATEX_MAIL_BLOCKED_DOMAINS}). */
 public class RecipientPolicy {
     private static final Pattern RESERVED = Pattern.compile("((@|\\.)example\\.(com|org|net)$|\\.(test|example|invalid|localhost)$)");
     private final Set<String> blockedDomains;

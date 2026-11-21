@@ -7,7 +7,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Consumer;
 
-/** Publicador de prueba: anota lo publicado, puede fallar para ciertas claves/tópicos y observar el momento de publicar. */
 class RecordingEventPublisher implements EventPublisherPort {
 
     record Published(String topic, String key, String payload) {
@@ -35,7 +34,6 @@ class RecordingEventPublisher implements EventPublisherPort {
         failingStreams.clear();
     }
 
-    /** Se ejecuta justo antes de que el "broker" confirme cada mensaje. */
     void beforeConfirm(Consumer<Published> hook) {
         this.beforeConfirm = hook;
     }

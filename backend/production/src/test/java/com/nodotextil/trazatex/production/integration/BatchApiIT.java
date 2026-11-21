@@ -16,10 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** US12 registrar, US13 buscar, US14 QR, US15 dividir (y la paginación de RNF-03). */
 class BatchApiIT extends ApiTestBase {
-
-    // ---- US12 registrar ----
 
     @Test
     void registeringCreatesAnAvailableNotReviewedBatchWithUniqueCodes() throws Exception {
@@ -114,8 +111,6 @@ class BatchApiIT extends ApiTestBase {
         assertThat(read(result).has("timestamp")).isTrue();
     }
 
-    // ---- consulta ----
-
     @Test
     void aBatchIsReadableByItsCompanyButNotByAnother() throws Exception {
         UUID id = idOf(registerBatch(10));
@@ -127,8 +122,6 @@ class BatchApiIT extends ApiTestBase {
         getAs(OPERATOR_OF_A, "/api/batches/" + UUID.randomUUID()).andExpect(status().isNotFound());
         getAs(OPERATOR_OF_A, "/api/batches/not-a-uuid").andExpect(status().isBadRequest());
     }
-
-    // ---- US14 QR ----
 
     @Test
     void scanningAQrOfTheOwnCompanyShowsEverything() throws Exception {
@@ -157,7 +150,6 @@ class BatchApiIT extends ApiTestBase {
         assertThat(shared.path("batchId").asString()).isEqualTo(batch.path("id").asString());
         assertThat(shared.path("companyId").asString()).isEqualTo(COMPANY_A.toString());
         assertThat(shared.path("traceabilityId").asString()).isEqualTo(batch.path("traceabilityId").asString());
-        // nada privado ni configurable: ni operario, ni cantidad, ni composición, ni proveedor, ni origen, ni datos comerciales
         assertThat(result.toString()).doesNotContain(OPERATOR_A.toString()).doesNotContain("Textiles del Norte")
                 .doesNotContain("Piura").doesNotContain("Algodón").doesNotContain("commercialData");
     }
@@ -179,8 +171,6 @@ class BatchApiIT extends ApiTestBase {
         getAs(OPERATOR_OF_A, "/api/batches/qr/" + typed.trim()).andExpect(status().isOk())
                 .andExpect(jsonPath("$.batch.id").value(batch.path("id").asString()));
     }
-
-    // ---- US13 búsqueda ----
 
     @Test
     void searchReturnsOnlyTheOwnBatchesNewestFirst() throws Exception {
@@ -237,7 +227,6 @@ class BatchApiIT extends ApiTestBase {
 
     @Test
     void searchDatesAreCalendarDaysInLimaBothInclusive() throws Exception {
-        // 2026-10-21T03:00:00Z son las 22:00 del 20 de octubre en Lima (UTC−5)
         clock.advance(Duration.between(clock.instant(), Instant.parse("2026-10-21T03:00:00Z")));
         JsonNode batch = registerBatch(1);
 
@@ -250,8 +239,6 @@ class BatchApiIT extends ApiTestBase {
                 .isEqualTo("INVALID_DATE_RANGE");
         getAs(OPERATOR_OF_A, "/api/batches?createdFrom=20-10-2026").andExpect(status().isBadRequest());
     }
-
-    // ---- RNF-03: paginación acotada y orden estable ----
 
     @Test
     void thePageSizeIsCappedAt100() throws Exception {
@@ -292,7 +279,6 @@ class BatchApiIT extends ApiTestBase {
     @Test
     void theOrderIsCreatedAtDescendingThenIdSoPagesNeverRepeatOrSkip() throws Exception {
         bulkInsertBatches(COMPANY_A, 60, 1);
-        // empates de fecha: 60 lotes en solo 3 instantes distintos
         jdbc.sql("UPDATE batches SET created_at = :start - make_interval(secs => (extract(epoch from :start - created_at))::int / 20)")
                 .param("start", java.time.OffsetDateTime.ofInstant(START, java.time.ZoneOffset.UTC)).update();
         List<String> seen = new ArrayList<>();
@@ -308,7 +294,6 @@ class BatchApiIT extends ApiTestBase {
             return byDate != 0 ? byDate : a.split("\\|")[1].compareTo(b.split("\\|")[1]);
         });
         assertThat(seen).as("created_at descendente y, a igual fecha, id ascendente").isEqualTo(sorted);
-        // pedir dos veces la misma página da lo mismo
         assertThat(read(getAs(OPERATOR_OF_A, "/api/batches?size=10&page=2")).path("items"))
                 .isEqualTo(read(getAs(OPERATOR_OF_A, "/api/batches?size=10&page=2")).path("items"));
     }
@@ -319,8 +304,6 @@ class BatchApiIT extends ApiTestBase {
                 .forEach(item -> ids.add(item.path("id").asString()));
         return ids;
     }
-
-    // ---- US15 dividir ----
 
     @Test
     void splittingMarksTheParentAsSplitAndCreatesAvailableChildrenWithNewCodes() throws Exception {
@@ -430,7 +413,6 @@ class BatchApiIT extends ApiTestBase {
         assertThat(count("SELECT count(*) FROM outbox")).as("un registro fallido no deja eventos en el outbox").isZero();
     }
 
-    /** M6: el nombre del lote admite hasta 20 caracteres (en el registro, en la división y en las salidas); más es 400 {@code INVALID_BATCH_NAME}. */
     @Test
     void aBatchNameOfTwentyCharactersIsAcceptedAndTwentyOneIsInvalidBatchName() throws Exception {
         Map<String, Object> ok = new java.util.HashMap<>(batchBody(10));

@@ -20,7 +20,6 @@ assert {
 }
 
 script:pre-request {
-  // el relay del outbox publica ~1 s después y el Gateway lo aplica en milisegundos
   await bru.sleep(2500);
 }
 

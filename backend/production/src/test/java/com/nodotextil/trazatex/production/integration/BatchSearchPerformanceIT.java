@@ -12,12 +12,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * RNF-03: la búsqueda de lotes no puede recorrer la tabla. Con volumen real (60 000 lotes de dos empresas) se pide a la base
- * el plan de ejecución —{@code EXPLAIN}— de la <b>consulta exacta que genera Hibernate</b> (capturada con un
- * {@code StatementInspector}) y se comprueba que usa los índices previstos. Sin tiempos: un plan es determinista, un
- * cronómetro no.
- */
 class BatchSearchPerformanceIT extends ApiTestBase {
 
     private static final int PER_COMPANY = 30_000;
@@ -29,7 +23,6 @@ class BatchSearchPerformanceIT extends ApiTestBase {
         jdbc.sql("ANALYZE batches").update();
     }
 
-    /** Ejecuta la búsqueda, toma el SELECT de lotes que envió Hibernate (no el conteo) y lo explica con los mismos parámetros. */
     private String explainTheListQuery(BatchSearchCriteria criteria, Object... parameters) {
         CapturingStatementInspector.reset();
         inTx(() -> batches.search(criteria));
@@ -58,8 +51,6 @@ class BatchSearchPerformanceIT extends ApiTestBase {
         return plan;
     }
 
-    // ---- (1) prefijo del Traceability ID ----
-
     @Test
     void thePrefixIndexExistsWithTextPatternOps() {
         String definition = jdbc.sql("SELECT indexdef FROM pg_indexes WHERE indexname = 'ix_batches_company_traceability_prefix'")
@@ -72,8 +63,6 @@ class BatchSearchPerformanceIT extends ApiTestBase {
 
     @Test
     void withoutTextPatternOpsThePrefixSearchCannotUseAnyTracebilityIndex() {
-        // control negativo: con el operador por defecto (el del UNIQUE de V1) LIKE 'prefijo%' no sirve si la base no usa la
-        // colación "C" — por eso V2 existe. Se borra V2 un momento y se restituye siempre (la base se comparte entre pruebas).
         String collation = jdbc.sql("SELECT datcollate FROM pg_database WHERE datname = current_database()").query(String.class).single();
         String definition = jdbc.sql("SELECT indexdef FROM pg_indexes WHERE indexname = 'ix_batches_company_traceability_prefix'")
                 .query(String.class).single();
@@ -106,7 +95,6 @@ class BatchSearchPerformanceIT extends ApiTestBase {
 
     @Test
     void theCountOfAPrefixSearchUsesTheIndexToo() {
-        // 111 coincidencias con página de 5: la página se llena y Spring Data necesita el conteo
         BatchSearchCriteria criteria = new BatchSearchCriteria(COMPANY_A, "TT-00000123", null, null, null, null, null, 0, 5);
 
         String plan = explainTheCountQuery(criteria, COMPANY_A, "TT-00000123%");
@@ -134,8 +122,6 @@ class BatchSearchPerformanceIT extends ApiTestBase {
         assertThat(read(getAs(OPERATOR_OF_B, "/api/batches?traceabilityId=TT-000001234")).path("items")).as("otra empresa: nada").isEmpty();
         assertThat(read(getAs(OPERATOR_OF_B, "/api/batches?traceabilityId=TT-000010123&size=100")).path("items")).hasSize(10);
     }
-
-    // ---- (2) listado paginado con orden estable ----
 
     @Test
     void theUnfilteredListingReadsInOrderFromTheIndexWithoutSortingTheCompany() {

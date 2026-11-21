@@ -4,7 +4,6 @@ import { vi } from 'vitest';
 import { StoreService } from '../core/store.service';
 import { QR_READER, QrScannerComponent } from './qr-scanner.component';
 
-/** Lector falso: guarda el callback que la cámara real llamaría una vez por fotograma. */
 class FakeReader {
   callback?: (result: { getText(): string } | undefined, error: unknown, controls: { stop(): void }) => void;
   readonly controls = { stop: vi.fn() };
@@ -12,7 +11,6 @@ class FakeReader {
     this.callback = callback;
     return this.controls;
   }
-  /** La cámara ve el mismo código en `frames` fotogramas seguidos. */
   see(text: string, frames = 1) {
     for (let i = 0; i < frames; i++) this.callback?.({ getText: () => text }, undefined, this.controls);
   }

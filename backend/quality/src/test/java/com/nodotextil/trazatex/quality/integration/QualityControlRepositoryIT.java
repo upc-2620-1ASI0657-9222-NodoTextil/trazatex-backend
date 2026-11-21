@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** {@code quality_control} y {@code quality_test} contra PostgreSQL real: el ida y vuelta, las restricciones y el reclamo con SKIP LOCKED. */
 class QualityControlRepositoryIT extends IntegrationTestBase {
 
     static final UUID COMPANY = UUID.fromString("00000000-0000-0000-0000-0000000000c1");
@@ -118,8 +117,6 @@ class QualityControlRepositoryIT extends IntegrationTestBase {
         assertThatThrownBy(() -> controls.save(newControl(UUID.randomUUID()))).isInstanceOf(IllegalStateException.class);
     }
 
-    // ---- un solo control activo por lote ----
-
     @Test
     void aBatchCannotHaveTwoActiveControlsButCanHaveAnotherOnceTheFirstIsNoLongerActive() {
         UUID batch = UUID.randomUUID();
@@ -146,8 +143,6 @@ class QualityControlRepositoryIT extends IntegrationTestBase {
         assertThatThrownBy(() -> controls.insertStarting(newControl(batch), START)).isInstanceOf(ConflictException.class);
     }
 
-    // ---- restricciones de la base ----
-
     @Test
     void theDatabaseRefusesACancelledControlWithoutReasonAndAReasonOnAControlThatIsNotCancelled() {
         QualityControl control = starting(START);
@@ -167,8 +162,6 @@ class QualityControlRepositoryIT extends IntegrationTestBase {
         assertThatThrownBy(() -> jdbc.sql("UPDATE quality_control SET next_attempt_at = NULL WHERE id = :id").param("id", control.id()).update())
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
-
-    // ---- reclamo del job ----
 
     @Test
     void onlyDueStartingControlsAreClaimedOldestFirstUpToTheLimit() {
@@ -228,10 +221,6 @@ class QualityControlRepositoryIT extends IntegrationTestBase {
         assertThat(column(control.id(), "next_attempt_at", OffsetDateTime.class)).isNull();
     }
 
-    /**
-     * Una instancia reclama dentro de una transacción que aún no termina; otra, a la vez, debe recibir <b>otros</b> controles sin esperar a
-     * la primera (SKIP LOCKED), no bloquearse ni repetir los mismos.
-     */
     @Test
     void anInstanceHoldingItsClaimDoesNotBlockAnotherOneAndTheyNeverTakeTheSameControl() throws Exception {
         for (int i = 0; i < 6; i++) {
@@ -255,7 +244,7 @@ class QualityControlRepositoryIT extends IntegrationTestBase {
             assertThat(firstHoldsItsClaim.await(20, TimeUnit.SECONDS)).isTrue();
 
             Future<List<ClaimedStart>> second = pool.submit(() -> tx.execute(status -> controls.claimPendingStarts(START, 3, LEASE)));
-            List<ClaimedStart> others = second.get(10, TimeUnit.SECONDS);   // si esperara a la primera, esto vencería
+            List<ClaimedStart> others = second.get(10, TimeUnit.SECONDS);
             secondIsDone.countDown();
             List<ClaimedStart> mine = first.get(20, TimeUnit.SECONDS);
 

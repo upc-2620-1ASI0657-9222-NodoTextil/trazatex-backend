@@ -11,7 +11,6 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
 
-/** Reglas de dependencia hexagonal (docs/conventions.md). */
 @AnalyzeClasses(packages = "com.nodotextil.trazatex.quality", importOptions = ImportOption.DoNotIncludeTests.class)
 class ArchitectureTest {
 
@@ -72,11 +71,6 @@ class ArchitectureTest {
             .that().resideOutsideOfPackage(ROOT + ".infrastructure..")
             .should().dependOnClassesThat().resideInAPackage(ROOT + ".infrastructure.external..");
 
-    /**
-     * Estas clases llaman a Production: no pueden correr dentro de una transacción del llamador (el {@code IdempotencyFilter} abre una
-     * por petición). Cada guardado usa su propia transacción ({@code REQUIRES_NEW}); un {@code @Transactional} aquí devolvería el
-     * control {@code STARTING} y el {@code CANCELLED} a la transacción de la petición, que un rechazo o una caída revierte.
-     */
     @ArchTest
     static final ArchRule classesThatCallProductionAreNotTransactional = noClasses()
             .that().haveSimpleNameStartingWith("ControlStart").or().haveSimpleNameStartingWith("ControlFinish").or().haveSimpleNameStartingWith("FailureDiscard")
@@ -92,10 +86,6 @@ class ArchitectureTest {
             .or().areDeclaredInClassesThat().haveSimpleNameStartingWith("PendingCommandSources")
             .should().beAnnotatedWith(Transactional.class);
 
-    /**
-     * US44: el reporte se genera en memoria y no se guarda («no lo almacena dentro del sistema»): ni el servicio ni el generador ni el endpoint
-     * pueden usar archivos del disco, ni temporales.
-     */
     @ArchTest
     static final ArchRule theReportIsNeverWrittenToDisk = noClasses()
             .that().haveSimpleName("ControlReportService").or().haveSimpleName("OpenHtmlToPdfAdapter").or().haveSimpleName("ReportConfig")
@@ -107,24 +97,21 @@ class ArchitectureTest {
             .orShould().dependOnClassesThat().haveFullyQualifiedName("java.nio.file.Path")
             .orShould().dependOnClassesThat().haveFullyQualifiedName("java.nio.channels.FileChannel");
 
-    /** El servicio del reporte genera el PDF fuera de toda transacción (puede tardar); solo su auditoría abre una, corta. */
     @ArchTest
     static final ArchRule theReportServiceIsNotTransactional = noClasses()
             .that().haveSimpleName("ControlReportService")
             .should().beAnnotatedWith(Transactional.class);
 
-    /** El generador local no habla con la red: ninguna clase del generador usa un cliente HTTP. */
     @ArchTest
     static final ArchRule thePdfGeneratorHasNoNetworkClient = noClasses()
             .that().haveSimpleName("OpenHtmlToPdfAdapter")
             .should().dependOnClassesThat().resideInAnyPackage("java.net.http..", "org.springframework.web.client..", "java.net")
             .because("el generador no puede cargar recursos externos");
 
-    /** I11: ni un controlador ni un caso de uso tocan la base; el SQL vive en los adaptadores de {@code infrastructure.persistence}. */
     @ArchTest
     static final ArchRule neitherControllersNorUseCasesUseJdbc = noClasses()
             .that().resideInAnyPackage(ROOT + ".infrastructure.web..", ROOT + ".application..")
             .should().dependOnClassesThat().resideInAPackage("org.springframework.jdbc..")
-            .because("regla 5 de CLAUDE.md: el acceso a datos es un adaptador detrás de un puerto de salida")
+            .because("convención hexagonal: el acceso a datos es un adaptador detrás de un puerto de salida")
             .allowEmptyShould(true);
 }

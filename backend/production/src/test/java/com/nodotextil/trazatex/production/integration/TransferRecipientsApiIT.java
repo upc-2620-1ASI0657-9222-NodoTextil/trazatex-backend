@@ -13,10 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * I11 e I12: {@code GET /api/transfers/recipients} lo arma un caso de uso sobre el puerto de la proyección de empresas (el controlador ya no usa
- * JDBC) y es una página {@code {items,page,size,totalElements,totalPages}} (RNF-03): solo empresas {@code ACTIVE}, por razón social.
- */
 class TransferRecipientsApiIT extends ApiTestBase {
 
     private void company(String name, CompanyStatus status) {
@@ -34,7 +30,6 @@ class TransferRecipientsApiIT extends ApiTestBase {
         company("Inactiva SAC", CompanyStatus.INACTIVE);
 
         JsonNode first = read(getAs(OPERATOR_OF_A, "/api/transfers/recipients?size=10").andExpect(status().isOk()));
-        // las dos empresas de la base de pruebas ("Empresa …") van antes que las "Zeta …" y la inactiva no sale
         assertThat(first.path("totalElements").asLong()).isEqualTo(25);
         assertThat(first.path("totalPages").asInt()).isEqualTo(3);
         assertThat(first.path("page").asInt()).isZero();

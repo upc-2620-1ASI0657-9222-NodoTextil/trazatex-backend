@@ -9,7 +9,6 @@ import static com.nodotextil.trazatex.quality.domain.Fixtures.finished;
 import static com.nodotextil.trazatex.quality.domain.Fixtures.id;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Qué hace un control finalizado con las fallas: genera, reutiliza (con su historial), resuelve o nada. */
 class FailureLifecycleTest {
 
     @Test
@@ -87,7 +86,6 @@ class FailureLifecycleTest {
 
     @Test
     void aReevaluationWithoutAnOpenFailureStillGeneratesOrDoesNothingInsteadOfBreaking() {
-        // dato inconsistente (PENDING_REEVALUATION sin falla abierta): el control no se pierde
         assertThat(FailureLifecycle.after(QualityStatus.PENDING_REEVALUATION, finished(available(QualityStatus.PENDING_REEVALUATION), TestResult.FAILED), null, id()).action())
                 .isEqualTo(FailureAction.GENERATE);
         assertThat(FailureLifecycle.after(QualityStatus.PENDING_REEVALUATION, finished(available(QualityStatus.PENDING_REEVALUATION), TestResult.CONFORMING), null, id()).action())

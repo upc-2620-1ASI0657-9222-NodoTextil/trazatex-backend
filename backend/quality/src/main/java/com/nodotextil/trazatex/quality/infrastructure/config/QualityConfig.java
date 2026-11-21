@@ -37,11 +37,6 @@ class QualityConfig {
         return properties.toSettings();
     }
 
-    /**
-     * Idempotencia de las escrituras expuestas al frontend (ADR-010): solo actúa si la petición trae {@code Idempotency-Key} (UUID) y
-     * {@code X-User-Id}. Quality no tiene rutas públicas, así que nada se exceptúa. Envuelve la petición en una transacción: lo que
-     * no puede perderse con un rechazo o una caída (el control {@code STARTING}, el {@code CANCELLED} y su motivo) se guarda en transacciones propias.
-     */
     @Bean
     FilterRegistrationBean<IdempotencyFilter> idempotencyFilter(IdempotencyStorePort store, PlatformTransactionManager transactionManager,
                                                                 ObjectMapper objectMapper, Clock clock) {

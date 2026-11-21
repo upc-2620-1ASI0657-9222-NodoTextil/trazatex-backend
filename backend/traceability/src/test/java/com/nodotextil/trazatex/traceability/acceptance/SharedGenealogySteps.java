@@ -14,12 +14,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * US36 — Consultar genealogía compartida (RF-018, RNF-07). Las empresas B y C configuran su privacidad con {@code CompanyPrivacyUpdated} (como lo publica
- * Organization &amp; Access), sus lotes y transformaciones llegan por los eventos de Production y un usuario de la empresa A abre la genealogía por la API. Lo que
- * se comprueba es el JSON que recibe: los campos Siempre Compartidos de todos los nodos, los Configurables solo donde esa empresa los compartió, y lo privado
- * ausente (no como {@code null}) y ni su valor en ningún lado de la respuesta.
- */
 public class SharedGenealogySteps {
 
     private static final String ROOT = "/api/traceability";
@@ -73,8 +67,6 @@ public class SharedGenealogySteps {
         platform.publishAndAwait(List.of(EventMessages.phaseChanged(UUID.randomUUID(), id(batch), company, "IN_TRANSFER", "AVAILABLE", true, 2)));
     }
 
-    // ---- lo que dice la respuesta ----
-
     private JsonNode body() {
         assertThat(world.reply.status()).as("la API respondió %s: %s", world.reply.status(), world.reply.body()).isEqualTo(200);
         return world.reply.body();
@@ -107,11 +99,8 @@ public class SharedGenealogySteps {
         return hidden;
     }
 
-    // ==== Escenario 1: información autorizada ====
-
     @Dado("^que el usuario consulta una genealogía con información de varias empresas$")
     public void theUserQueriesAGenealogyWithInformationOfSeveralCompanies() {
-        // La empresa B comparte proveedor, cantidad y maquinaria; la C solo el origen; la A (la que consulta) mezcla lo de las dos en un lote suyo
         company(world.companyB, "Bahía SAC", sharing("SUPPLIER", "QUANTITY", "MACHINERY"));
         UUID companyC = UUID.randomUUID();
         world.ids.put("companyC", companyC);
@@ -147,7 +136,6 @@ public class SharedGenealogySteps {
 
     @Y("^los campos Configurables establecidos como Compartidos por cada empresa\\.$")
     public void theConfigurableFieldsEachCompanySharedAreShown() {
-        // B compartió proveedor, cantidad y maquinaria: se ven; sus demás campos configurables, no
         assertShown("B0", List.of("supplierName", "quantityKg"));
         assertThat(node("B0").get("supplierName").asString()).isEqualTo("Proveedor de B");
         assertHidden("B0", except(BATCH_CONFIGURABLE, "supplierName", "quantityKg"));
@@ -155,22 +143,16 @@ public class SharedGenealogySteps {
         assertShown("TB", List.of("machineName", "machineType"));
         assertThat(node("TB").get("machineName").asString()).isEqualTo("Cardadora de B");
         assertHidden("TB", except(TRANSFORMATION_CONFIGURABLE, "machineName", "machineType"));
-        // C compartió solo el origen
         assertShown("C1", List.of("origin"));
         assertThat(node("C1").get("origin").asString()).isEqualTo("Origen de C");
         assertHidden("C1", except(BATCH_CONFIGURABLE, "origin"));
-        // y lo de A, la que consulta, se ve completo aunque A no comparta nada
         assertShown("AO", List.of("quantityKg"));
         assertShown("TA", TRANSFORMATION_CONFIGURABLE);
         assertThat(node("TA").get("access").asString()).isEqualTo("OWN");
     }
 
-    // ==== Escenario 2: información privada ====
-
     @Dado("^que existen campos Configurables Privados o información Siempre Privada$")
     public void thereArePrivateConfigurableFieldsOrAlwaysPrivateInformation() {
-        // La empresa B comparte solo el origen: su proveedor, cantidad, composición, recepción y todo de su transformación son Configurables Privados; además su lote
-        // tiene retención por calidad (la retención es información Siempre Privada: solo la ve su empresa)
         company(world.companyB, "Bahía SAC", sharing("ORIGIN"));
         company(world.companyA, "Andina SAC", sharing());
         register("BP", world.companyB, "Proveedor secreto de B", "Origen de B");

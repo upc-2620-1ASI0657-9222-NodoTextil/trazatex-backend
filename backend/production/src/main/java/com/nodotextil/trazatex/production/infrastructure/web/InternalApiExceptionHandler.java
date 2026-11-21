@@ -15,12 +15,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-/**
- * Errores del comando interno que difieren de {@code /api}: una carrera nunca es 409 (Quality cancela el control con un 409) sino
- * 503 con {@code Retry-After}, que Quality reintenta con el mismo {@code requestId}. Va antes que {@link ApiExceptionHandler},
- * que para {@code /api} sí responde 409 {@code CONCURRENT_MODIFICATION}; todo lo demás (rechazos de negocio, 400, 404) lo resuelve
- * ese handler.
- */
 @RestControllerAdvice(assignableTypes = InternalBatchController.class)
 @Order(Ordered.HIGHEST_PRECEDENCE)
 class InternalApiExceptionHandler {
@@ -32,7 +26,6 @@ class InternalApiExceptionHandler {
         return unavailable(e.getMessage());
     }
 
-    /** Red de seguridad: si una carrera se escapara del servicio sin convertir, sigue siendo "reintente", nunca 409 ni 500. */
     @ExceptionHandler({ConcurrencyFailureException.class, DataIntegrityViolationException.class})
     ResponseEntity<ApiError> handleRace(RuntimeException e) {
         log.warn("Carrera no controlada en el comando interno: {}", e.toString());

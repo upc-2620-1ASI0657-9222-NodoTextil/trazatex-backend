@@ -42,7 +42,6 @@ class TransferController {
         return transfers.initiate(request, actor);
     }
 
-    /** {@code direction}: {@code OUTGOING} (enviadas), {@code INCOMING} (recibidas) o {@code ALL} (por defecto). */
     @GetMapping
     @RequiresRole({Role.OPERATOR, Role.COMPANY_ADMIN})
     PageResult<TransferResult> search(@RequestParam(required = false) TransferDirection direction,

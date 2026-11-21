@@ -5,7 +5,6 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.util.Base64;
 
-/** Pares RSA para pruebas, en el formato de las variables de entorno: el PEM completo en Base64, en una línea. */
 public final class TestKeys {
 
     public static final String KEY_ID = "test-key-20261019";

@@ -12,16 +12,8 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.random.RandomGenerator;
 
-/**
- * Factory Method de todo lote nuevo —registro, hijo de una división o salida de una transformación—: siempre le asigna
- * Traceability ID y QR nuevos y lo deja {@code AVAILABLE} y sin retención. Los códigos son aleatorios; la fábrica
- * consulta un {@code Predicate} de "código ya tomado" (que implementa la persistencia) y sortea otro hasta
- * {@value #MAX_CODE_ATTEMPTS} veces. La restricción {@code UNIQUE} de la base queda como última barrera ante una
- * carrera entre dos transacciones.
- */
 public final class BatchFactory {
 
-    /** Datos que da el operario al registrar un lote (US12). */
     public record Registration(
             String name,
             String materialType,
@@ -32,7 +24,6 @@ public final class BatchFactory {
             String receptionCharacteristics) {
     }
 
-    /** Una salida de transformación, tal como la declara el operario al finalizar (US18, US20). */
     public record OutputSpec(
             String name,
             String materialType,
@@ -41,11 +32,9 @@ public final class BatchFactory {
             CommercialData commercialData) {
     }
 
-    /** Un hijo de la división: cantidad y, opcionalmente, nombre (por defecto el del padre). */
     public record ChildSpec(String name, Quantity quantity) {
     }
 
-    /** El padre ya en {@code SPLIT} y sus hijos nuevos, en el orden pedido. */
     public record SplitResult(Batch parent, List<Batch> children) {
     }
 
@@ -59,14 +48,12 @@ public final class BatchFactory {
         this(random, ids, code -> false);
     }
 
-    /** {@code codeTaken} dice si un Traceability ID o un QR ya existe (en cualquiera de los dos campos). */
     public BatchFactory(RandomGenerator random, Supplier<UUID> ids, Predicate<String> codeTaken) {
         this.random = random;
         this.ids = ids;
         this.codeTaken = codeTaken;
     }
 
-    /** Fábrica de producción: {@link SecureRandom} (los códigos no deben ser adivinables) y UUID aleatorios. */
     public static BatchFactory secure() {
         return secure(code -> false);
     }
@@ -75,7 +62,6 @@ public final class BatchFactory {
         return new BatchFactory(new SecureRandom(), UUID::randomUUID, codeTaken);
     }
 
-    /** Registro (US12). Obligatorios: origen, tipo de material, composición, cantidad y características de recepción. */
     public Batch register(Registration registration, UUID companyId, UUID createdBy, Instant now) {
         new RequiredFields()
                 .text("origin", registration.origin())
@@ -94,11 +80,6 @@ public final class BatchFactory {
                 registration.receptionCharacteristics().trim(), createdBy, now, CommercialData.EMPTY, 0));
     }
 
-    /**
-     * División (US15, RF-025…027): el padre debe estar habilitado, dos o más hijos y la suma de sus cantidades igual a la
-     * del padre, exactamente. Si algo falla no cambia nada. El padre pasa a {@code SPLIT}; los hijos nacen con
-     * Traceability ID y QR nuevos.
-     */
     public SplitResult split(Batch parent, List<ChildSpec> specs, UUID createdBy, Instant now) {
         if (specs == null || specs.size() < 2) {
             throw new ValidationException(ErrorCodes.SPLIT_REQUIRES_TWO_CHILDREN,
@@ -125,11 +106,6 @@ public final class BatchFactory {
         return new SplitResult(parent, List.copyOf(children));
     }
 
-    /**
-     * Hijo de una división (US15): misma composición, tipo de material, origen, proveedor y características de
-     * recepción del padre, y el mismo estado de calidad (decisión del usuario). Misma empresa; el padre estaba
-     * habilitado, así que el hijo nace sin retención.
-     */
     Batch child(Batch parent, String name, Quantity quantity, UUID createdBy, Instant now) {
         return new Batch(new BatchSnapshot(ids.get(), newTraceabilityId(), newQrCode(),
                 parent.companyId(), nameOrDefault(name, parent.name()), parent.materialType(), quantity,
@@ -138,10 +114,6 @@ public final class BatchFactory {
                 CommercialData.EMPTY, 0));
     }
 
-    /**
-     * Salida de una transformación (US18): {@code NOT_REVIEWED}, composición ya calculada. Origen, proveedor y
-     * características de recepción son de lo que se registra, no de lo que se produce: quedan vacíos.
-     */
     Batch output(OutputSpec spec, Composition composition, UUID companyId, UUID createdBy, Instant now) {
         if (spec.materialType() == null || spec.materialType().isBlank()) {
             throw new ValidationException(ErrorCodes.MISSING_FIELDS,

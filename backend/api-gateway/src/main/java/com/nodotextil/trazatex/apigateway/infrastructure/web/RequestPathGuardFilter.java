@@ -13,18 +13,6 @@ import reactor.core.publisher.Mono;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
-/**
- * Primera barrera, antes del enrutamiento y de la autenticación, para toda petición:
- * <ul>
- *   <li>{@code /internal/**} no existe para el exterior: 404, igual que una ruta cualquiera (no se revela que existe, no se
- *       pide token). Es la red interna (ADR-009: comando Quality → Production). Vale para cualquier método, con o sin token, y
- *       aunque algún día una ruta del Gateway lo cubriera.</li>
- *   <li>Rutas con trucos de normalización se rechazan con 400: segmentos {@code .} o {@code ..} (también codificados),
- *       {@code %2F}, {@code \}, {@code ;}, {@code //} y bytes nulos. El Gateway reenvía la ruta tal cual y el servicio de destino
- *       (Tomcat) la normalizaría: {@code /api/batches/../../internal/...} o {@code /internal;x=1/...} llegarían a una ruta
- *       interna pasando por una ruta pública del Gateway.</li>
- * </ul>
- */
 @Component
 class RequestPathGuardFilter implements WebFilter, Ordered {
 
@@ -59,6 +47,6 @@ class RequestPathGuardFilter implements WebFilter, Ordered {
 
     @Override
     public int getOrder() {
-        return Ordered.HIGHEST_PRECEDENCE + 1; // justo después de NoStoreWebFilter, que no decide nada: solo registra la cabecera de sus respuestas
+        return Ordered.HIGHEST_PRECEDENCE + 1;
     }
 }

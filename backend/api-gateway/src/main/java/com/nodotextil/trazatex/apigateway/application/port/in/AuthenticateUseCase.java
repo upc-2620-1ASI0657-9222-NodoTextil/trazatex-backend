@@ -5,9 +5,5 @@ import reactor.core.publisher.Mono;
 
 public interface AuthenticateUseCase {
 
-    /**
-     * @param authorizationHeader valor de {@code Authorization} (puede ser nulo)
-     * @return la identidad; falla con {@code AuthenticationFailedException} (401) o {@code AuthenticationUnavailableException} (503)
-     */
     Mono<AuthenticatedUser> authenticate(String authorizationHeader);
 }

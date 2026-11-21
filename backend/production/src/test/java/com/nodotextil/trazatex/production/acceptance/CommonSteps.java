@@ -7,17 +7,12 @@ import tools.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Los pasos {@code Cuando} que son simplemente "el usuario confirma": ejecutan la petición que los pasos {@code Dado} dejaron preparada.
- * Varios escenarios usan la misma frase para operaciones distintas (confirmar un registro de maquinaria o de lote), por eso viven aquí.
- */
 public class CommonSteps extends StepSupport {
 
     public CommonSteps(World world, ProductionApi api, Outbox outbox, JdbcClient jdbc, ObjectMapper json) {
         super(world, api, outbox, jdbc, json);
     }
 
-    /** Lo dicen US16 (la transformación, {@code startTime}) y US21 (la transferencia, {@code departureTime}): se lee de la respuesta recién obtenida. */
     @Entonces("^el sistema registra fecha y hora de inicio$")
     public void theSystemRegistersTheStartDateAndTime() {
         assertThat(world.last.status()).as("la operación debía crearse: %s", world.last.raw()).isEqualTo(201);

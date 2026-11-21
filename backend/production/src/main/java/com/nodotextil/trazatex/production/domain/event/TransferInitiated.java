@@ -5,7 +5,6 @@ import com.nodotextil.trazatex.production.domain.model.Transfer;
 import java.util.List;
 import java.util.UUID;
 
-/** Tópico {@code production.transfer}, clave transferId. Lo consume notification (avisa a los administradores de la empresa destino). */
 public record TransferInitiated(UUID transferId, List<UUID> batchIds, UUID fromCompanyId, UUID toCompanyId) implements ProductionEvent {
 
     public static final String TYPE = "TransferInitiated";

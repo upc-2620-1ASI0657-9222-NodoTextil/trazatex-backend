@@ -25,11 +25,6 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Consumo de eventos (ADR-004): lectura idempotente, reintentos con espera creciente y {@code <tópico>.DLT}. Los tópicos
- * consumidos son de otros servicios y <b>no</b> se declaran aquí —ni se crean al suscribirse (`allow.auto.create.topics=false`)—:
- * solo sus DLT. Un grupo nuevo lee desde el principio ({@code earliest}) para conocer lo ocurrido antes de su primer arranque.
- */
 @Configuration
 @EnableKafka
 @ConditionalOnProperty(name = "trazatex.messaging.enabled", havingValue = "true", matchIfMissing = true)
@@ -76,8 +71,6 @@ class MessagingConsumerConfig {
             @Value("${trazatex.messaging.consumer.retry.max-interval:PT30S}") Duration maxInterval) {
         ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(productionConsumerFactory);
-        // Los reintentos y la DLT: lo que falla se repite con espera creciente; un conflicto de versión (@Version) es un fallo
-        // reintentable más, a propósito
         factory.setCommonErrorHandler(KafkaConsumerErrorHandling.deadLetterErrorHandler(outboxKafkaTemplate,
                 new RetrySettings(maxRetries, initialInterval, multiplier, maxInterval)));
         return factory;

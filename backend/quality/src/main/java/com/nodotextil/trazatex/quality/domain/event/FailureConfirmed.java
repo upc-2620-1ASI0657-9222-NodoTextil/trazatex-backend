@@ -6,7 +6,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-/** Tópico {@code quality.failure}, clave failureId. Lo consumen traceability (análisis de impacto) y analytics. */
 public record FailureConfirmed(UUID failureId, UUID batchId, UUID controlId, UUID companyId, String cause, BigDecimal affectedQuantityKg,
                                Instant confirmedAt) implements QualityEvent {
 

@@ -27,7 +27,6 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** US05, RNF-06, ADR-005. */
 class LoginApiIT extends IntegrationTestBase {
 
     UUID company;
@@ -46,8 +45,6 @@ class LoginApiIT extends IntegrationTestBase {
     private int loginStatus(String email, String password) throws Exception {
         return login(email, password).andReturn().getResponse().getStatus();
     }
-
-    // ---- Éxito y JWT ----
 
     @Test
     void validCredentialsReturnAnRs256JwtThatTheJwksKeyVerifies() throws Exception {
@@ -97,8 +94,6 @@ class LoginApiIT extends IntegrationTestBase {
         login("ana@hilos.pe", PASSWORD).andExpect(status().isOk());
     }
 
-    // ---- Credenciales inválidas: siempre el mismo mensaje ----
-
     @Test
     void wrongPasswordUnknownEmailInactiveUserAndMalformedEmailAllGetTheSameGenericAnswer() throws Exception {
         insertUserWithPassword(company, "baja@hilos.pe", "OPERATOR", "INACTIVE");
@@ -119,8 +114,6 @@ class LoginApiIT extends IntegrationTestBase {
         perform(body(POST("/api/auth/login"), "{\"email\":\"ana@hilos.pe\"}"))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.details", containsInAnyOrder("password")));
     }
-
-    // ---- RNF-06: bloqueo ----
 
     @Test
     void threeConsecutiveFailuresLockTheAccountForFifteenMinutesEvenForTheCorrectPassword() throws Exception {
@@ -214,8 +207,6 @@ class LoginApiIT extends IntegrationTestBase {
         return jdbc.sql("SELECT failed_attempts FROM login_attempts WHERE email = :e").param("e", email).query(Integer.class).single();
     }
 
-    // ---- El 423 no revela si la cuenta existe: los intentos se cuentan por correo normalizado ----
-
     @Test
     void anUnknownEmailIsLockedAfterThreeFailuresExactlyLikeAnExistingOne() throws Exception {
         List<Reply> existing = new ArrayList<>();
@@ -266,7 +257,6 @@ class LoginApiIT extends IntegrationTestBase {
 
     @Test
     void aLockedUnknownEmailCannotBeToldApartByTheCorrectPasswordEither() throws Exception {
-        // la contraseña correcta de una cuenta que existe y la de una que no existe dan la misma respuesta mientras dura el bloqueo
         for (int i = 0; i < 3; i++) {
             login("ana@hilos.pe", "mala-" + i);
             login("nadie@hilos.pe", "mala-" + i);
@@ -327,21 +317,18 @@ class LoginApiIT extends IntegrationTestBase {
         }
     }
 
-    // ---- Limpieza de lo vencido ----
-
     @Autowired
     MaintainLoginAttemptsUseCase maintenance;
 
     @Test
     void theCleanupJobRemovesFinishedLocksAndStaleCountersButKeepsWhatIsStillInForce() throws Exception {
         for (int i = 0; i < 3; i++) {
-            login("bloqueado-vigente@hilos.pe", "x");          // bloqueado hasta +15 min
-            login("bloqueado-vencido@hilos.pe", "x");          // se vence al avanzar el reloj
+            login("bloqueado-vigente@hilos.pe", "x");
+            login("bloqueado-vencido@hilos.pe", "x");
         }
         login("parcial-reciente@hilos.pe", "x");
         login("parcial-antiguo@hilos.pe", "x");
         assertThat(count("SELECT count(*) FROM login_attempts")).isEqualTo(4);
-        // parcial-antiguo: su último fallo fue hace 25 h; bloqueado-vencido: el bloqueo terminó hace 1 min
         jdbc.sql("UPDATE login_attempts SET updated_at = :t WHERE email = 'parcial-antiguo@hilos.pe'").param("t", utc(clock.instant().minus(Duration.ofHours(25)))).update();
         jdbc.sql("UPDATE login_attempts SET locked_until = :t WHERE email = 'bloqueado-vencido@hilos.pe'").param("t", utc(clock.instant().minus(Duration.ofMinutes(1)))).update();
 

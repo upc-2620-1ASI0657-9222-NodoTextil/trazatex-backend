@@ -17,7 +17,6 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
 
-/** JWT como los emite organization-access (RS256, sub/role/companyId/iat/exp, kid), y variantes inválidas para probar el rechazo. */
 public final class TestTokens {
 
     public static final String KID = "test-kid-1";
@@ -37,7 +36,6 @@ public final class TestTokens {
         }
     }
 
-    /** JWKS como el de organization-access: solo las partes públicas. */
     public static String jwks(RSAKey... keys) {
         return new JWKSet(java.util.Arrays.stream(keys).map(RSAKey::toPublicJWK).map(k -> (com.nimbusds.jose.jwk.JWK) k).toList()).toString();
     }
@@ -55,7 +53,6 @@ public final class TestTokens {
         return claims(USER_ID, "OPERATOR", COMPANY_ID);
     }
 
-    /** Un token válido de un operario. */
     public static String operator() {
         return sign(KEY, operatorClaims().build());
     }
@@ -78,7 +75,6 @@ public final class TestTokens {
         }
     }
 
-    /** Ataque de confusión de algoritmo: HS256 firmado con los bytes de la clave pública como secreto. */
     public static String hs256WithPublicKeyAsSecret(JWTClaimsSet claims) {
         try {
             JWSSigner signer = new MACSigner(KEY.toRSAPublicKey().getEncoded());
@@ -90,7 +86,6 @@ public final class TestTokens {
         }
     }
 
-    /** {@code alg: none}, sin firma. */
     public static String unsigned(JWTClaimsSet claims) {
         return new PlainJWT(claims).serialize();
     }

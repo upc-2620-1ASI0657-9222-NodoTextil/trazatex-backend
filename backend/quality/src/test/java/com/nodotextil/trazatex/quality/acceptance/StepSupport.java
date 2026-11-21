@@ -14,7 +14,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Lo común de los pasos: preparar un lote (sembrando la proyección que alimentarían los eventos de Production) y leer el estado real. */
 abstract class StepSupport {
 
     protected final World world;
@@ -29,9 +28,6 @@ abstract class StepSupport {
         this.json = json;
     }
 
-    // ---- preparar ----
-
-    /** Un lote como lo dejarían los eventos de Production: disponible, de la empresa A, con la calidad y la retención dadas. */
     protected UUID seedBatch(String qualityStatus, boolean hold, boolean everControlled) {
         UUID batch = UUID.randomUUID();
         jdbc.sql("""
@@ -47,7 +43,6 @@ abstract class StepSupport {
         return api.post(world.adminA, "/api/quality/batches/" + batch + "/controls", null);
     }
 
-    /** Un control en curso sobre el lote, con una prueba por cada resultado dado. */
     protected UUID controlInProgress(UUID batch, String... results) {
         Reply started = startControl(batch);
         assertThat(started.status()).as("iniciar el control: %s", started.raw()).isEqualTo(201);
@@ -68,7 +63,6 @@ abstract class StepSupport {
         return api.post(world.adminA, "/api/quality/controls/" + control + "/finish", null);
     }
 
-    /** Un lote con un control que falló y su falla abierta (la deja como la dejaría el flujo real). */
     protected UUID failedBatchWithOpenFailure() {
         UUID batch = seedBatch("NOT_REVIEWED", false, false);
         UUID control = controlInProgress(batch, "FAILED");
@@ -91,7 +85,6 @@ abstract class StepSupport {
         assertThat(reply.status()).as("enviar a reevaluación: %s", reply.raw()).isEqualTo(200);
     }
 
-    /** Un control finalizado (una prueba conforme y otra con falla) con su falla abierta. */
     protected UUID finishedControl() {
         UUID batch = seedBatch("NOT_REVIEWED", false, false);
         UUID control = controlInProgress(batch, "CONFORMING", "FAILED");
@@ -100,7 +93,6 @@ abstract class StepSupport {
         return control;
     }
 
-    /** Cuántas filas tiene cada tabla de negocio: para comprobar que una operación no guardó nada nuevo. */
     protected Map<String, Long> tableCounts() {
         Map<String, Long> counts = new java.util.TreeMap<>();
         for (String table : jdbc.sql("SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename <> 'flyway_schema_history'").query(String.class).list()) {
@@ -108,8 +100,6 @@ abstract class StepSupport {
         }
         return counts;
     }
-
-    // ---- leer el estado real ----
 
     protected Map<String, Object> projection(UUID batch) {
         return jdbc.sql("SELECT quality_status, quality_hold, ever_controlled FROM batch_projection WHERE batch_id = :b").param("b", batch).query().singleRow();
@@ -128,7 +118,6 @@ abstract class StepSupport {
         return spec.query(Long.class).single();
     }
 
-    /** Los comandos que Production recibió para el lote, con su operación. */
     protected List<JsonNode> commandsFor(UUID batch) {
         return ProductionStub.requestsFor(batch).stream().map(LoggedRequest::getBodyAsString).map(json::readTree).toList();
     }

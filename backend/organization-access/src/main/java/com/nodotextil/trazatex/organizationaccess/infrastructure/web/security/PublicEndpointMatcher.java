@@ -9,11 +9,6 @@ import org.springframework.web.util.ServletRequestPathUtils;
 
 import java.util.function.Predicate;
 
-/**
- * ¿La petición va a un método {@link PublicEndpoint}? Lo usa {@code IdempotencyFilter} (un filtro de servlet, anterior al
- * {@code DispatcherServlet}) para ignorar {@code Idempotency-Key} en rutas sin identidad. Resuelve el handler con el mismo
- * mapeo que usará MVC, así que la anotación es la única fuente de qué es público.
- */
 public class PublicEndpointMatcher implements Predicate<HttpServletRequest> {
 
     private final ObjectProvider<RequestMappingHandlerMapping> handlerMapping;

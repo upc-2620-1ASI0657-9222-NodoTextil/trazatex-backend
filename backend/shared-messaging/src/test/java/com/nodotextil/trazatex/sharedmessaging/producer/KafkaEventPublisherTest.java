@@ -16,7 +16,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class KafkaEventPublisherTest {
 
-    /** Plantilla que no toca la red: cada envío devuelve el futuro que decida la prueba. */
     private static final class ScriptedTemplate extends KafkaTemplate<String, String> {
         final List<String> sent = new ArrayList<>();
         Supplier<CompletableFuture<SendResult<String, String>>> outcome;
@@ -41,7 +40,7 @@ class KafkaEventPublisherTest {
         CompletableFuture<Void> call = CompletableFuture.runAsync(() -> publisher.publish("production.batch", "b-1", "{}"));
 
         Thread.sleep(150);
-        assertThat(call).isNotDone(); // sin confirmación, no retorna
+        assertThat(call).isNotDone();
 
         confirmation.complete(null);
         call.get();

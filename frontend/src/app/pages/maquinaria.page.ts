@@ -39,7 +39,7 @@ import { SHARED, UiService } from '../shared/ui';
               <app-icon class="rc-figure" name="machine" [size]="44" />
               <span class="rc-state">{{ m.estado }}</span>
               <span class="rc-title">{{ m.nombre }}</span>
-              <span class="rc-meta">{{ m.tipo }} / {{ usos(m.codigo) }} proceso(s)</span>
+              <span class="rc-meta">{{ m.tipo }} / {{ usos(m.codigo) }} transformación(es)</span>
             </button>
           }
         </div>
@@ -61,7 +61,7 @@ import { SHARED, UiService } from '../shared/ui';
             <dt>Código interno</dt><dd class="id">{{ m.codigo }}</dd>
             <dt>Nombre</dt><dd>{{ m.nombre }}</dd>
             <dt>Tipo</dt><dd>{{ m.tipo }}</dd>
-            <dt>Procesos</dt><dd class="num">{{ usos(m.codigo) }}</dd>
+            <dt>Transformaciones</dt><dd class="num">{{ usos(m.codigo) }}</dd>
           </dl>
         </section>
         @if (session.esAdmin()) {
@@ -153,4 +153,3 @@ export class MaquinariaPage {
     this.ui.toast(`${m.codigo} / ${e}`);
   }
 }
-

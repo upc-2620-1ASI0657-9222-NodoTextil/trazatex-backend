@@ -5,10 +5,6 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * Implementación del sobre de eventos. El {@code payload} es el objeto del evento (record del servicio productor);
- * al deserializar en un consumidor llega como estructura genérica (mapa) y cada consumidor lo convierte al tipo que necesita.
- */
 public record BaseDomainEvent(
         UUID eventId,
         String type,

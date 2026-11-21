@@ -11,7 +11,6 @@ import com.nodotextil.trazatex.production.domain.model.TransformationType;
 
 import java.util.UUID;
 
-/** US16 iniciar, US17–US19 finalizar con balance, US20 productos finales. */
 public interface ManageTransformationsUseCase {
 
     TransformationResult start(StartTransformationCommand command, Actor actor);

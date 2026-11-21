@@ -6,11 +6,6 @@ import com.nodotextil.trazatex.sharedkernel.exception.ValidationException;
 import java.util.List;
 import java.util.Set;
 
-/**
- * RUC peruano (primer paso de ADR-012; el estado ACTIVO/HABIDO lo valida Chequea.pe): 11 dígitos, que empiezan con
- * {@value #PREFIXES_TEXT} (los únicos que acepta Chequea.pe) y con dígito verificador módulo 11. El prefijo se comprueba
- * <b>antes</b> del módulo 11, así que un RUC con prefijo inválido ni siquiera llega a la API.
- */
 public record Ruc(String value) {
 
     public static final int LENGTH = 11;
@@ -33,7 +28,6 @@ public record Ruc(String value) {
         return checkDigitFor(candidate.substring(0, LENGTH - 1)) == candidate.charAt(LENGTH - 1) - '0';
     }
 
-    /** Dígito verificador de los 10 primeros dígitos: {@code (11 - suma mod 11) mod 10}. */
     public static int checkDigitFor(String firstTenDigits) {
         int sum = 0;
         for (int i = 0; i < WEIGHTS.length; i++) {

@@ -5,7 +5,6 @@ import com.nodotextil.trazatex.organizationaccess.domain.model.AdminRequestStatu
 
 import java.util.UUID;
 
-/** Tópico {@code orgaccess.invitation}, clave requestId. Lo consume notification. {@code decision} es APPROVED o REJECTED. */
 public record AdminRequestResolved(
         UUID requestId,
         UUID companyId,

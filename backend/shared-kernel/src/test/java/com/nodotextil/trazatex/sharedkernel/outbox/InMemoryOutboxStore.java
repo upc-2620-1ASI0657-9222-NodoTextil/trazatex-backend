@@ -10,12 +10,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-/**
- * Doble de prueba con lo que exige {@link OutboxStorePort} a una base real: las escrituras se deshacen si la
- * transacción se revierte, y {@code findPending} bloquea las filas devueltas para la transacción (el equivalente de
- * {@code FOR UPDATE SKIP LOCKED}: otra transacción las salta). Devuelve las filas en orden de inserción, no de
- * {@code createdAt}, para comprobar que el relay ordena por sí mismo.
- */
 class InMemoryOutboxStore implements OutboxStorePort {
 
     static final class Row {

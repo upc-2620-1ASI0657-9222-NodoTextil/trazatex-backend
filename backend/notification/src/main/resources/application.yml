@@ -23,7 +23,6 @@ trazatex:
       topic-check-interval: PT15S
   mail:
     job-delay: PT30S
-    # Intentos por correo antes de pasar a FAILED (espera creciente de 30 s a 1 h entre intentos)
     max-attempts: 8
 server:
   port: 8085

@@ -21,7 +21,6 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 import java.util.List;
 
-/** Todo error HTTP sale como {@code ApiError { code, message, details, timestamp }}. */
 @RestControllerAdvice
 class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
@@ -32,7 +31,6 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return respond(statusOf(e), ApiError.of(e.code(), e.getMessage(), e.details()));
     }
 
-    /** Un {@code batchId} que no es un UUID o un {@code page} que no es un número. */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     ResponseEntity<ApiError> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
         return respond(HttpStatus.BAD_REQUEST, ApiError.of("INVALID_PARAMETER",
@@ -45,7 +43,6 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return respond(HttpStatus.INTERNAL_SERVER_ERROR, ApiError.of("INTERNAL_ERROR", "Ocurrió un error inesperado."));
     }
 
-    /** Errores estándar de Spring MVC (método no permitido, ruta inexistente...) con el mismo cuerpo. */
     @Override
     protected ResponseEntity<Object> handleExceptionInternal(Exception ex, Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
         HttpStatus status = HttpStatus.resolve(statusCode.value());

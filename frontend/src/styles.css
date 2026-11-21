@@ -50,7 +50,6 @@
   --brown: #8a6643;
   --brown-ink: #5b4129;
   --carmine: #a3263c;
-  /* Kraft para TEXTO sobre fondos claros (crema): el --kraft de siempre solo da 1,8–2:1 sobre crema. */
   --kraft-ink: #6f5319;
   --carmine-paper: #f6dfe0;
   --muted-on-green: #c6c7ad;
@@ -91,7 +90,6 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
-
 
 h1,
 h2,
@@ -170,7 +168,6 @@ code {
   color: var(--carmine);
   font-size: 0.82rem;
 }
-/* Razón visible de un botón deshabilitado (FE-I8): texto, no solo tooltip. */
 .action-reason {
   color: var(--carmine);
   font-size: 0.78rem;
@@ -1135,10 +1132,8 @@ app-login .login-card h2 {
 h1, h2, h3, h4, .page-title, .sheet-title { text-align: left; }
 .rc-id, .rc-title { overflow-wrap: anywhere; min-width: 0; }
 
-/* Panel de pestañas ARIA (app-subnav): no altera la maquetación de los hijos de .page */
 .tabpanel { display: contents; }
 
-/* Marcador de carga de las listas (app-skeleton) */
 .skeleton { display: grid; gap: 0.8rem; margin-bottom: 1rem; }
 .skeleton-row {
   min-height: 5.6rem;
@@ -1149,7 +1144,6 @@ h1, h2, h3, h4, .page-title, .sheet-title { text-align: left; }
 @keyframes skeleton-shimmer { to { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) { .skeleton-row { animation: none; } }
 
-/* Etiqueta QR impresa (FE-M15): al imprimir desde «Imprimir etiqueta» solo sale el QR con el código del lote. */
 @media print {
   body.printing-qr * { visibility: hidden !important; }
   body.printing-qr .qr-printable, body.printing-qr .qr-printable * { visibility: visible !important; }
@@ -1165,10 +1159,7 @@ h1, h2, h3, h4, .page-title, .sheet-title { text-align: left; }
     color: #000;
   }
   body.printing-qr .qr-actions { display: none !important; }
-  /* `visibility: hidden` deja el resto de la aplicación ocupando espacio: el documento salía en varias páginas y la etiqueta (fixed) se repetía en cada una.
-     Todo lo que no es la etiqueta ni la contiene se quita del flujo, y los contenedores que la contienen dejan de recortar la altura. */
   body.printing-qr :not(.qr-printable):not(.qr-printable *):not(:has(.qr-printable)) { display: none !important; }
   body.printing-qr, body.printing-qr :has(.qr-printable) { height: auto !important; min-height: 0 !important; max-height: none !important; overflow: visible !important; }
   @page { margin: 1cm; }
 }
-

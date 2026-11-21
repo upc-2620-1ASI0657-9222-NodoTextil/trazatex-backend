@@ -20,11 +20,9 @@ import static com.nodotextil.trazatex.traceability.application.usecase.FakeLinea
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** US33: qué hace {@code FailureConfirmed} con el resultado del análisis: lo registra una sola vez, nada si no hay afectados y nada si la familia está incompleta. */
 @ExtendWith(OutputCaptureExtension.class)
 class FailureImpactServiceTest {
 
-    /** El outbox como un puerto en memoria: lo que se registró y por qué falla. */
     private static final class InMemoryEvents implements ImpactEventPort {
         final List<UUID> failures = new ArrayList<>();
         final List<ImpactResult> results = new ArrayList<>();

@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** Los adaptadores reales de Chequea.pe (ADR-012) y HIBP (ADR-007) dentro de los casos de uso, contra WireMock. */
 class ExternalServicesIT extends IntegrationTestBase {
 
     @BeforeEach
@@ -42,8 +41,6 @@ class ExternalServicesIT extends IntegrationTestBase {
     private long chequeaCalls() {
         return WIREMOCK.countRequestsMatching(getRequestedFor(urlEqualTo("/api/v1/ruc/" + RUC)).build()).getCount();
     }
-
-    // ---- US02: RUC con Chequea.pe ----
 
     @Test
     void anActiveAndHabidoRucCreatesTheCompanyAndIsCached() throws Exception {
@@ -114,7 +111,7 @@ class ExternalServicesIT extends IntegrationTestBase {
     @Test
     void aCachedValidationLetsTheCompanyBeCreatedWhenChequeaIsDown() throws Exception {
         jdbc.sql("INSERT INTO validated_ruc_cache VALUES (:r, 'SUNAT', 'ACTIVO', 'HABIDO', :at)")
-                .param("r", RUC).param("at", utc(clock.instant().minus(Duration.ofDays(5)))).update();   // antigua: se intenta la API primero
+                .param("r", RUC).param("at", utc(clock.instant().minus(Duration.ofDays(5)))).update();
         WIREMOCK.stubFor(forRuc(RUC).willReturn(aResponse().withStatus(500)));
 
         createCompany(RUC).andExpect(status().isCreated());
@@ -156,8 +153,6 @@ class ExternalServicesIT extends IntegrationTestBase {
 
         assertThat(chequeaCalls()).as("por defecto abre tras 5 llamadas fallidas").isEqualTo(5);
     }
-
-    // ---- US04: HIBP ----
 
     private String pendingOperatorToken() {
         UUID company = insertCompany("20100070970", "Hilos SAC", "ACTIVE");

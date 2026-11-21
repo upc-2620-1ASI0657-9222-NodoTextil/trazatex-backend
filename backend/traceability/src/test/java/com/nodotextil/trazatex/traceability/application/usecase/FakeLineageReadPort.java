@@ -22,10 +22,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Un grafo en memoria con el contrato de {@link LineageReadPort} (sin filtrar, con incompletos), para probar el recorrido y la búsqueda
- * sin Neo4j. Cuenta las llamadas de nivel para comprobar que el recorrido no enumera caminos.
- */
 final class FakeLineageReadPort implements LineageReadPort {
 
     static final Instant T0 = Instant.parse("2026-10-21T10:00:00Z");
@@ -53,8 +49,6 @@ final class FakeLineageReadPort implements LineageReadPort {
         return UUID.nameUUIDFromBytes(("lote-" + name).getBytes(StandardCharsets.UTF_8));
     }
 
-    // ---- construcción ----
-
     FakeLineageReadPort batch(String... names) {
         for (String name : names) {
             batch(name, COMPANY_A);
@@ -68,13 +62,11 @@ final class FakeLineageReadPort implements LineageReadPort {
         return this;
     }
 
-    /** Un lote que un evento nombró pero cuya creación no ha llegado: solo su id. */
     FakeLineageReadPort provisional(String name) {
         batches.put(id(name), new BatchData(id(name), null, null, null, null, null, null, null, null, null, null, null, null, null, null, true));
         return this;
     }
 
-    /** Cambia la fase de un lote ya creado. */
     FakeLineageReadPort phase(String name, BatchPhase phase) {
         BatchData b = batches.get(id(name));
         batches.put(id(name), new BatchData(b.batchId(), b.traceabilityId(), b.qrCode(), b.companyId(), b.materialType(), phase, b.qualityStatus(), b.qualityHold(), b.finalProduct(),
@@ -82,7 +74,6 @@ final class FakeLineageReadPort implements LineageReadPort {
         return this;
     }
 
-    /** Cambia el estado de calidad y la retención de un lote ya creado. */
     FakeLineageReadPort quality(String name, QualityStatus status, boolean hold) {
         BatchData b = batches.get(id(name));
         batches.put(id(name), new BatchData(b.batchId(), b.traceabilityId(), b.qrCode(), b.companyId(), b.materialType(), b.phase(), status, hold, b.finalProduct(),
@@ -124,7 +115,6 @@ final class FakeLineageReadPort implements LineageReadPort {
         return this;
     }
 
-    /** Una cadena n0 → n1 → … → n{length-1} por divisiones. */
     FakeLineageReadPort chain(String prefix, int length) {
         for (int i = 0; i < length; i++) {
             batch(prefix + i);
@@ -138,8 +128,6 @@ final class FakeLineageReadPort implements LineageReadPort {
     int levelCalls() {
         return parentCalls + childCalls;
     }
-
-    // ---- LineageReadPort ----
 
     @Override
     public Optional<BatchData> findBatch(UUID batchId) {

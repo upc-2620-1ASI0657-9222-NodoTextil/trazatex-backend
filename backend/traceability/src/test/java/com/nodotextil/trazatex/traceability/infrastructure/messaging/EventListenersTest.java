@@ -48,14 +48,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-/** Los listeners traducen el mensaje del catálogo a la llamada del caso de uso; lo ajeno se ignora y lo ilegible es {@link MalformedEventException}. */
 class EventListenersTest {
 
     private static final ObjectMapper MAPPER = JsonMapper.builder().build();
     private static final Instant NOW = Instant.parse("2026-10-21T10:00:00Z");
 
     private final Set<UUID> processed = new HashSet<>();
-    /** Como el real: el registro se deshace si la transacción se revierte. */
     private final ProcessedEventPort processedEvents = (eventId, type) -> {
         boolean added = processed.add(eventId);
         if (added) {
@@ -99,8 +97,6 @@ class EventListenersTest {
         return EventMessages.map(keysAndValues);
     }
 
-    // ---- lo ajeno se ignora ----
-
     @Test
     void everyListenerIgnoresTheTypesThatAreNotItsOwnWithoutRecordingThemAsProcessed() {
         batches.onMessage(record("production.batch", "UnTipoNuevo", map("x", 1)));
@@ -114,8 +110,6 @@ class EventListenersTest {
         assertThat(processed).isEmpty();
         verifyNoInteractions(register, split, phase, transformation, transfer, quality, privacy, registered);
     }
-
-    // ---- del catálogo a la llamada ----
 
     @Test
     void aPhaseChangeCarriesTheVersionTheNewPhaseTheHoldAndTheOwnerAndIgnoresTheRest() {
@@ -209,8 +203,6 @@ class EventListenersTest {
         assertThat(processed).isEmpty();
     }
 
-    // ---- lo ilegible ----
-
     @Test
     void aMissingMandatoryFieldIsMalformedAndNothingIsRecorded() {
         ConsumerRecord<String, String> withoutVersion = record("production.batch", "BatchPhaseChanged",
@@ -257,8 +249,6 @@ class EventListenersTest {
 
         assertThat(calls[0]).isEqualTo(2);
     }
-
-    // ---- FailureConfirmed (US33) ----
 
     @Test
     void aFailureConfirmedCarriesOnlyTheFailureAndTheBatchAndIgnoresTheRestOfThePayload() {

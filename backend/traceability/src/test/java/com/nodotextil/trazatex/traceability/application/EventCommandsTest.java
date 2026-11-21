@@ -26,7 +26,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** Un evento al que le falta algo obligatorio es ilegible (va a la DLT): cada comando lo rechaza nombrando el campo. */
 class EventCommandsTest {
 
     private static final UUID ID = UUID.randomUUID();

@@ -27,7 +27,6 @@ class EvidenceDeletionServiceTest {
     @BeforeEach void prepare(){when(manager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());service=new EvidenceDeletionService(batches,transformations,deletions,storage,audit,Clock.systemUTC(),manager);}
     @Test void foreignCompanyCannotDelete(){when(batches.findById(owner)).thenReturn(Optional.empty());assertThrows(NotFoundException.class,()->service.delete(EvidenceOwnerType.BATCH,owner,id,actor));verifyNoInteractions(deletions,storage);}
     @Test void recordsDurableDeletionBeforeContactingStorage(){Batch batch=mock(Batch.class);when(batch.companyId()).thenReturn(actor.companyId());when(batches.findById(owner)).thenReturn(Optional.of(batch));when(deletions.markDeleted(eq(EvidenceOwnerType.BATCH),eq(owner),eq(id),eq(actor.companyId()),any())).thenReturn(true);service.delete(EvidenceOwnerType.BATCH,owner,id,actor);verify(manager).commit(any());verifyNoInteractions(storage);}
-    /** Una evidencia que falla no frena a las demás: se aplaza con espera y la purga sigue con la siguiente. */
     @Test void aFailingEvidenceIsDeferredAndTheRestAreStillPurged(){
         UUID bad=UUID.randomUUID(), good=UUID.randomUUID();
         when(deletions.nextDeleted(any())).thenReturn(Optional.of(bad),Optional.of(good),Optional.empty());
@@ -38,7 +37,6 @@ class EvidenceDeletionServiceTest {
         verify(deletions).purge(good);
     }
     @Test void aFailureOnlyDefersTheRowAndNeverPurgesItsReferences(){when(deletions.nextDeleted(any())).thenReturn(Optional.of(id),Optional.empty());doThrow(new IllegalStateException("sin red")).when(storage).delete(id.toString());assertEquals(0,service.purgeDeleted());verify(deletions).deferPurge(eq(id),any());verify(deletions,never()).purge(any());}
-    /** M5: la llamada a Cloudinary no corre dentro de ninguna transacción (ni la que elige ni la que purga). */
     @Test void theStorageCallRunsOutsideAnyTransaction(){
         java.util.concurrent.atomic.AtomicInteger open=new java.util.concurrent.atomic.AtomicInteger();
         when(manager.getTransaction(any())).thenAnswer(call->{open.incrementAndGet();return new SimpleTransactionStatus();});

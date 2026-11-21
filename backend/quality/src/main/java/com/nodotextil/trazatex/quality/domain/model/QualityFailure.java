@@ -9,16 +9,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * La falla que genera un control con pruebas fallidas (US25, US26, US27, US28). {@code OPEN} es «generada, sin decisión final»; se
- * queda {@code OPEN} mientras el lote se reevalúa. {@code controlId} apunta al <b>último</b> control que la originó o reabrió; las
- * pruebas de los controles anteriores siguen ligadas a su propio control.
- *
- * <pre>
- *  OPEN ──confirm──▶ CONFIRMED          (se descarta el lote)
- *  OPEN ──resolve──▶ RESOLVED           (la reevaluación salió conforme)
- * </pre>
- */
 public final class QualityFailure {
 
     private final UUID id;
@@ -44,7 +34,6 @@ public final class QualityFailure {
         this.status = status;
     }
 
-    /** US25 esc. 2: un control con falla genera su falla, {@code OPEN}, ligada al lote y al control. */
     public static QualityFailure generate(UUID id, ControlOutcome outcome) {
         if (id == null) {
             throw new ValidationException(ErrorCodes.MISSING_FIELDS, "Falta el id de la falla", List.of("id"));
@@ -68,7 +57,6 @@ public final class QualityFailure {
         return failure;
     }
 
-    /** US26 esc. 1: causa, cantidad afectada (mayor que cero) y observaciones. Se puede corregir mientras esté {@code OPEN}. */
     public void complete(String rootCause, BigDecimal affectedQtyKg, String observations) {
         requireOpen("completar");
         requireNoDiscardPending();
@@ -87,19 +75,11 @@ public final class QualityFailure {
         this.observations = observations == null || observations.isBlank() ? null : observations.trim();
     }
 
-    /** US26 esc. 2: la falla debe seguir abierta para reevaluar el lote; no cambia de estado (sigue {@code OPEN}). */
     public void startReevaluation() {
         requireOpen("enviar a reevaluación");
         requireNoDiscardPending();
     }
 
-    /**
-     * US27: pide descartar el lote. Exige causa no vacía y cantidad afectada mayor que cero —{@code FailureConfirmed} las lleva como
-     * obligatorias y Analytics calcula las causas más frecuentes desde la causa—; enviar a reevaluación no exige nada. La falla sigue
-     * {@code OPEN} (y deja de admitir cambios) hasta que Production confirme {@code DISCARD} ({@link #completeDiscard}).
-     *
-     * @return {@code true} si la solicitud es nueva, {@code false} si ya estaba pedida
-     */
     public boolean requestDiscard(UUID requestedBy, Instant now) {
         requireOpen("descartar");
         requireInfoComplete();
@@ -114,7 +94,6 @@ public final class QualityFailure {
         return true;
     }
 
-    /** Production confirmó {@code DISCARD}: la falla queda {@code CONFIRMED} (ya no cambia). */
     public void completeDiscard() {
         requireOpen("confirmar");
         requireInfoComplete();
@@ -124,7 +103,6 @@ public final class QualityFailure {
         status = FailureStatus.CONFIRMED;
     }
 
-    /** Production rechazó {@code DISCARD} (409, 404 o un 400): la falla sigue {@code OPEN} y vuelve a admitir cambios. */
     public void abortDiscard() {
         if (!discardPending()) {
             throw new ConflictException(ErrorCodes.INVALID_FAILURE_TRANSITION, "La falla no tiene un descarte pendiente.");
@@ -151,7 +129,6 @@ public final class QualityFailure {
         }
     }
 
-    /** US28 esc. 1: la reevaluación salió conforme. */
     public void resolve(ControlOutcome outcome) {
         requireOpen("resolver");
         requireSameBatch(outcome);
@@ -161,7 +138,6 @@ public final class QualityFailure {
         status = FailureStatus.RESOLVED;
     }
 
-    /** US28 esc. 2: la reevaluación volvió a fallar. Se reutiliza esta falla (sigue {@code OPEN}) y apunta al control nuevo. */
     public void reopenAfterFailedReevaluation(ControlOutcome outcome) {
         requireOpen("reabrir");
         requireSameBatch(outcome);
@@ -197,7 +173,6 @@ public final class QualityFailure {
         return batchId;
     }
 
-    /** La empresa responsable del lote al generarse la falla; viaja en {@code FailureConfirmed}. */
     public UUID companyId() {
         return companyId;
     }

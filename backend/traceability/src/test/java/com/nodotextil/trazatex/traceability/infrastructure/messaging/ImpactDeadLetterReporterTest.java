@@ -14,10 +14,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * El aviso de un {@code FailureConfirmed} que agotó sus reintentos: dice que hay lotes sin retener, la falla, qué falta y cómo reenviarlo; y los comandos que
- * trae son <b>exactamente</b> los del procedimiento de {@code docs/progress.md} (el mismo que ejecuta {@code FailureImpactDeadLetterIT}).
- */
 @ExtendWith(OutputCaptureExtension.class)
 class ImpactDeadLetterReporterTest {
 

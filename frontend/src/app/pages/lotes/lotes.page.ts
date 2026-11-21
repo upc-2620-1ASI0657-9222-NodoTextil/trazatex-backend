@@ -46,7 +46,7 @@ type Vista = 'todos' | 'disponibles' | 'operacion' | 'transferencia' | 'historic
             <button type="button" class="row-card row-card--{{ d.tono }}" [class.is-sel]="sel()?.id === l.id" [class.is-dim]="store.esHistorico(l) && !l.productoFinal" (click)="selId.set(l.id)">
               <span class="rc-id">{{ l.id }}</span>
               <app-icon class="rc-figure" name="lot" [size]="42" />
-              <span class="rc-state">@if (d.bloqueado && d.tono !== 'hist') {<app-icon name="lock" [size]="11" [stroke]="2" />}{{ l.productoFinal ? 'Producto final' : d.etiqueta }}</span>
+              <span class="rc-state" [attr.data-tip]="d.bloqueado && d.tono !== 'hist' ? d.motivo : ''">@if (d.bloqueado && d.tono !== 'hist') {<app-icon name="lock" [size]="11" [stroke]="2" />}{{ l.productoFinal ? 'Producto final' : d.etiqueta }}@if (d.bloqueado && d.tono !== 'hist') {<span class="visually-hidden">: {{ d.motivo }}</span>}</span>
               <span class="rc-title">{{ l.nombre }}</span>
               <span class="rc-meta"><span class="num">{{ l.cantidadKg | kg }}</span> / {{ l.calidad }}@if (session.esDueno()) { / {{ store.nombreEmpresa(l.empresaId) }}}</span>
             </button>
@@ -61,7 +61,6 @@ type Vista = 'todos' | 'disponibles' | 'operacion' | 'transferencia' | 'historic
       </div>
     </div>
 
-    
     @if (sel(); as l) {
       @let d = store.disponibilidad(l);
       @let propio = store.puedeVerPrivado(l.empresaId);
@@ -189,7 +188,7 @@ export class LotesPage {
   readonly nuevo = signal(false);
   readonly masFiltros = signal(false);
   readonly selId = signal<string | null>(null);
-                                                                        
+
   readonly sel = computed(() => this.store.lote(this.selId()) ?? null);
   readonly dividir = signal<Lote | null>(null);
   readonly final = signal<Lote | null>(null);
@@ -250,4 +249,3 @@ export class LotesPage {
     this.page.set(0);
   }
 }
-

@@ -1,6 +1,5 @@
 package com.nodotextil.trazatex.quality.domain.model;
 
-/** Fase operativa del lote: la gobierna Production (docs/domain/glossary.md). Quality solo la copia en su proyección. */
 public enum BatchPhase {
     AVAILABLE(false),
     IN_TRANSFORMATION(false),
@@ -16,7 +15,6 @@ public enum BatchPhase {
         this.historic = historic;
     }
 
-    /** Lote histórico: solo sirve para reconstruir la genealogía; no se opera. */
     public boolean historic() {
         return historic;
     }

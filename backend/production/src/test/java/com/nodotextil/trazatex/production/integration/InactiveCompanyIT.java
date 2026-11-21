@@ -10,12 +10,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * RF-003 ("no podrán iniciar nuevas operaciones productivas"), con la decisión del usuario: con la empresa {@code INACTIVE}
- * se bloquean (409 {@code COMPANY_INACTIVE}) registrar, dividir, iniciar transformación, iniciar transferencia y aceptar una
- * transferencia entrante; se permiten finalizar una transformación ya iniciada y rechazar una transferencia entrante, para
- * que ningún lote quede atascado. Una empresa que no está en la proyección es {@code COMPANY_UNKNOWN}.
- */
 class InactiveCompanyIT extends ApiTestBase {
 
     private void deactivate(UUID company) {
@@ -27,8 +21,6 @@ class InactiveCompanyIT extends ApiTestBase {
     }
 
     private static final List<Object> SPLIT = List.of(obj("quantityKg", 40), obj("quantityKg", 60));
-
-    // ---- lo que se bloquea ----
 
     @Test
     void registeringIsBlocked() throws Exception {
@@ -82,8 +74,6 @@ class InactiveCompanyIT extends ApiTestBase {
         assertThat(jdbc.sql("SELECT company_id FROM batches WHERE id = :id").param("id", idOf(batch)).query(UUID.class).single()).isEqualTo(COMPANY_A);
     }
 
-    // ---- lo que se permite, para que ningún lote quede atascado ----
-
     @Test
     void finishingATransformationAlreadyStartedIsAllowed() throws Exception {
         JsonNode batch = registerBatch(100);
@@ -96,7 +86,6 @@ class InactiveCompanyIT extends ApiTestBase {
 
         assertThat(result.path("transformation").path("status").asString()).isEqualTo("COMPLETED");
         assertThat(count("SELECT count(*) FROM batches WHERE current_stage = 'PROCESSED'")).isEqualTo(1);
-        // las salidas existen y siguen siendo suyas, pero con la empresa inactiva no se pueden operar
         String output = result.path("outputs").get(0).path("id").asString();
         assertThat(code(postAs(OPERATOR_OF_A, "/api/batches/" + output + "/split", obj("children", SPLIT)).andExpect(status().isConflict())))
                 .isEqualTo("COMPANY_INACTIVE");
@@ -134,8 +123,6 @@ class InactiveCompanyIT extends ApiTestBase {
         patchAs(ADMIN_OF_A, "/api/machines/" + machine + "/status", obj("status", "INACTIVE")).andExpect(status().isOk());
     }
 
-    // ---- reactivar y empresa desconocida ----
-
     @Test
     void reactivatingTheCompanyRestoresEveryOperation() throws Exception {
         deactivate(COMPANY_A);
@@ -158,7 +145,6 @@ class InactiveCompanyIT extends ApiTestBase {
                 "batchIds", List.of(UUID.randomUUID()))).andExpect(status().isConflict()))).isEqualTo("COMPANY_UNKNOWN");
         assertThat(code(postAs(OPERATOR_OF_A, "/api/transfers", obj("targetCompanyId", COMPANY_B, "batchIds", List.of(idOf(batch))))
                 .andExpect(status().isConflict()))).isEqualTo("COMPANY_UNKNOWN");
-        // cerrar trabajo ya iniciado y consultar siguen permitidos
         postAs(OPERATOR_OF_A, "/api/transformations/" + transformation + "/complete", obj("outputs", List.of(output("Hilo", 90))))
                 .andExpect(status().isOk());
         getAs(OPERATOR_OF_A, "/api/batches").andExpect(status().isOk());

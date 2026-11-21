@@ -22,11 +22,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * 05c-3: las rutas de {@code /api/traceability/**} llegan a traceability con la identidad que inyecta el Gateway, y toda respuesta que sale por ellas
- * lleva {@code Cache-Control: no-store} (lo que ve cada empresa depende de quien consulta): la del servicio, la que el servicio olvidó poner y la
- * de los errores del propio Gateway.
- */
 class TraceabilityRoutingTest extends GatewayTestSupport {
 
     private static final String BODY = "{\"ok\":true}";
@@ -72,8 +67,6 @@ class TraceabilityRoutingTest extends GatewayTestSupport {
         assertThat(received.header("X-User-Id").values()).containsExactly(TestTokens.USER_ID.toString());
     }
 
-    // ---- Cache-Control: no-store ----
-
     @Test
     void whenTheServiceForgetsTheHeaderTheGatewayAddsIt() {
         assertThat(cacheControl(client.get().uri("/api/traceability/lineages?qrCode=QR-1").exchange().expectStatus().isOk())).containsExactly("no-store");
@@ -108,7 +101,6 @@ class TraceabilityRoutingTest extends GatewayTestSupport {
 
     @Test
     void theGatewaysOwnErrorsAreNotCacheableEither() {
-        // sin token y con un token que no es nuestro: 401 del Gateway; el servicio no se entera
         WebTestClient.ResponseSpec noToken = anonymous.get().uri("/api/traceability/batches/1/lineage").exchange().expectStatus().isUnauthorized();
         WebTestClient.ResponseSpec garbage = anonymous.get().uri("/api/traceability/lineages?qrCode=1").header(HttpHeaders.AUTHORIZATION, "Bearer no-es-un-jwt")
                 .exchange().expectStatus().isUnauthorized();
@@ -132,7 +124,6 @@ class TraceabilityRoutingTest extends GatewayTestSupport {
     @Test
     void thePathGuardsRejectionsOnTheseRoutesAreNotCacheableEither() {
         for (String path : List.of("/api/traceability//batches", "/api/traceability/../internal/x", "/api/traceability/%2e%2e/x", "/api/traceability/a%2Fb")) {
-            // la ruta cruda: con client.get().uri(String) el cliente la normalizaría antes de enviarla
             WebTestClient.ResponseSpec response = client.get().uri(URI.create("http://localhost:" + port + path)).exchange().expectStatus().isBadRequest();
 
             assertThat(cacheControl(response)).as(path).containsExactly("no-store");

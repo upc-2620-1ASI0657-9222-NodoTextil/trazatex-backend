@@ -4,12 +4,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 
-/**
- * Intentos fallidos de login de un <b>correo</b> (RNF-06), exista o no la cuenta: así el bloqueo (423) se comporta igual con
- * correos inexistentes y la respuesta no revela si una cuenta existe. 3 fallos consecutivos bloquean {@value #LOCK_MINUTES}
- * minutos. Al bloquear el contador vuelve a 0, de modo que al vencer el bloqueo hay 3 intentos nuevos; los intentos hechos
- * durante el bloqueo no cuentan ni lo extienden. Un login correcto elimina el registro.
- */
 public final class LoginAttempts {
 
     public static final int MAX_FAILED_ATTEMPTS = 3;
@@ -44,7 +38,7 @@ public final class LoginAttempts {
         if (isLocked(now)) {
             return;
         }
-        lockedUntil = null;   // un bloqueo vencido no debe sobrevivir a los intentos nuevos
+        lockedUntil = null;
         failedAttempts++;
         updatedAt = now;
         if (failedAttempts >= MAX_FAILED_ATTEMPTS) {

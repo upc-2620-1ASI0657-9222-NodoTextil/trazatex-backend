@@ -7,7 +7,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-/** La cola diferida de Cloudinary (ADR-007): cada pasada sube lo que está vencido. {@code trazatex.evidence.upload.enabled=false} lo apaga (pruebas). */
 @Component
 @ConditionalOnProperty(name = "trazatex.evidence.upload.enabled", havingValue = "true", matchIfMissing = true)
 class PendingEvidenceUploadJob {

@@ -52,12 +52,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Eventos de entrada con Kafka real (ADR-004, RF-003): la proyección de empresas se alimenta de {@code orgaccess.company} (desde
- * el principio del tópico), {@code QualityStatusChanged} copia el estado de calidad desde {@code quality.control} —un tópico de
- * otro servicio que al arrancar no existe—, el mismo evento dos veces no se aplica dos veces y un conflicto de {@code @Version}
- * con una operación del usuario se reintenta en lugar de ir a la DLT.
- */
 @SpringBootTest(properties = {
         "trazatex.messaging.enabled=true", "trazatex.cloudinary.url=", "trazatex.evidence.upload.enabled=false",
         "trazatex.messaging.consumer.quality.topic-check-interval=PT1S",
@@ -73,12 +67,10 @@ class EventConsumptionKafkaIT extends ApiTestBase {
     static final String COMPANY_TOPIC = "orgaccess.company";
     static final String QUALITY_TOPIC = "quality.control";
 
-    /** Una empresa registrada ANTES de que Production arrancara por primera vez. */
     static final UUID PRE_EXISTING_COMPANY = UUID.randomUUID();
 
     static {
         KAFKA.start();
-        // Estado previo: organization-access ya creó su tópico y publicó un alta; quality.control NO existe (no hay creación automática)
         try (AdminClient admin = AdminClient.create(Map.<String, Object>of("bootstrap.servers", KAFKA.getBootstrapServers()))) {
             admin.createTopics(List.of(new NewTopic(COMPANY_TOPIC, 1, (short) 1))).all().get();
         } catch (Exception e) {
@@ -98,13 +90,11 @@ class EventConsumptionKafkaIT extends ApiTestBase {
     @MockitoSpyBean
     BatchRepositoryPort batchRepository;
 
-    /** No se siembran las empresas A y B: la proyección de esta prueba viene solo de Kafka. */
     @Override
     @BeforeEach
     void seedCompanies() {
     }
 
-    /** Como la base, pero sin vaciar la proyección de empresas ni los eventos procesados: se alimentan de Kafka al arrancar. */
     @Override
     @BeforeEach
     void resetDatabase() {
@@ -114,8 +104,6 @@ class EventConsumptionKafkaIT extends ApiTestBase {
                 """).update();
         clock.advance(Duration.between(clock.instant(), START));
     }
-
-    // ---- Kafka ----
 
     record Sent(UUID eventId, String json) {
     }
@@ -183,8 +171,6 @@ class EventConsumptionKafkaIT extends ApiTestBase {
         }
     }
 
-    // ---- proyección ----
-
     private String projectedStatus(UUID company) {
         return jdbc.sql("SELECT status FROM company_projection WHERE company_id = :id").param("id", company).query(String.class).optional().orElse(null);
     }
@@ -193,7 +179,6 @@ class EventConsumptionKafkaIT extends ApiTestBase {
         await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(projectedStatus(company)).isEqualTo(status));
     }
 
-    /** Publica un evento posterior y espera a que se aplique: todo lo publicado antes en la misma partición ya fue consumido. */
     private void awaitConsumedUpToHere() {
         UUID marker = UUID.randomUUID();
         send(COMPANY_TOPIC, marker.toString(), registered(marker, "Marcador", "ACTIVE").json());
@@ -211,8 +196,6 @@ class EventConsumptionKafkaIT extends ApiTestBase {
     private long processed(UUID eventId) {
         return count("SELECT count(*) FROM processed_events WHERE event_id = ?", eventId);
     }
-
-    // ---- empresas ----
 
     @Test
     @Order(1)
@@ -276,7 +259,6 @@ class EventConsumptionKafkaIT extends ApiTestBase {
         Instant updatedAt = jdbc.sql("SELECT updated_at FROM company_projection WHERE company_id = :id").param("id", company)
                 .query(java.time.OffsetDateTime.class).single().toInstant();
 
-        // Kafka entrega el evento viejo otra vez (at-least-once), después del más nuevo: si se aplicara, la dejaría inactiva
         send(COMPANY_TOPIC, company.toString(), inactivated.json());
         send(COMPANY_TOPIC, company.toString(), inactivated.json());
         awaitConsumedUpToHere();
@@ -335,14 +317,12 @@ class EventConsumptionKafkaIT extends ApiTestBase {
         assertThat(projectedStatus(badStatusCompany)).isNull();
     }
 
-    // ---- quality.control ----
-
     @Test
     @Order(2)
     void productionStartsWithoutTheQualityTopicNeverCreatesItAndConsumesItOnceItAppears(CapturedOutput output) throws Exception {
         assertThat(topicExists(QUALITY_TOPIC)).as("el tópico de Quality no existe: el servicio arrancó igual").isFalse();
         assertThat(topicExists(QUALITY_TOPIC + ".DLT")).as("sí declara la DLT de lo que consume").isTrue();
-        Thread.sleep(6_000);   // varias renovaciones de metadata con el tópico ausente
+        Thread.sleep(6_000);
         assertThat(topicExists(QUALITY_TOPIC)).as("Production no crea tópicos de otros servicios").isFalse();
         assertThat(output.getAll().lines().filter(line -> line.contains("UNKNOWN_TOPIC_OR_PARTITION")).count())
                 .as("sin suscribirse a un tópico ausente no hay avisos UNKNOWN_TOPIC_OR_PARTITION").isZero();
@@ -419,7 +399,7 @@ class EventConsumptionKafkaIT extends ApiTestBase {
         send(QUALITY_TOPIC, missing.toString(), qualityStatusChanged(missing, UUID.randomUUID(), "NOT_REVIEWED", "FAILED").json());
 
         await().atMost(Duration.ofSeconds(60)).untilAsserted(() -> assertThat(deadLetters(QUALITY_TOPIC, missing.toString())).hasSize(1));
-        Thread.sleep(2_000);   // más que toda la espera de los reintentos (0,2 + 0,3 + 0,5 s)
+        Thread.sleep(2_000);
         verify(qualityStatus, times(1)).apply(eq(missing), any(), any(), any());
         assertThat(output.getAll()).contains("referencia un lote que no existe");
         assertThat(count("SELECT count(*) FROM processed_events WHERE event_type = 'QualityStatusChanged' AND event_id = ?",
@@ -434,7 +414,6 @@ class EventConsumptionKafkaIT extends ApiTestBase {
         JsonNode batch = registerBatchAs(operator, 10);
         UUID id = idOf(batch);
         AtomicInteger saves = new AtomicInteger();
-        // Entre la lectura y el guardado del consumidor, "otra operación" modifica el lote y confirma (otra conexión): solo la primera vez
         doAnswer(invocation -> {
             if (saves.getAndIncrement() == 0) {
                 CompletableFuture.runAsync(() -> jdbc.sql("UPDATE batches SET version = version + 1 WHERE id = :id").param("id", id).update()).join();

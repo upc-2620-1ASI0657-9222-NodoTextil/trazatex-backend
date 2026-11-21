@@ -22,7 +22,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/** La maquinaria no es una operación productiva: la gestiona su administrador aunque la empresa esté inactiva. */
 @Service
 @Transactional
 class MachineService implements ManageMachinesUseCase {

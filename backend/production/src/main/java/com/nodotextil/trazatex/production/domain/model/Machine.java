@@ -7,11 +7,6 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * Maquinaria de una empresa (US10, RF-014). Nace {@code ACTIVE}; solo una {@code ACTIVE} se usa en transformaciones.
- * El código interno es único por empresa (lo garantiza la base). Cada cambio de estado produce un
- * {@link MachineStatusChange} para conservar el historial.
- */
 public final class Machine {
 
     private final UUID id;
@@ -46,7 +41,6 @@ public final class Machine {
         return new Machine(id, companyId, internalCode, name, type, status, createdAt);
     }
 
-    /** US10 esc. 2: pasa a otro estado de los tres. Repetir el estado actual es 409. */
     public MachineStatusChange changeStatus(MachineStatus target, UUID changedBy, Instant now) {
         Objects.requireNonNull(target, "target");
         if (target == status) {
@@ -58,7 +52,6 @@ public final class Machine {
         return change;
     }
 
-    /** US10 esc. 3 / US16 esc. 3: 409 si no está {@code ACTIVE} o no es de la empresa que la usa. */
     public void ensureUsableBy(UUID companyId) {
         if (!this.companyId.equals(companyId)) {
             throw new ConflictException(ErrorCodes.MACHINE_COMPANY_MISMATCH,

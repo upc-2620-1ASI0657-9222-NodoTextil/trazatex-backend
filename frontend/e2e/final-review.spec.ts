@@ -11,7 +11,6 @@ async function contrast(page:Page,selector:string){return page.locator(selector)
  return elements.filter(e=>(e as HTMLElement).offsetWidth>0).map(e=>{const chain:Element[]=[];for(let n:Element|null=e;n;n=n.parentElement)chain.unshift(n);let bg=[255,255,255];for(const n of chain)bg=blend(rgba(getComputedStyle(n).backgroundColor),bg);const style=getComputedStyle(e);const fg=blend(rgba(style.color),bg);const a=lum(fg),b=lum(bg);return {text:e.textContent?.trim().slice(0,70),ratio:(Math.max(a,b)+.05)/(Math.min(a,b)+.05)};});
 });}
 test('login conserva su apariencia y utiliza los tres iconos de hilo',async({page})=>{
-  // Clase C: compara contra una captura de referencia de la instalación oficial (revision-login-before.png) que no se genera en un stack aislado.
   test.skip(!existsSync(localFile('revision-login-before.png')),'Falta la captura de referencia revision-login-before.png de la instalación oficial.');
   await page.setViewportSize({width:1440,height:900});
   await page.goto('/login');
@@ -58,9 +57,7 @@ test('genealogía con superficies legibles y landing sin alterar el hero',async(
  await page.goto(landingUrl());await expect(page.locator('body')).not.toHaveClass(/is-loading/);await expect(page.locator('.hero__media img')).toHaveCount(1);await expect(page.locator('.hero__media img')).toHaveAttribute('src','/img/hero/conos-textiles.webp');expect(await page.locator('.hero__media img').evaluate(e=>getComputedStyle(e).filter)).toBe('brightness(0.82)');expect(await page.locator('.hero__actions .btn').first().evaluate(e=>getComputedStyle(e).opacity)).toBe('0.81');const nav=await page.locator('.nav').evaluate(e=>({background:getComputedStyle(e).backgroundColor,expected:getComputedStyle(e).getPropertyValue('--green-950').trim()}));const rgb=nav.background.match(/\d+/g)!.map(Number);expect(rgb.reduce((a,b)=>a+b,0)).toBeLessThan(80);for(const result of await contrast(page,'.nav__links a'))expect(result.ratio,JSON.stringify(result)).toBeGreaterThanOrEqual(4.5);
 });
 
-
 test('exposición: avisos administrativos reales con estados leído y no leído', async ({page}) => {
-  // Clase B: los cinco avisos (cuatro sin leer) son los de la instalación oficial; en un stack aislado dependen del orden en que corrieron los demás specs.
   test.skip(process.env['TRAZATEX_EXPOSURE_DATA']!=='true','Cuentas exactas de avisos de la instalación oficial (TRAZATEX_EXPOSURE_DATA=true).');
   await login(page,'owner');
   await page.goto('/notificaciones');

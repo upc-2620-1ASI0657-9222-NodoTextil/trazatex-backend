@@ -25,11 +25,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * RF-012: {@code orgaccess.user} tiene que estar compactado para que el Gateway pueda releerlo desde el inicio. Caso de tu Kafka
- * local: el tópico <b>ya existe</b> sin compactación (lo creó la fase 02) y con datos; al arrancar el servicio se corrige sin
- * perder mensajes ni cambiar las particiones.
- */
 @SpringBootTest(properties = "trazatex.messaging.enabled=true")
 class UserTopicCompactionIT extends IntegrationTestBase {
 
@@ -38,7 +33,6 @@ class UserTopicCompactionIT extends IntegrationTestBase {
 
     static {
         KAFKA.start();
-        // Estado previo: el tópico como lo dejó la fase 02, con retención por tiempo y un mensaje
         try (AdminClient admin = AdminClient.create(Map.<String, Object>of("bootstrap.servers", KAFKA.getBootstrapServers()))) {
             admin.createTopics(List.of(new NewTopic("orgaccess.user", 1, (short) 1))).all().get();
         } catch (Exception e) {

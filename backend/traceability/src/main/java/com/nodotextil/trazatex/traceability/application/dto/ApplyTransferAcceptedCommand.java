@@ -7,7 +7,6 @@ import java.util.UUID;
 import static com.nodotextil.trazatex.traceability.application.dto.EventFields.notEmpty;
 import static com.nodotextil.trazatex.traceability.application.dto.EventFields.required;
 
-/** {@code TransferAccepted}: solo historial ({@code TRANSFERRED_VIA}); el cambio de dueño llega con {@code BatchPhaseChanged}. */
 public record ApplyTransferAcceptedCommand(UUID eventId, UUID transferId, List<UUID> batchIds, UUID toCompanyId, Instant acceptedAt) {
 
     public ApplyTransferAcceptedCommand {

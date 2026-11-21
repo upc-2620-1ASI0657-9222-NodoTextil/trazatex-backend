@@ -16,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Map;
 import java.util.UUID;
 
-/** US24. No llama a Production, así que es una transacción ordinaria. */
 @Service
 @Transactional
 class ControlTestService implements AddQualityTestUseCase {

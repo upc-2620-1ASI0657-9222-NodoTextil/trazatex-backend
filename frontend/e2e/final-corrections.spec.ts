@@ -2,12 +2,11 @@ import { test, expect, Page, APIRequestContext } from './base';
 import { readFileSync, writeFileSync, existsSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { credentialsFile, localFile, resultsDir } from './paths';
-import { psql } from './support';
+import { chooseLoginRole, psql } from './support';
 const root = resolve('..');
 const accounts = JSON.parse(readFileSync(credentialsFile(), 'utf8')).accounts;
 const credentials = (key: string) => accounts.find((item: {key: string}) => item.key === key);
 const checkpoint = localFile('correction-checks.json');
-// El punto de control solo vale para la instalación sembrada que lo creó (se ata a la marca de tiempo de credentials.json); con otra siembra se descarta.
 const installation = String(statSync(credentialsFile()).mtimeMs);
 const previous = existsSync(checkpoint) ? JSON.parse(readFileSync(checkpoint, 'utf8')) : undefined;
 const checks = previous?.installation === installation ? previous : {installation, splits: []};
@@ -22,6 +21,7 @@ async function session(request: APIRequestContext, key = 'operator/hilanderia/1'
 async function login(page: Page, key = 'operator/hilanderia/1') {
   const account = credentials(key);
   await page.goto('/login');
+  await chooseLoginRole(page, key);
   await page.getByLabel('Correo', {exact: true}).fill(account.email);
   await page.getByLabel('Contraseña', {exact: true}).fill(account.password);
   await page.getByRole('button', {name: 'Ingresar', exact: true}).click();
@@ -171,7 +171,6 @@ test('Quality con previsualización, eliminación real, finalización y PDF auto
   await evidence.getByRole('button',{name:'Eliminar evidencia',exact:true}).click();
   await page.getByRole('dialog',{name:'Confirmar acción',exact:true}).getByRole('button',{name:'Confirmar',exact:true}).click();
   await expect.poll(async()=>(await get(request,'/quality/controls/'+control.id+'/evidence',admin)).items.length).toBe(0);
-  // Consulta directa a la base de Quality del proyecto aislado (por etiquetas de Compose; ver support.psql).
   await expect.poll(()=>Number(psql('quality_db',"SELECT count(*) FROM evidence WHERE id='"+photo.id+"'")),{timeout:30000,intervals:[3000]}).toBe(0);
   await page.getByRole('button',{name:/^Pruebas/}).click();
   await page.getByLabel('Criterio',{exact:true}).fill('Resistencia de la fibra');
@@ -186,7 +185,6 @@ test('Quality con previsualización, eliminación real, finalización y PDF auto
   await page.screenshot({path:resolve(resultsDir(),'quality-check.png')});
   checks.qualityVerified=true;save();
 });
-
 
 test('composición con centésimas y promedio ponderado igual al backend', async ({page,request}) => {
   test.setTimeout(90000); const auth=await session(request);

@@ -15,10 +15,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.time.Clock;
 import java.util.List;
 
-/**
- * Las cuatro fuentes. Cada una reclama en una transacción corta ({@code FOR UPDATE SKIP LOCKED}, que además arrienda lo reclamado) y resuelve
- * fuera de ella, uno por uno; un elemento que falla no frena a los demás de su fuente (su arrendamiento vence y se repite).
- */
 final class PendingCommandSources {
 
     private static final Logger log = LoggerFactory.getLogger(PendingCommandSources.class);

@@ -13,11 +13,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * US29 — Generar genealogía (RF-053). Los pasos hacen de Production: publican sus eventos en los tópicos de Kafka, con el sobre y el payload
- * del catálogo, y esperan a que traceability los procese; después miran el grafo con Cypher. Los {@code Dado} publican el estado previo
- * (el lote ya registrado) y dejan <i>preparado</i> lo que ocurre en el {@code Cuando}.
- */
 public class GenealogySteps {
 
     private final World world;
@@ -45,8 +40,6 @@ public class GenealogySteps {
                 "Piura", "Textiles del Norte", "Fibra limpia", World.T0)));
         return id;
     }
-
-    // ---- Escenario 1: relación por división ----
 
     @Dado("^que un lote ha sido dividido$")
     public void aBatchHasBeenSplit() {
@@ -80,8 +73,6 @@ public class GenealogySteps {
                 .as("una relación por cada hijo y ninguna más").isEqualTo(world.children.size());
         assertThat(platform.batch(world.batch)).as("el padre ya figura como dividido").containsEntry("phase", "SPLIT");
     }
-
-    // ---- Escenario 2: relación por transformación ----
 
     @Dado("^que una transformación genera lotes de salida$")
     public void aTransformationProducesOutputBatches() {
@@ -123,8 +114,6 @@ public class GenealogySteps {
             assertThat(platform.batch(output)).as("la salida es un lote completo, no provisional").containsEntry("provisional", false).containsKey("traceabilityId");
         }
     }
-
-    // ---- Escenario 3: transferencia ----
 
     @Dado("^que un lote es transferido entre empresas$")
     public void aBatchIsTransferredBetweenCompanies() {

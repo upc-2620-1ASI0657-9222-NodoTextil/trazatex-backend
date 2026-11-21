@@ -92,7 +92,6 @@ class TransformationService implements ManageTransformationsUseCase {
         return TransformationResult.from(transformation);
     }
 
-    /** Finalizar cierra trabajo ya iniciado: se permite aunque la empresa esté inactiva (RF-003, sin lotes atascados). */
     @Override
     public CompleteTransformationResult complete(UUID transformationId, CompleteTransformationCommand command, Actor actor) {
         Transformation transformation = transformations.findByIdForUpdate(transformationId)

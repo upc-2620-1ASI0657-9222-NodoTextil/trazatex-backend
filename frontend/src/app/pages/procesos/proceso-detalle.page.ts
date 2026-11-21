@@ -15,7 +15,7 @@ import { FinalizarProcesoDialog } from './proceso-dialogs';
       @let propio = store.puedeVerPrivado(p.empresaId);
       <div class="page detail-page page--proceso-detalle">
         <ng-template appHeaderActions>
-            <a class="btn btn--ghost" routerLink="/procesos"><app-icon name="arrowLeft" [size]="15" /> Procesos</a>
+            <a class="btn btn--ghost" routerLink="/procesos"><app-icon name="arrowLeft" [size]="15" /> Transformaciones</a>
             <a class="btn btn--ghost" [routerLink]="['/trazabilidad']" [queryParams]="{ lote: p.entradas[0].loteId }"><app-icon name="trace" [size]="16" /> Ver en genealogía</a>
                   </ng-template>
 
@@ -34,10 +34,6 @@ import { FinalizarProcesoDialog } from './proceso-dialogs';
                 }
               </div>
             </app-fold>
-
-            
-
-            
 
             <app-fold n="02" title="Salidas" [summary]="p.salidasIds.length ? p.salidasIds.length + ' lote(s)' : 'Al finalizar'">
               @if (p.salidasIds.length) {
@@ -92,7 +88,7 @@ import { FinalizarProcesoDialog } from './proceso-dialogs';
                   <p class="row"><app-priv /> <span class="small muted">Merma y desperdicio son privados para {{ store.nombreEmpresa(p.empresaId) }}.</span></p>
                 }
               } @else {
-                <div class="notice"><app-icon name="clock" /><span>Proceso en curso desde {{ p.inicio | fecha }}. El balance se calcula al finalizar.</span></div>
+                <div class="notice"><app-icon name="clock" /><span>Transformación en curso desde {{ p.inicio | fecha }}. El balance se calcula al finalizar.</span></div>
               }
             </app-fold>
             @if (session.esOperario() && propio && !p.fin) {
@@ -131,7 +127,7 @@ import { FinalizarProcesoDialog } from './proceso-dialogs';
         <app-finalizar-proceso [proceso]="p" (closed)="finalizar.set(false)" />
       }
     } @else {
-      <div class="page"><div class="empty"><strong>Proceso no encontrado</strong><a routerLink="/procesos">Volver</a></div></div>
+      <div class="page"><div class="empty"><strong>Transformación no encontrada</strong><a routerLink="/procesos">Volver</a></div></div>
     }
   `,
   styles: `
@@ -179,5 +175,3 @@ export class ProcesoDetallePage {
     if (result.ok) this.ui.toast('Evidencia registrada');
   }
 }
-
-

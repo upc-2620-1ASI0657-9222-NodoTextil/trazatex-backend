@@ -18,12 +18,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClasspathResource;
 import static org.junit.platform.launcher.EngineFilter.includeEngines;
 
-/**
- * Modo estricto: un paso sin definir, pendiente o ambiguo hace FALLAR el escenario (no lo omite ni lo da por bueno). Se comprueba
- * lanzando el motor de Cucumber con .feature de ejemplo ({@code strictness/}) y exigiendo que el resultado sea {@code FAILED}; el
- * escenario de control, con un paso definido, debe pasar (así se sabe que el lanzador funciona). Un paso con el cuerpo vacío no se
- * puede detectar al ejecutar: lo vigila {@code StepDefinitionsTest}.
- */
 class StrictModeIT {
 
     private record Outcome(String name, TestExecutionResult.Status status, Throwable error) {

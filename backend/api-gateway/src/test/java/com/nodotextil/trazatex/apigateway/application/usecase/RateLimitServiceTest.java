@@ -19,7 +19,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** La lógica de qué cubos aplican y cómo se combinan, con un puerto de mentira que registra lo que se le pide. */
 class RateLimitServiceTest {
 
     private static final RateLimit LOGIN = new RateLimit(60, Duration.ofMinutes(1));

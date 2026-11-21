@@ -15,7 +15,6 @@ import static com.nodotextil.trazatex.quality.domain.Fixtures.startedControl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** Finalizar solo cambia el estado del control cuando Production confirma {@code RELEASE}: hasta entonces la solicitud queda pendiente. */
 class ControlFinishPendingTest {
 
     static final UUID ADMIN = UUID.fromString("00000000-0000-0000-0000-00000000a0ad");

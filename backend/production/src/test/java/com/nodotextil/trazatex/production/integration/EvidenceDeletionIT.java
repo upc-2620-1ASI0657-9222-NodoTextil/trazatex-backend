@@ -17,10 +17,6 @@ import java.util.concurrent.TimeUnit;
 import static com.nodotextil.trazatex.production.domain.SampleImages.jpeg;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * M5: borrar una evidencia deja primero la marca (la evidencia desaparece de los listados) y luego un job borra la imagen en Cloudinary y las
- * referencias. La llamada a Cloudinary no retiene ninguna transacción de la base: mientras tarda, no hay conexiones «idle in transaction».
- */
 class EvidenceDeletionIT extends EvidenceItBase {
 
     static final com.github.tomakehurst.wiremock.matching.UrlPattern DESTROY = WireMock.urlPathMatching("/v1_1/.*/image/destroy");
@@ -39,7 +35,6 @@ class EvidenceDeletionIT extends EvidenceItBase {
         return jdbc.sql("SELECT purge_attempts FROM evidence WHERE id = :id").param("id", evidence).query(Integer.class).single();
     }
 
-    /** Segundos de espera que quedan según el reloj simulado de la prueba (el {@code now()} de PostgreSQL es la hora real). */
     private long waitSeconds(UUID evidence) {
         java.time.OffsetDateTime at = jdbc.sql("SELECT purge_retry_at FROM evidence WHERE id = :id").param("id", evidence)
                 .query((rs, n) -> rs.getObject(1, java.time.OffsetDateTime.class)).single();
@@ -90,7 +85,6 @@ class EvidenceDeletionIT extends EvidenceItBase {
         assertThat(rows(evidence)).isZero();
     }
 
-    /** Una evidencia que falla siempre no frena a las demás (antes la primera excepción cortaba toda la corrida). */
     @Test
     void aFailingEvidenceDoesNotStopThePurgeOfTheOthers() throws Exception {
         UUID batch = idOf(registerBatch(10));
@@ -102,7 +96,7 @@ class EvidenceDeletionIT extends EvidenceItBase {
         CLOUDINARY.stubFor(WireMock.post(DESTROY).willReturn(WireMock.okJson("{\"result\":\"ok\"}")));
         CLOUDINARY.stubFor(WireMock.post(DESTROY).withRequestBody(WireMock.containing(bad.toString())).atPriority(1)
                 .willReturn(WireMock.aResponse().withStatus(422).withBody("{\"error\":{\"message\":\"rechazada\"}}")));
-        jdbc.sql("UPDATE evidence SET deleted_at = now() - interval '1 hour' WHERE id = :id").param("id", bad).update();   // la fallida es la más antigua: va primero
+        jdbc.sql("UPDATE evidence SET deleted_at = now() - interval '1 hour' WHERE id = :id").param("id", bad).update();
 
         assertThat(deletions.purgeDeleted()).as("la buena se purgó aunque la primera falló").isEqualTo(1);
 
@@ -124,7 +118,7 @@ class EvidenceDeletionIT extends EvidenceItBase {
         var executor = Executors.newSingleThreadExecutor();
         try {
             Future<Integer> purge = executor.submit(() -> deletions.purgeDeleted());
-            Thread.sleep(400);                                   // Cloudinary sigue respondiendo (1,2 s; el timeout de lectura de las pruebas es de 2 s)
+            Thread.sleep(400);
             assertThat(purge.isDone()).as("la llamada a Cloudinary está en vuelo").isFalse();
             long idleInTransaction = jdbc.sql("SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND state LIKE 'idle in transaction%'")
                     .query(Long.class).single();

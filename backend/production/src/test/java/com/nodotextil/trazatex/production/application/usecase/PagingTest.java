@@ -9,7 +9,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** RNF-03: el tamaño de página tiene un tope de 100; si piden más, se usa 100. */
 class PagingTest {
 
     @Test

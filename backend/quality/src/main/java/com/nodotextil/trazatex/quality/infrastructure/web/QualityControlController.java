@@ -31,7 +31,6 @@ import java.util.UUID;
 @RequestMapping("/api/quality")
 class QualityControlController {
 
-    /** Segundos que se sugiere esperar antes de consultar un control que sigue {@code STARTING}. */
     static final String POLL_AFTER_SECONDS = "5";
 
     private final StartQualityControlUseCase start;
@@ -49,11 +48,6 @@ class QualityControlController {
         this.reports = reports;
     }
 
-    /**
-     * US23 / US34. {@code 201}: Production confirmó y el control está {@code IN_PROGRESS}. {@code 202}: Production no respondió; el
-     * control está {@code STARTING} y se resuelve solo (consultar {@code Location}). Si Production lo rechaza, la respuesta es el error de
-     * Production (409 con su código, o 404 {@code BATCH_NOT_FOUND}) y el control queda {@code CANCELLED} con ese código como motivo.
-     */
     @PostMapping("/batches/{batchId}/controls")
     @RequiresRole(Role.COMPANY_ADMIN)
     ResponseEntity<ControlResult> start(@PathVariable UUID batchId, @RequestBody(required = false) StartControlRequest request, Actor actor) {
@@ -72,18 +66,12 @@ class QualityControlController {
         return get.get(controlId, actor);
     }
 
-    /** US24: registra una prueba en un control {@code IN_PROGRESS}. {@code 409 CONTROL_FINISH_PENDING} si ya se pidió finalizarlo. */
     @PostMapping("/controls/{controlId}/tests")
     @RequiresRole(Role.COMPANY_ADMIN)
     ResponseEntity<ControlResult.TestView> addTest(@PathVariable UUID controlId, @RequestBody AddTestCommand request, Actor actor) {
         return ResponseEntity.status(HttpStatus.CREATED).body(tests.addTest(controlId, request, actor));
     }
 
-    /**
-     * US25, US28, US34. {@code 200}: Production confirmó {@code RELEASE}; el control está {@code FINISHED} (con la falla que generó, reabrió o resolvió).
-     * {@code 202}: Production no respondió; el control sigue {@code IN_PROGRESS} con {@code finishPending} y se resuelve solo (consultar
-     * {@code Location}). Si Production lo rechaza, la respuesta es su error (409 con su código o 404) y el control sigue {@code IN_PROGRESS}.
-     */
     @PostMapping("/controls/{controlId}/finish")
     @RequiresRole(Role.COMPANY_ADMIN)
     ResponseEntity<FinishControlResult> finish(@PathVariable UUID controlId, Actor actor) {
@@ -95,10 +83,6 @@ class QualityControlController {
                 .header(HttpHeaders.RETRY_AFTER, POLL_AFTER_SECONDS).body(result);
     }
 
-    /**
-     * US44: el reporte PDF de un control {@code FINISHED}, generado al vuelo y sin almacenarse ({@code Cache-Control: no-store} lo pone un filtro,
-     * también en los errores). {@code 409 CONTROL_NOT_FINISHED}; {@code 503 REPORT_UNAVAILABLE} si el generador falla (se puede reintentar).
-     */
     @GetMapping("/controls/{controlId}/report")
     @RequiresRole(Role.COMPANY_ADMIN)
     ResponseEntity<byte[]> report(@PathVariable UUID controlId, Actor actor) {

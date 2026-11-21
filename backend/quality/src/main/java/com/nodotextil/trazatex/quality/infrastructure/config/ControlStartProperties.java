@@ -6,7 +6,6 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 
 import java.time.Duration;
 
-/** El inicio de un control y su recuperación ({@code PendingControlRecoveryJob}). Todo configurable. */
 @ConfigurationProperties(prefix = "trazatex.quality.start")
 public record ControlStartProperties(
         @DefaultValue("PT30S") Duration grace,

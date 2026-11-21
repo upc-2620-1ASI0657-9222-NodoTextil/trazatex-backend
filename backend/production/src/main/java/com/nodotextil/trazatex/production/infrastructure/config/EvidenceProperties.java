@@ -6,17 +6,12 @@ import org.springframework.util.unit.DataSize;
 
 import java.time.Duration;
 
-/**
- * Evidencias ({@code trazatex.evidence.*}). El tamaño por archivo y por petición los hace cumplir el contenedor
- * ({@code spring.servlet.multipart.*}, que debe ir alineado con {@code maxFileSize}); aquí se repite como segunda barrera.
- */
 @ConfigurationProperties("trazatex.evidence")
 public record EvidenceProperties(
         @DefaultValue("5") int maxFiles,
         @DefaultValue("10MB") DataSize maxFileSize,
         @DefaultValue UploadQueue upload) {
 
-    /** La cola diferida de Cloudinary (ADR-007). */
     public record UploadQueue(
             @DefaultValue("true") boolean enabled,
             @DefaultValue("PT30S") Duration jobDelay,

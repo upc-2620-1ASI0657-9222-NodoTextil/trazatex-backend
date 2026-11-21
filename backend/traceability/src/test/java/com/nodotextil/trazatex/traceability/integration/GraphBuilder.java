@@ -28,10 +28,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Arma un grafo como lo harían los eventos de verdad (por los mismos casos de uso que usan los consumidores), para probar las consultas
- * sobre datos reales: lotes con todos sus datos, divisiones, mezclas, transferencias y nombres de empresa.
- */
 final class GraphBuilder {
 
     static final Instant T0 = Instant.parse("2026-10-21T10:00:00Z");
@@ -45,7 +41,6 @@ final class GraphBuilder {
     private final ApplyCompanyRegisteredUseCase company;
     private final ApplyCompanyPrivacyUseCase privacy;
     private final AtomicInteger clock = new AtomicInteger();
-    /** El nombre libre ({@code name}) de los lotes que lo tienen, por clave; los demás nacen sin nombre, como en los eventos antiguos. */
     private final Map<String, String> names = new java.util.HashMap<>();
 
     GraphBuilder(RegisterBatchUseCase register, ApplyBatchSplitUseCase split, ApplyTransformationCompletedUseCase transformation,
@@ -82,13 +77,11 @@ final class GraphBuilder {
         return this;
     }
 
-    /** El lote {@code key} que se cree después (registrado, hijo de una división o salida de una transformación) llevará este nombre libre. */
     GraphBuilder named(String key, String batchName) {
         names.put(key, batchName);
         return this;
     }
 
-    /** Un lote registrado con todos sus datos; su Traceability ID es {@code TT-<nombre>} y su QR {@code QR-<nombre>}. */
     GraphBuilder batch(String name, UUID companyId) {
         register.apply(new RegisterBatchCommand(event(), id(name), "TT-" + name, "QR-" + name, companyId, "Algodón", COTTON, new BigDecimal("100"), "Piura",
                 "Textiles del Norte", "Fibra limpia", next(), names.get(name)));
@@ -102,7 +95,6 @@ final class GraphBuilder {
         return this;
     }
 
-    /** Divide {@code parent}: los hijos nacen con los datos de su empresa y relación {@code SPLIT_INTO} desde el padre. */
     GraphBuilder split(String parent, UUID companyId, String... children) {
         List<ApplyBatchSplitCommand.Child> list = new ArrayList<>();
         for (String child : children) {
@@ -113,7 +105,6 @@ final class GraphBuilder {
         return this;
     }
 
-    /** Una transformación con las entradas indicadas (que pueden no existir aún: quedan provisionales) y salidas nuevas. */
     GraphBuilder transform(String name, UUID companyId, List<String> inputs, String... outputs) {
         List<ApplyTransformationCompletedCommand.Output> list = new ArrayList<>();
         for (String output : outputs) {
@@ -134,7 +125,6 @@ final class GraphBuilder {
         return this;
     }
 
-    /** Una cadena prefijo0 → prefijo1 → … por divisiones. */
     GraphBuilder chain(String prefix, UUID companyId, int length) {
         batch(prefix + 0, companyId);
         for (int i = 1; i < length; i++) {

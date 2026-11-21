@@ -34,10 +34,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * ADR-004 de extremo a extremo con Kafka real: los eventos salen del outbox hacia Kafka <b>después</b> del commit, nunca con
- * rollback, con la clave y el sobre del catálogo, en orden por agregado.
- */
 @SpringBootTest(properties = "trazatex.messaging.enabled=true")
 class KafkaPublicationIT extends IntegrationTestBase {
 
@@ -69,8 +65,6 @@ class KafkaPublicationIT extends IntegrationTestBase {
         startOffsets = endOffsets();
     }
 
-    // ---- utilidades de Kafka ----
-
     private KafkaConsumer<String, String> consumer() {
         Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA.getBootstrapServers());
@@ -90,7 +84,6 @@ class KafkaPublicationIT extends IntegrationTestBase {
         }
     }
 
-    /** Todo lo publicado en el tópico desde que empezó la prueba. */
     private List<ConsumerRecord<String, String>> published(String topic) {
         try (KafkaConsumer<String, String> consumer = consumer()) {
             List<TopicPartition> partitions = startOffsets.keySet().stream().filter(tp -> tp.topic().equals(topic)).toList();
@@ -113,8 +106,6 @@ class KafkaPublicationIT extends IntegrationTestBase {
     private JsonNode parse(ConsumerRecord<String, String> record) throws Exception {
         return json.readTree(record.value());
     }
-
-    // ---- pruebas ----
 
     @Test
     void theServiceDeclaresItsTopics() throws Exception {
@@ -139,7 +130,6 @@ class KafkaPublicationIT extends IntegrationTestBase {
 
         await().atMost(Duration.ofSeconds(20)).until(() -> publishedWithKey("orgaccess.user", operator.toString()).size() == 3);
 
-        // El Gateway se queda con el último mensaje de cada clave: debe ser el estado completo, no un delta
         JsonNode last = parse(publishedWithKey("orgaccess.user", operator.toString()).get(2));
         assertThat(last.get("type").asString()).isEqualTo("UserAccountUpdated");
         assertThat(last.get("aggregateId").asString()).isEqualTo(operator.toString());
@@ -157,7 +147,6 @@ class KafkaPublicationIT extends IntegrationTestBase {
                 throw new IllegalStateException(e);
             }
         }).toList()).containsExactly("INACTIVE", "ACTIVE", "INACTIVE");
-        // y todo lo que hay en el tópico lleva como clave un userId (nunca otra cosa que compactaría eventos distintos)
         assertThat(published("orgaccess.user")).allSatisfy(record -> {
             assertThat(UUID.fromString(record.key())).isNotNull();
             assertThat(parse(record).get("type").asString()).isEqualTo("UserAccountUpdated");
@@ -200,12 +189,12 @@ class KafkaPublicationIT extends IntegrationTestBase {
         UUID company = insertCompany(VALID_RUC, "Hilos SAC", "ACTIVE");
         UUID admin = insertUser(company, "Ana", "ana@hilos.pe", "COMPANY_ADMIN", "ACTIVE");
         insertInvitation(company, "uno@hilos.pe", "OPERATOR", "PENDING", admin, START);
-        insertInvitation(company, "dos@hilos.pe", "OPERATOR", "PENDING", admin, START);   // sin cupo
+        insertInvitation(company, "dos@hilos.pe", "OPERATOR", "PENDING", admin, START);
 
         perform(body(asAdmin(POST("/api/invitations/operators"), admin, company),
                 "{\"firstName\":\"Luis\",\"lastName\":\"Rojas\",\"email\":\"luis@hilos.pe\",\"position\":\"Tejedor\"}"))
                 .andExpect(status().isConflict());
-        Thread.sleep(1500);   // varias pasadas del relay
+        Thread.sleep(1500);
 
         assertThat(published("orgaccess.invitation")).isEmpty();
         assertThat(count("SELECT count(*) FROM outbox")).isZero();
@@ -218,7 +207,7 @@ class KafkaPublicationIT extends IntegrationTestBase {
 
         tx.executeWithoutResult(status -> {
             events.publish(new CompanyStatusChanged(companyId, CompanyStatus.INACTIVE));
-            sleep(1500);   // el relay pasa varias veces mientras la transacción sigue abierta
+            sleep(1500);
             assertThat(countFromAnotherConnection("SELECT count(*) FROM outbox")).as("la fila no es visible fuera de la transacción").isZero();
             assertThat(publishedWithKey("orgaccess.company", companyId.toString())).isEmpty();
         });
@@ -279,7 +268,6 @@ class KafkaPublicationIT extends IntegrationTestBase {
         assertThat(payload.get("acceptUrl").asString()).isEqualTo("http://localhost:5173/invitations/" + token);
     }
 
-    /** JdbcClient comparte la transacción del hilo actual: otro hilo = otra conexión, que solo ve lo confirmado. */
     private long countFromAnotherConnection(String sql) {
         try {
             return java.util.concurrent.CompletableFuture.supplyAsync(() -> count(sql)).get(10, java.util.concurrent.TimeUnit.SECONDS);

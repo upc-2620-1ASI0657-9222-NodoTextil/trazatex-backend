@@ -9,15 +9,10 @@ import java.lang.reflect.Proxy;
 import java.sql.Connection;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Cuenta las sentencias {@code SELECT} que llegan a la base (por {@code prepareStatement}), para probar que un listado no hace una consulta
- * por fila (N+1): el número de sentencias de una página tiene que ser el mismo con 3 filas que con 25.
- */
 final class StatementCounter implements BeanPostProcessor {
 
     static final AtomicInteger SELECTS = new AtomicInteger();
 
-    /** Cuántos SELECT hace {@code action}. */
     static int during(ThrowingRunnable action) throws Exception {
         int before = SELECTS.get();
         action.run();

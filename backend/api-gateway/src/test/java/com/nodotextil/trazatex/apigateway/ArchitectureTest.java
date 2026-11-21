@@ -8,7 +8,6 @@ import com.tngtech.archunit.lang.ArchRule;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
-/** Reglas de dependencia hexagonal (docs/conventions.md). El Gateway es reactivo: {@code application} puede usar Reactor. */
 @AnalyzeClasses(packages = "com.nodotextil.trazatex.apigateway", importOptions = ImportOption.DoNotIncludeTests.class)
 class ArchitectureTest {
 
@@ -37,11 +36,10 @@ class ArchitectureTest {
             .should().dependOnClassesThat().resideInAPackage("com.nodotextil.trazatex.sharedkernel..")
             .because("el Gateway es reactivo y no depende de shared-kernel (progress.md)");
 
-    /** I11: ni un controlador ni un caso de uso tocan la base; el SQL vive en los adaptadores de {@code infrastructure.persistence}. */
     @ArchTest
     static final ArchRule neitherControllersNorUseCasesUseJdbc = noClasses()
             .that().resideInAnyPackage(ROOT + ".infrastructure.web..", ROOT + ".application..")
             .should().dependOnClassesThat().resideInAPackage("org.springframework.jdbc..")
-            .because("regla 5 de CLAUDE.md: el acceso a datos es un adaptador detrás de un puerto de salida")
+            .because("convención hexagonal: el acceso a datos es un adaptador detrás de un puerto de salida")
             .allowEmptyShould(true);
 }

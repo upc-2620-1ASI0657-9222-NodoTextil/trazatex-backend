@@ -8,10 +8,8 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.util.UUID;
 
-/** Lo que los escenarios hacen con la API: consultarla como la llama el Gateway (cabeceras de identidad de un operario de la empresa dada). */
 public class Api {
 
-    /** La respuesta HTTP: estado, cuerpo JSON y la cabecera {@code Cache-Control}. */
     public record Reply(int status, JsonNode body, String cacheControl) {
     }
 
@@ -25,7 +23,6 @@ public class Api {
         this.json = json;
     }
 
-    /** {@code GET url} como un OPERATOR de la empresa. */
     public Reply get(String url, UUID companyId) {
         try {
             MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get(url).header("X-User-Id", OPERATOR.toString()).header("X-Company-Id", companyId.toString())

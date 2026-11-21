@@ -31,11 +31,6 @@ import java.util.UUID;
 import static com.nodotextil.trazatex.traceability.integration.GraphBuilder.id;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * US36 / ADR-006 sobre Neo4j real: la privacidad B2B de cada empresa (el mapa de su último {@code CompanyPrivacyUpdated}) decide qué campos configurables
- * de sus nodos ve otra empresa. Se aplica a <b>todos sus nodos, también los antiguos</b>, desde que llega el evento; cada empresa con su propia configuración;
- * lo que no se configuró (o no se puede leer) es {@code PRIVATE}; la empresa dueña siempre lo ve todo; {@code qualityHold} nunca sale a otra.
- */
 class LineagePrivacyIT extends IntegrationTestBase {
 
     static final UUID A = UUID.fromString("00000000-0000-0000-0000-0000000000a1");
@@ -66,11 +61,9 @@ class LineagePrivacyIT extends IntegrationTestBase {
     void builder() {
         graph = new GraphBuilder(register, split, transformation, phase, transfer, company, privacy);
         graph.company(A, "Andina SAC").company(B, "Bahía SAC").company(C, "Cumbre SAC").company(D, "Delta SAC");
-        // la empresa B: un lote registrado (con proveedor, origen, cantidad, composición y recepción), con retención por calidad, y una transformación que lo usa
         graph.batch("BB", B).phase("BB", B, BatchPhase.AVAILABLE, true, 2).transform("TB", B, List.of("BB"), "BO");
     }
 
-    /** Qué campos configurables de los nodos de B (el lote registrado BB y la transformación TB) ve quien consulta, por nombre de atributo. */
     private Set<String> visibleFieldsOfB(UUID requester) {
         VisibleLineage view = queries.ancestors(id("BO"), requester);
         Set<String> visible = new TreeSet<>();
@@ -125,12 +118,10 @@ class LineagePrivacyIT extends IntegrationTestBase {
         data.put(ConfigurableField.SHRINKAGE, Set.of("shrinkageKg"));
         data.put(ConfigurableField.WASTE, Set.of("wasteKg"));
         data.put(ConfigurableField.WASTE_REASON, Set.of("wasteReason"));
-        data.put(ConfigurableField.FAILURE_CAUSE, Set.of());      // sin dato en el grafo todavía (Quality, siguiente sprint)
-        data.put(ConfigurableField.QUALITY_TEST_VALUES, Set.of()); // ídem
+        data.put(ConfigurableField.FAILURE_CAUSE, Set.of());
+        data.put(ConfigurableField.QUALITY_TEST_VALUES, Set.of());
         return data;
     }
-
-    // ---- campo por campo ----
 
     @Test
     void withoutAnyConfigurationEverythingConfigurableIsPrivateAndTheQualityHoldIsInternal() {
@@ -160,8 +151,6 @@ class LineagePrivacyIT extends IntegrationTestBase {
         assertThat(visibleFieldsOfB(B)).containsAll(EVERYTHING_CONFIGURABLE).contains("qualityHold");
     }
 
-    // ---- desde que llega, a todos los nodos, también los antiguos ----
-
     @Test
     void aChangeAppliesToEveryNodeOfTheCompanyIncludingTheOldOnesFromTheMomentItArrivesAndOnlyThen() {
         assertThat(visibleFieldsOfB(A)).as("antes de que llegue: privado").isEmpty();
@@ -169,7 +158,7 @@ class LineagePrivacyIT extends IntegrationTestBase {
         graph.privacy(B, sharing(ConfigurableField.SUPPLIER, ConfigurableField.MACHINERY));
         assertThat(visibleFieldsOfB(A)).as("BB y TB ya existían: se aplica a los antiguos").containsExactlyInAnyOrder("supplierName", "machineName", "machineType");
 
-        graph.batch("BN", B).transform("TN", B, List.of("BN"), "BN2"); // nodos nuevos, creados con la configuración ya vigente
+        graph.batch("BN", B).transform("TN", B, List.of("BN"), "BN2");
         VisibleLineage fresh = queries.ancestors(id("BN2"), A);
         assertThat(fresh.nodes().stream().filter(VisibleBatch.class::isInstance).map(VisibleBatch.class::cast).filter(b -> b.id().equals(id("BN"))).findFirst().orElseThrow()
                 .supplierName()).as("los nuevos también").isEqualTo("Textiles del Norte");
@@ -191,8 +180,6 @@ class LineagePrivacyIT extends IntegrationTestBase {
 
         assertThat(visibleFieldsOfB(A)).containsExactly("supplierName");
     }
-
-    // ---- cada empresa con la suya ----
 
     @Test
     void eachCompanyHasItsOwnConfigurationAndOneCompanysSharingNeverLeaksAnothers() {
@@ -223,8 +210,6 @@ class LineagePrivacyIT extends IntegrationTestBase {
         return found.getFirst();
     }
 
-    // ---- lo que no se puede leer no se comparte ----
-
     @Test
     void whatIsStoredButCannotBeReadSharesNothing() {
         for (String broken : List.of("esto no es json", "[1,2,3]", "{\"SUPPLIER\":", "null")) {
@@ -243,7 +228,7 @@ class LineagePrivacyIT extends IntegrationTestBase {
 
     @Test
     void aCompanyThatNeverConfiguredAnythingAndAnUnknownOneAreBothPrivate() {
-        graph.batch("ZZ", UUID.fromString("00000000-0000-0000-0000-0000000000e5")); // una empresa que ni siquiera tiene nodo :Company
+        graph.batch("ZZ", UUID.fromString("00000000-0000-0000-0000-0000000000e5"));
 
         VisibleBatch seen = batch(queries.lineage(id("ZZ"), A), "ZZ");
 

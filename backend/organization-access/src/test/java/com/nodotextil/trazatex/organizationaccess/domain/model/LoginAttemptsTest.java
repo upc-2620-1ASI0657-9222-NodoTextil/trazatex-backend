@@ -7,7 +7,6 @@ import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** RNF-06: las reglas del bloqueo, ahora por correo (exista o no la cuenta). */
 class LoginAttemptsTest {
 
     private static final Instant NOW = Instant.parse("2026-10-19T12:00:00Z");

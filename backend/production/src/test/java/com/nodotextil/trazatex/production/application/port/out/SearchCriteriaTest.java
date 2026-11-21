@@ -8,7 +8,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** El tope de 100 filas por página también está en los criterios de búsqueda: ninguna consulta lo supera, venga de donde venga. */
 class SearchCriteriaTest {
 
     private static final UUID COMPANY = UUID.randomUUID();

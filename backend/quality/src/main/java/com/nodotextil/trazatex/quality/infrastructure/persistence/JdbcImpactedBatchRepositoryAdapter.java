@@ -17,10 +17,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * {@code impacted_batch}: {@code (failure_id, batch_id)} es la clave, así que el mismo aviso dos veces no duplica. {@code next_attempt_at} solo tiene valor
- * mientras el aviso está {@code PENDING} (lo exige una restricción de la tabla).
- */
 @Component
 class JdbcImpactedBatchRepositoryAdapter implements ImpactedBatchRepositoryPort {
 

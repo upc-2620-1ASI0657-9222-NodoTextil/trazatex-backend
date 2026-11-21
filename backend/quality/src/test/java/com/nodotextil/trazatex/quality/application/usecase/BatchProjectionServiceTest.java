@@ -21,10 +21,6 @@ import static com.nodotextil.trazatex.quality.domain.Fixtures.OTHER_COMPANY;
 import static com.nodotextil.trazatex.quality.domain.Fixtures.id;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * La proyección no depende del orden en que lleguen los eventos de los distintos tópicos: cualquier permutación de los eventos de un
- * lote deja el mismo estado.
- */
 class BatchProjectionServiceTest {
 
     private final InMemoryBatchProjections rows = new InMemoryBatchProjections();
@@ -149,12 +145,12 @@ class BatchProjectionServiceTest {
     void theTraceabilityIdComesFromTheBirthEventsAndIsKeptInEveryOrder() {
         UUID registered = id();
         UUID child = id();
-        projection.phaseChanged(registered, COMPANY, BatchPhase.AVAILABLE, false, 1);   // la fila nace parcial, sin Traceability ID
+        projection.phaseChanged(registered, COMPANY, BatchPhase.AVAILABLE, false, 1);
         assertThat(row(registered).traceabilityId()).isNull();
 
         projection.registered(registered, COMPANY, "TT-REGISTERED1");
         projection.split(COMPANY, List.of(new SplitChild(child, QualityStatus.NOT_REVIEWED, "TT-CHILD000001")));
-        projection.registered(registered, COMPANY, "TT-OTHERVALUE1");   // un evento repetido no lo pisa
+        projection.registered(registered, COMPANY, "TT-OTHERVALUE1");
 
         assertThat(row(registered).traceabilityId()).isEqualTo("TT-REGISTERED1");
         assertThat(row(child).traceabilityId()).isEqualTo("TT-CHILD000001");

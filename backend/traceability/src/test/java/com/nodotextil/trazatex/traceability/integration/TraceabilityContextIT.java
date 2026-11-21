@@ -6,7 +6,6 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** El servicio arranca completo contra Neo4j real (la misma edición community que el docker compose). */
 class TraceabilityContextIT extends IntegrationTestBase {
 
     @Autowired

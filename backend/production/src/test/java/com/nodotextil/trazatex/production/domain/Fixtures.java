@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
-/** Datos de prueba. Todo lo aleatorio sale de un {@link Random} con semilla: cualquier fallo se reproduce. */
 public final class Fixtures {
 
     public static final UUID COMPANY = UUID.fromString("00000000-0000-0000-0000-0000000000c1");
@@ -45,7 +44,6 @@ public final class Fixtures {
         return new BatchFactory(random, () -> uuid(random));
     }
 
-    /** Estrategias con los mínimos por defecto: 60 % hilandería, 80 % tejeduría y tintorería. */
     public static TransformationFactory transformationFactory() {
         return new TransformationFactory(List.of(
                 new SpinningStrategy(new BigDecimal("60")),
@@ -65,7 +63,6 @@ public final class Fixtures {
         return composition("Algodón", "100");
     }
 
-    /** Lote de {@link #COMPANY} en la fase y con las marcas dadas (los lotes se crean con {@link BatchFactory}; esto reconstruye). */
     public static Batch batch(BatchPhase phase, boolean qualityHold, boolean finalProduct, String kg) {
         return batch(phase, qualityHold, finalProduct, Quantity.ofKg(kg), cotton(), UUID.randomUUID(), QualityStatus.NOT_REVIEWED);
     }

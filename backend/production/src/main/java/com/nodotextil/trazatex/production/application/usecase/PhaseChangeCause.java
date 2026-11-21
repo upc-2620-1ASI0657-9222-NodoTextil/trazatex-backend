@@ -1,10 +1,5 @@
 package com.nodotextil.trazatex.production.application.usecase;
 
-/**
- * Qué provocó un cambio de fase o de retención: va en {@code reason} y {@code requestId} de {@code BatchPhaseChanged}.
- * En las operaciones del usuario, {@code reason} es el código de la operación y {@code requestId} el id de la transformación,
- * la transferencia o el lote padre de la división; en los comandos de Quality (04e), los del comando.
- */
 record PhaseChangeCause(String reason, String requestId) {
 
     static final String SPLIT = "SPLIT";

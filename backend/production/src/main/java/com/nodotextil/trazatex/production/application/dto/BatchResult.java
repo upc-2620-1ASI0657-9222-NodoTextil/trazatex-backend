@@ -12,7 +12,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-/** Todos los datos de un lote de la propia empresa. */
 public record BatchResult(
         UUID id,
         String traceabilityId,

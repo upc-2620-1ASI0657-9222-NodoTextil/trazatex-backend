@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/** Cola en memoria con las mismas reglas que el adaptador JDBC: solo lo {@code PENDING} cambia y todo final vacía el cuerpo. */
 class InMemoryDeferredEmailStore implements DeferredEmailStorePort {
     static final class Row {
         String recipient, subject, body, status = "PENDING", lastError;

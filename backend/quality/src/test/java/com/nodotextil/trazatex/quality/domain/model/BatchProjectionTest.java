@@ -27,8 +27,6 @@ class BatchProjectionTest {
         assertThatThrownBy(action::run).isInstanceOfSatisfying(TrazatexException.class, e -> assertThat(e.code()).isEqualTo(code));
     }
 
-    // ---- nacimiento ----
-
     @Test
     void aRegisteredBatchIsBornAvailableWithoutHoldAndNotReviewed() {
         BatchProjection batch = BatchProjection.registered(id(), COMPANY, NOW);
@@ -48,8 +46,6 @@ class BatchProjectionTest {
         assertThat(child.qualityHold()).isFalse();
         assertThat(child.qualityStatus()).isEqualTo(QualityStatus.CONFORMING);
     }
-
-    // ---- BatchPhaseChanged: versiones y filas parciales ----
 
     @Test
     void aPhaseChangeWithAHigherVersionIsAppliedWithTheCompanyPhaseAndHoldAfterTheChange() {
@@ -124,8 +120,6 @@ class BatchProjectionTest {
         assertThat(batch.updatedAt()).isEqualTo(NOW);
     }
 
-    // ---- TransferAccepted ----
-
     @Test
     void anAcceptedTransferMovesTheBatchToTheTargetCompanyOnlyIfItIsStillWithTheOrigin() {
         BatchProjection batch = BatchProjection.registered(id(), COMPANY, NOW);
@@ -136,8 +130,6 @@ class BatchProjectionTest {
         assertThat(batch.applyTransferAccepted(UUID.randomUUID(), UUID.randomUUID(), LATER)).isEqualTo(BatchProjection.TransferEffect.OWNER_MISMATCH);
         assertThat(batch.companyId()).isEqualTo(OTHER_COMPANY);
     }
-
-    // ---- Resultado de un control y decisiones sobre la falla ----
 
     @Test
     void aConformingControlReleasesTheBatchAndAFailedOneKeepsItOnHold() {

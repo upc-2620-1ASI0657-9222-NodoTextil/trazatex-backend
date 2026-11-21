@@ -10,7 +10,6 @@ import com.nodotextil.trazatex.production.domain.model.TransferStatus;
 
 import java.util.UUID;
 
-/** US21 iniciar, US22 resolver. */
 public interface ManageTransfersUseCase {
 
     TransferResult initiate(InitiateTransferCommand command, Actor actor);

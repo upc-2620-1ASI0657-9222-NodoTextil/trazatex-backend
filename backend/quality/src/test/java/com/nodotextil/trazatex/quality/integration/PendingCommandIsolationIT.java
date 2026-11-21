@@ -28,10 +28,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 
-/**
- * Las cuatro fuentes de comandos pendientes (inicio, finalización, descarte y retención) son independientes: si una falla, o Production no se puede
- * llamar (circuito abierto), las otras tres se siguen atendiendo.
- */
 @SpringBootTest(properties = {
         "trazatex.messaging.enabled=false", "trazatex.quality.start.job-enabled=false",
         "trazatex.production.read-timeout=PT0.5S", "trazatex.production.connect-timeout=PT0.5S",
@@ -48,17 +44,14 @@ class PendingCommandIsolationIT extends FlowTestBase {
     @MockitoSpyBean
     ImpactedBatchRepositoryPort noticesSpy;
 
-    /** Una pieza pendiente de cada fuente, todas vencidas dentro de la gracia. */
     record Pending(UUID startBatch, UUID startControl, UUID finishBatch, UUID finishControl, UUID discardBatch, UUID discardFailure, UUID holdBatch, UUID holdFailure) {
     }
 
     Pending onePendingOfEach() throws Exception {
-        // Inicio pendiente: Production no responde al crearlo
         UUID startBatch = seedAvailable();
         ProductionStub.answers(503, ProductionStub.apiError("TEMPORARILY_UNAVAILABLE"));
         UUID startControl = UUID.fromString(read(postAs(ADMIN_OF_A, "/api/quality/batches/" + startBatch + "/controls").andExpect(
                 org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isAccepted())).path("id").asString());
-        // Finalización pendiente
         UUID finishBatch = seedAvailable();
         UUID finishControl = startControl(finishBatch);
         addTest(finishControl, "CONFORMING");
@@ -66,7 +59,6 @@ class PendingCommandIsolationIT extends FlowTestBase {
         ProductionStub.reset();
         ProductionStub.answers(503, ProductionStub.apiError("TEMPORARILY_UNAVAILABLE"));
         postAs(ADMIN_OF_A, "/api/quality/controls/" + finishControl + "/finish").andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isAccepted());
-        // Descarte pendiente
         UUID discardBatch = seedAvailable();
         UUID failedControl = startControl(discardBatch);
         addTest(failedControl, "FAILED");
@@ -81,7 +73,6 @@ class PendingCommandIsolationIT extends FlowTestBase {
         ProductionStub.reset();
         ProductionStub.answers(503, ProductionStub.apiError("TEMPORARILY_UNAVAILABLE"));
         postAs(ADMIN_OF_A, "/api/quality/failures/" + discardFailure + "/discard").andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isAccepted());
-        // Retención pendiente
         UUID holdBatch = seedAvailable();
         UUID holdFailure = UUID.randomUUID();
         derived.record(holdFailure, UUID.randomUUID(), List.of(new AffectedBatch(holdBatch, COMPANY_A, UUID.randomUUID())));
@@ -135,7 +126,6 @@ class PendingCommandIsolationIT extends FlowTestBase {
     @Test
     void withTheCircuitOpenEverySourceReschedulesWithoutCountingAnAttemptAndWhatNeedsNoProductionStillGetsDone() throws Exception {
         Pending pending = onePendingOfEach();
-        // Un aviso más que no necesita a Production: el lote es histórico
         UUID historicBatch = seed(BatchPhase.AVAILABLE, QualityStatus.NOT_REVIEWED, false, false);
         UUID historicFailure = UUID.randomUUID();
         derived.record(historicFailure, UUID.randomUUID(), List.of(new AffectedBatch(historicBatch, COMPANY_A, UUID.randomUUID())));

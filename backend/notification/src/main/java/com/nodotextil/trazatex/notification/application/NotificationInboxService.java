@@ -19,7 +19,6 @@ public class NotificationInboxService {
     private final NotificationStorePort store;
     public NotificationInboxService(NotificationStorePort store) { this.store=store; }
 
-    /** {@code size} por encima de {@value #MAX_SIZE} se recorta a {@value #MAX_SIZE}; {@code page < 0} o {@code size < 1} es {@code INVALID_PAGINATION}. */
     public NotificationPage list(NotificationRecipient a,Boolean unread,String type,int page,int size) {
         if (page < 0) throw new ValidationException("INVALID_PAGINATION","La página debe ser 0 o mayor.",List.of("page"));
         if (size < 1) throw new ValidationException("INVALID_PAGINATION","El tamaño de página debe ser 1 o mayor.",List.of("size"));

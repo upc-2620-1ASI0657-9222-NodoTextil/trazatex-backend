@@ -9,12 +9,10 @@ import com.nodotextil.trazatex.production.domain.model.MachineStatus;
 import java.util.List;
 import java.util.UUID;
 
-/** US10. */
 public interface ManageMachinesUseCase {
 
     MachineResult register(RegisterMachineCommand command, Actor actor);
 
-    /** Maquinaria de la empresa; {@code status} nulo trae todas. */
     List<MachineResult> list(MachineStatus status, Actor actor);
 
     MachineDetailResult get(UUID machineId, Actor actor);

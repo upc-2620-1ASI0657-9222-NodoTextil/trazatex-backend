@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-/** (d) Al apagar el contexto, el hilo del consumidor termina y no queda nada vivo, esté cargado o esperando a Kafka. */
 class UserRevocationShutdownIT {
 
     private static Set<Thread> consumerThreads() {
@@ -21,10 +20,6 @@ class UserRevocationShutdownIT {
                 .filter(t -> t.getName().equals(UserRevocationConsumer.THREAD_NAME) && t.isAlive()).collect(Collectors.toSet());
     }
 
-    /**
-     * Argumentos de línea de comandos y no {@code properties(...)}: esos son los de MENOR precedencia y el application.yml los
-     * pisa (llegaron a conectar con el Kafka local de docker compose en vez del broker de la prueba).
-     */
     private static ConfigurableApplicationContext run(String bootstrapServers, String topic, String apiTimeout) {
         return new SpringApplicationBuilder(ApiGatewayApplication.class).run(
                 "--server.port=0",
@@ -56,7 +51,6 @@ class UserRevocationShutdownIT {
     @Test
     void closingTheContextInterruptsAConsumerBlockedWaitingForAnUnreachableKafkaWithoutWaitingForItsTimeout() {
         Set<Thread> before = consumerThreads();
-        // api-timeout de 60 s: si el apagado esperara a que venza, la prueba tardaría un minuto
         ConfigurableApplicationContext context = run("localhost:" + KafkaTestSupport.closedPort(), "orgaccess.user", "PT60S");
         Set<Thread> mine = consumerThreads();
         mine.removeAll(before);

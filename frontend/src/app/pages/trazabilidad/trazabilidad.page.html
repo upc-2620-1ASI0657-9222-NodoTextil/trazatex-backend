@@ -1,7 +1,6 @@
 <p role="status" class="label">{{ store.lineageStatus() }}</p>
 <div class="page trace-page">
 
-
   <div class="trace-layout">
     <aside class="trace-sidebar" aria-label="Filtros y detalle del elemento">
       <section class="trace-filters" aria-label="Filtrar etapas">
@@ -68,11 +67,11 @@
               </dl>
             } @else if (selProceso(); as proc) {
               <dl class="detail-data">
-                <dt>Proceso</dt><dd>{{ proc.tipo }}</dd>
+                <dt>Transformación</dt><dd>{{ proc.tipo }}</dd>
                 <dt>Empresa</dt><dd>{{ store.nombreEmpresa(proc.empresaId) }}</dd>
                 <dt>Entradas</dt><dd>{{ proc.entradas.length }}</dd>
                 <dt>Salidas</dt><dd>{{ proc.salidasIds.length }}</dd>
-                <dt>Estado</dt><dd>{{ proc.fin ? 'Finalizado' : 'En curso' }}</dd>
+                <dt>Estado</dt><dd>{{ proc.fin ? 'Finalizada' : 'En curso' }}</dd>
               </dl>
             } @else if (selDivision(); as d) {
               <dl class="detail-data">
@@ -171,7 +170,7 @@
                     [class.is-hist]="store.esHistorico(l) && !l.productoFinal"
                     [class.is-final]="l.productoFinal"
                     [class.is-dim]="dim(n)"
-                    [attr.title]="store.nombreLote(l.id) + ' / ' + l.id + ' / ' + l.fase + ' / ' + l.calidad"
+                    [attr.title]="store.nombreLote(l.id) + ' / ' + l.id + ' / ' + l.fase + ' / ' + l.calidad + (store.disponibilidad(l).bloqueado && store.disponibilidad(l).tono !== 'hist' ? ' / ' + store.disponibilidad(l).motivo : '')"
                     (click)="select(n.id)"
                   >
                     <span class="row1"><b>{{ store.nombreLote(l.id) }}</b><span class="stg">{{ l.productoFinal ? 'Final' : etapaDe(l) }}</span></span>
@@ -200,7 +199,7 @@
                     [class.is-open]="!p.fin"
                     (click)="select(n.id)"
                   >
-                    <span class="label">{{ store.esMezcla(p) ? 'Mezcla' : p.fin ? 'Proceso' : 'En curso' }}</span>
+                    <span class="label">{{ store.esMezcla(p) ? 'Mezcla' : p.fin ? 'Transformación' : 'En curso' }}</span>
                     <b>{{ p.tipo }}</b>
                   </button>
                 }
@@ -254,4 +253,3 @@
     </section>
   </div>
 </div>
-

@@ -13,7 +13,6 @@ import static com.nodotextil.trazatex.quality.domain.Fixtures.id;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** US25 esc. 2, US26, US27 y US28: la falla y su ciclo de vida. */
 class QualityFailureTest {
 
     private static ControlOutcome failedOutcome(BatchProjection batch) {
@@ -26,7 +25,6 @@ class QualityFailureTest {
 
     private static final java.util.UUID USER = java.util.UUID.fromString("00000000-0000-0000-0000-00000000a0ad");
 
-    /** Descartar de principio a fin: se pide y Production confirma. */
     private static void discard(QualityFailure failure) {
         failure.requestDiscard(USER, NOW);
         failure.completeDiscard();
@@ -100,7 +98,7 @@ class QualityFailureTest {
     void sendingTheFailureToReevaluationKeepsItOpen_US26Scenario2() {
         QualityFailure failure = openFailure();
 
-        failure.startReevaluation();   // sin causa ni cantidad: enviar a reevaluación no exige nada
+        failure.startReevaluation();
 
         assertThat(failure.status()).isEqualTo(FailureStatus.OPEN);
         assertThat(failure.rootCause()).isNull();

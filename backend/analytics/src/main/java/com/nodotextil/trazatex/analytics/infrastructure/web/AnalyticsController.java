@@ -14,7 +14,6 @@ class AnalyticsController {
     private final AnalyticsQueryService queries;
     AnalyticsController(AnalyticsQueryService queries) { this.queries=queries; }
 
-    /** Los parámetros se piden opcionales a Spring para que su ausencia o un formato malo sea {@code 400 INVALID_PERIOD} con {@code ApiError}. */
     @GetMapping("/summary")
     AnalyticsSummary summary(@RequestParam(required=false) String from,@RequestParam(required=false) String to,HttpServletRequest request) {
         var actor=RequestActor.from(request);

@@ -16,10 +16,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Un interbloqueo real de Neo4j (dos transacciones que toman los mismos dos nodos en orden cruzado): una de las dos la aborta
- * el servidor con un error transitorio, {@link TransientRetry} lo reconoce a través de la traducción de Spring y la repite.
- */
 class DeadlockRetryIT extends IntegrationTestBase {
 
     @Autowired
@@ -47,11 +43,10 @@ class DeadlockRetryIT extends IntegrationTestBase {
                 .as("cada empresa recibió las dos escrituras").containsEntry("n", 4L);
     }
 
-    /** Toma el primer nodo, espera a que la otra transacción tome el suyo y pide el segundo: nunca avanzan las dos. */
     private void cross(String firstNode, String secondNode, CountDownLatch bothHoldTheirFirstLock, AtomicInteger attempts) {
         int attempt = attempts.incrementAndGet();
         neo4j.query("MATCH (c:Company {companyId: $id}) SET c.touched = coalesce(c.touched, 0) + 1").bind(firstNode).to("id").run();
-        if (attempt <= 2) { // solo en el primer intento de cada una: el reintento ya no se cruza
+        if (attempt <= 2) {
             bothHoldTheirFirstLock.countDown();
             try {
                 bothHoldTheirFirstLock.await(10, TimeUnit.SECONDS);

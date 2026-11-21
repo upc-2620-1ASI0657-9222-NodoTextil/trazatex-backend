@@ -29,10 +29,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * Consultas de genealogía (US30–US32, US36). Recorre el grafo con {@link LineageTraversal} y entrega el resultado a
- * {@link LineageAuthorizationPolicy}: nada sale de aquí sin haber pasado por la política. Lectura en una sola transacción.
- */
 @Service
 @Transactional(readOnly = true)
 class LineageQueryService implements QueryLineageUseCase {
@@ -67,7 +63,6 @@ class LineageQueryService implements QueryLineageUseCase {
 
     private VisibleLineage query(UUID batchId, UUID requesterCompanyId, LineageDirection direction) {
         require(requesterCompanyId, "requesterCompanyId");
-        // Desconocido e incompleto responden igual: no se revela que el lote existe
         BatchData start = port.findBatch(batchId).filter(BatchData::isComplete)
                 .orElseThrow(() -> new NotFoundException(ErrorCodes.BATCH_NOT_FOUND, "El lote no existe."));
         Map<UUID, LeveledBatch> batches = new LinkedHashMap<>();
@@ -97,15 +92,12 @@ class LineageQueryService implements QueryLineageUseCase {
         batches.values().forEach(b -> companies.add(b.data().companyId()));
         transformations.values().forEach(t -> companies.add(t.data().companyId()));
         transfers.values().forEach(list -> list.forEach(t -> companies.add(t.toCompanyId())));
-        // La privacidad que importa es la de las empresas AJENAS (la propia lo ve todo): una sola consulta, con la configuración vigente de cada una
         Set<UUID> foreign = new HashSet<>(companies);
         foreign.remove(requesterCompanyId);
         Lineage lineage = new Lineage(start.batchId(), direction, List.copyOf(batches.values()), List.copyOf(transformations.values()),
                 List.copyOf(edges), transfers, port.businessNames(companies), port.privacyOf(foreign), complete, truncated);
         return policy.view(lineage, requesterCompanyId);
     }
-
-    // ---- búsqueda ----
 
     @Override
     public VisibleBatchPage search(UUID requesterCompanyId, String qrCode, String traceabilityId, Integer page, Integer size) {
@@ -125,7 +117,6 @@ class LineageQueryService implements QueryLineageUseCase {
         List<BatchData> items;
         long total;
         if (qr != null) {
-            // Por QR: coincidencia exacta, de cualquier empresa; con el Traceability ID también, debe cumplirse la regla de arriba
             Optional<BatchData> found = port.findByQrCode(qr).filter(BatchData::isComplete)
                     .filter(batch -> trace == null || matchesTraceability(batch, trace, requesterCompanyId));
             total = found.isPresent() ? 1 : 0;
@@ -151,7 +142,6 @@ class LineageQueryService implements QueryLineageUseCase {
         return policy.page(items, names, requesterCompanyId, pageNumber, pageSize, total);
     }
 
-    /** Un lote de la propia empresa se encuentra por prefijo; uno de otra, solo por el Traceability ID exacto. */
     private static boolean matchesTraceability(BatchData batch, String normalized, UUID requesterCompanyId) {
         return batch.companyId().equals(requesterCompanyId) ? batch.traceabilityId().startsWith(normalized) : batch.traceabilityId().equals(normalized);
     }

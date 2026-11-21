@@ -24,11 +24,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * US44 de punta a punta: el reporte de un control finalizado es un documento para compartir (sin observaciones internas, sin la falla, sin la identidad de
- * nadie), solo lo pide el administrador de la empresa del control, no se almacena y siempre lleva {@code Cache-Control: no-store}; si el generador falla, 503
- * y se puede reintentar.
- */
 @SpringBootTest(properties = {
         "trazatex.messaging.enabled=false", "trazatex.quality.start.job-enabled=false",
         "trazatex.production.read-timeout=PT0.5S", "trazatex.production.connect-timeout=PT0.5S", "trazatex.production.retry.wait-duration=PT0.01S"})
@@ -42,7 +37,6 @@ class ControlReportApiIT extends FlowTestBase {
     @MockitoSpyBean
     PdfGeneratorPort pdfSpy;
 
-    /** Un lote con Traceability ID cuyo control (con observaciones internas y una prueba con falla) lo inició ADMIN_A y lo finalizó OTRO administrador. */
     UUID finishedControl() throws Exception {
         UUID batch = UUID.randomUUID();
         projections.insert(BatchProjection.restore(batch, COMPANY_A, BatchPhase.AVAILABLE, false, QualityStatus.NOT_REVIEWED, false, 1, START, TRACEABILITY_ID));
@@ -72,8 +66,6 @@ class ControlReportApiIT extends FlowTestBase {
     long count(String table) {
         return jdbc.sql("SELECT count(*) FROM " + table).query(Long.class).single();
     }
-
-    // ---- US44 esc. 1 ----
 
     @Test
     void aFinishedControlProducesAShareableDocumentWithTheTestsValuesResultsAndRemarks_US44Scenario1() throws Exception {
@@ -134,8 +126,6 @@ class ControlReportApiIT extends FlowTestBase {
         assertThat(text(result.getResponse().getContentAsByteArray())).contains(batch.toString()).doesNotContain(TRACEABILITY_ID);
     }
 
-    // ---- solo un control finalizado ----
-
     @Test
     void aControlThatIsNotFinishedIsA409WithNoStoreWhateverItsState() throws Exception {
         UUID inProgress = startControl(seedAvailable());
@@ -165,8 +155,6 @@ class ControlReportApiIT extends FlowTestBase {
         return startControl(seedAvailable());
     }
 
-    // ---- quién puede pedirlo ----
-
     @Test
     void anotherCompanyAnOperatorAndAnAnonymousCallerNeverGetTheDocumentAndEveryAnswerIsNoStore() throws Exception {
         UUID control = finishedControl();
@@ -183,8 +171,6 @@ class ControlReportApiIT extends FlowTestBase {
         getAs(ADMIN_OF_A, "/api/quality/controls/no-es-uuid/report").andExpect(status().isBadRequest()).andExpect(header().string("Cache-Control", "no-store"));
         assertThat(count("audit_log") - jdbc.sql("SELECT count(*) FROM audit_log WHERE action <> 'REPORT_GENERATED'").query(Long.class).single()).as("ninguna de estas peticiones auditó un reporte").isZero();
     }
-
-    // ---- US44 esc. 2: el generador falla ----
 
     @Test
     void whenTheGeneratorFailsThereIsAn503WithItsOwnCodeNothingIsChangedAndRetryingWorks_US44Scenario2() throws Exception {

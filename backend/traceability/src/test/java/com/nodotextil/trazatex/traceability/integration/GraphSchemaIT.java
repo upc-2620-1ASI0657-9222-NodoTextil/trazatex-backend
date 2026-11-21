@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** Restricciones e índices del grafo (ADR-002, docs/architecture/data.md): existen tras arrancar, se hacen cumplir y se pueden recrear. */
 class GraphSchemaIT extends IntegrationTestBase {
 
     @Autowired

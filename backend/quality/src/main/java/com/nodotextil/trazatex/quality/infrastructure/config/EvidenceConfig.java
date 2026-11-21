@@ -18,7 +18,6 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.time.Clock;
 
-/** Evidencias: Cloudinary detrás de su puerto con timeout y circuit breaker (ADR-007) y los parámetros de la cola diferida. */
 @Configuration
 @EnableConfigurationProperties({CloudinaryProperties.class, EvidenceProperties.class})
 class EvidenceConfig {
@@ -27,7 +26,7 @@ class EvidenceConfig {
 
     @Bean
     EvidenceStoragePort evidenceStorage(CloudinaryProperties properties, CircuitBreakerRegistry registry, ObjectMapper mapper, Clock clock) {
-        CloudinaryCredentials credentials = CloudinaryCredentials.parse(properties.url());   // mal formada: no arranca, sin imprimir el secreto
+        CloudinaryCredentials credentials = CloudinaryCredentials.parse(properties.url());
         if (credentials == null) {
             log.warn("CLOUDINARY_URL no está configurada: las evidencias se aceptan y quedan PENDING en la cola local hasta que se configure");
         }

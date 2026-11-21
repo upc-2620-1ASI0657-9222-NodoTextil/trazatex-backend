@@ -10,11 +10,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Recoge todo lo que se registra mientras vive (mensaje ya formateado y, si lo hay, la excepción con su traza) para comprobar que un secreto
- * —el token de una invitación, la clave de SendGrid— no aparece en ningún log. Sube a TRACE los loggers del servicio para que la prueba mire también
- * lo que solo se vería al depurar.
- */
 public final class LogCapture implements AutoCloseable {
     private final Logger root = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
     private final Logger service = (Logger) LoggerFactory.getLogger("com.nodotextil.trazatex");
@@ -27,12 +22,10 @@ public final class LogCapture implements AutoCloseable {
         service.setLevel(Level.TRACE);
     }
 
-    /** Registra una marca propia para que la prueba pueda comprobar que la captura está viva aunque el servicio no escriba nada en ese camino. */
     public void mark(String marker) {
         LoggerFactory.getLogger("com.nodotextil.trazatex.notification.LogCapture").info(marker);
     }
 
-    /** Todo lo registrado hasta ahora, una cadena por registro. */
     public List<String> lines() {
         List<String> lines = new ArrayList<>();
         for (ILoggingEvent event : new ArrayList<>(appender.list)) {

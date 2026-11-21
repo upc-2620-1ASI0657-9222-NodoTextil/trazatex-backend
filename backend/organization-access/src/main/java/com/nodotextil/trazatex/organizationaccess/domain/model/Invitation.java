@@ -9,20 +9,6 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * Invitación para crear una cuenta (US04, US06, US41). {@code PENDING} pasa a {@code ACCEPTED}, {@code EXPIRED} o
- * {@code CANCELLED} y ninguna vuelve a {@code PENDING}.
- *
- * <p><b>Vigencia.</b> Vence a los {@value #VALIDITY_DAYS} días. El estado guardado puede ir por detrás (el job de expiración
- * corre cada cierto tiempo), así que toda decisión usa {@link #effectiveStatus(Instant)}: una invitación vencida nunca se
- * acepta, no se cancela y no ocupa cupo aunque siga guardada como {@code PENDING}.
- *
- * <p>Los datos personales son opcionales salvo para el operario (US06 pide nombres, apellidos, correo y cargo); en las
- * invitaciones de administrador y de Dueño quien acepta completa nombres y apellidos. {@code displayName} es el nombre
- * para mostrar (el del correo de invitación): el que trae quien invita ({@code fullName} de la solicitud de administrador,
- * {@code TRAZATEX_OWNER_NAME}) tal cual, sin dividirlo, o "nombres apellidos" si la invitación los trae. {@code issuedBy} es nulo solo en la
- * invitación del Dueño que crea el bootstrap, que nadie puede cancelar.
- */
 public final class Invitation {
 
     public static final int VALIDITY_DAYS = 7;
@@ -67,7 +53,6 @@ public final class Invitation {
         return issue(id, token, email, null, firstName, lastName, position, role, companyId, issuedBy, now);
     }
 
-    /** @param displayName nombre para mostrar tal como lo dio quien invita; si es nulo se arma con nombres y apellidos, si los hay */
     public static Invitation issue(UUID id, InvitationToken token, Email email, String displayName, String firstName,
                                    String lastName, String position, Role role, UUID companyId, UUID issuedBy, Instant now) {
         RequiredFields required = new RequiredFields().value("token", token).value("email", email).value("role", role);
@@ -89,7 +74,6 @@ public final class Invitation {
                 status, createdAt, expiresAt);
     }
 
-    /** Estado real en {@code now}: una {@code PENDING} vencida es {@code EXPIRED}. */
     public InvitationStatus effectiveStatus(Instant now) {
         if (status == InvitationStatus.PENDING && !now.isBefore(expiresAt)) {
             return InvitationStatus.EXPIRED;
@@ -97,15 +81,10 @@ public final class Invitation {
         return status;
     }
 
-    /** Ocupa un cupo de usuario de su empresa (RF-013): está realmente pendiente y es de una empresa. */
     public boolean occupiesSlot(Instant now) {
         return companyId != null && effectiveStatus(now) == InvitationStatus.PENDING;
     }
 
-    /**
-     * Crea la cuenta del invitado con la empresa y el rol de la invitación y pasa la invitación a {@code ACCEPTED}.
-     * La contraseña ya viene validada y con hash. Si la invitación no está vigente no cambia nada y lanza el error del estado.
-     */
     public User accept(UUID userId, String firstName, String lastName, String passwordHash, Instant now) {
         ensureUsable(now);
         User user = User.createActive(userId, companyId, email, firstName, lastName, position, passwordHash, role, now);
@@ -113,7 +92,6 @@ public final class Invitation {
         return user;
     }
 
-    /** Solo quien la emitió, y solo si sigue pendiente (US41). */
     public void cancel(UUID requestedBy, Instant now) {
         if (issuedBy == null || !issuedBy.equals(requestedBy)) {
             throw new ForbiddenException(ErrorCodes.INVITATION_NOT_ISSUER, "Solo quien emitió la invitación puede cancelarla.");
@@ -124,7 +102,6 @@ public final class Invitation {
         status = InvitationStatus.CANCELLED;
     }
 
-    /** Uso del job de expiración: marca {@code EXPIRED} si venció. Devuelve si cambió. */
     public boolean expire(Instant now) {
         if (status == InvitationStatus.PENDING && !now.isBefore(expiresAt)) {
             status = InvitationStatus.EXPIRED;
@@ -133,7 +110,6 @@ public final class Invitation {
         return false;
     }
 
-    /** Lanza el error del estado si la invitación no se puede usar para crear una cuenta (vencida, cancelada o ya aceptada). */
     public void ensureUsable(Instant now) {
         switch (effectiveStatus(now)) {
             case PENDING -> { }
@@ -143,7 +119,6 @@ public final class Invitation {
         }
     }
 
-    /** Nombre para mostrar (va en {@code InvitationCreated.fullName}); nulo si quien invita no dio ninguno. */
     public String fullName() {
         return displayName;
     }
@@ -192,7 +167,6 @@ public final class Invitation {
         return issuedBy;
     }
 
-    /** Estado guardado; para decidir usa {@link #effectiveStatus(Instant)}. */
     public InvitationStatus status() {
         return status;
     }

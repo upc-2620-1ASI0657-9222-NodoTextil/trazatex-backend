@@ -10,11 +10,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Un control de la propia empresa. {@code cancelReason} es el código de error con el que Production rechazó el inicio (solo si
- * {@code status = CANCELLED}). {@code finishPending}: se pidió finalizar y Production aún no confirmó {@code RELEASE}; el control sigue
- * {@code IN_PROGRESS} y sus pruebas no admiten cambios.
- */
 public record ControlResult(UUID id, UUID batchId, UUID companyId, ControlType controlType, ControlStatus status, TestResult overallResult,
                             UUID inspectorId, Instant startDate, Instant endDate, String internalObservations, String cancelReason,
                             boolean finishPending, List<TestView> tests) {

@@ -30,20 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Resuelve los avisos de falla derivada {@code PENDING}. En cada pasada <b>se vuelve a decidir con la proyección de ahora</b>
- * ({@link DerivedFailurePolicy}): el lote pudo cambiar desde que llegó el aviso.
- * <ul>
- *   <li>{@code HOLD_NOW}: {@code HOLD} a Production fuera de transacción ({@code requestId = failureId}, sin {@code requestedBy}: lo dispara un
- *       evento). Con el 200, en una transacción: el aviso pasa a {@code APPLIED}, la calidad a {@code POTENTIAL_DERIVED_FAILURE} y se escribe
- *       {@code QualityStatusChanged}. <b>Un 409</b> (el lote no está {@code AVAILABLE}: la proyección va atrasada) no cambia nada: el aviso sigue
- *       {@code PENDING}, se registra un WARN y se reintenta con espera creciente; en cada intento se decide de nuevo. Un 404 (el lote no existe en
- *       Production) lo deja {@code NO_ACTION} con ERROR; un 400 es un defecto de Quality: sigue {@code PENDING} con ERROR.</li>
- *   <li>{@code WAIT_FOR_AVAILABLE}: no se llama; se vuelve a mirar en {@code holdWaitPoll} (o antes, si llega un {@code BatchPhaseChanged} del lote).</li>
- *   <li>Lote histórico o ya retenido: {@code NO_ACTION}.</li>
- * </ul>
- * Esta clase no es {@code @Transactional} a propósito: llama a Production.
- */
 @Component
 class DerivedHoldResolver {
 
@@ -138,7 +124,6 @@ class DerivedHoldResolver {
         }
     }
 
-    /** El HOLD se confirmó: recién ahora cambia la calidad (POTENTIAL_DERIVED_FAILURE implica qualityHold = true). */
     private void applied(ImpactedBatch notice) {
         Instant now = clock.instant();
         BatchProjection batch = projections.findByIdForUpdate(notice.batchId()).orElse(null);
@@ -149,7 +134,6 @@ class DerivedHoldResolver {
             }
             change = batch.applyConfirmedDerivedHold(now);
         } catch (ConflictException keepsItsState) {
-            // El lote ya tenía otro estado de calidad que retiene (otra falla, una reevaluación): se conserva y esta retención no cambia nada
             log.warn("Production confirmó el HOLD de la falla {} sobre el lote {}, pero su estado de calidad ({}) no admite el cambio: se conserva",
                     notice.failureId(), notice.batchId(), batch == null ? "desconocido" : batch.qualityStatus());
             noAction(notice.failureId(), notice.batchId(), "ALREADY_RETAINED");

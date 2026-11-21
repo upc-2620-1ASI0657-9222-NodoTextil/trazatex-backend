@@ -10,7 +10,6 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
-/** Contrato de {@link OutboxStorePort}: {@code created_at} lo escribe la aplicación y {@code findPending} usa {@code FOR UPDATE SKIP LOCKED}. */
 @Component
 class JdbcOutboxStoreAdapter implements OutboxStorePort {
 

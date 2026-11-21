@@ -20,10 +20,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Cubo por IP de las peticiones a rutas protegidas SIN credencial válida (5 por minuto en la prueba): pasado el límite reciben 429
- * con Retry-After en lugar de 401. No frena a quien trae un token válido, y no cuenta token vencido ni usuario inactivo.
- */
 @TestPropertySource(properties = "trazatex.rate-limit.auth-failure.permits=5")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class AuthFailureRateLimitTest extends GatewayTestSupport {
@@ -75,7 +71,6 @@ class AuthFailureRateLimitTest extends GatewayTestSupport {
         }
         assertThat(callWith("Bearer token.invalido.x")).isEqualTo(429);
 
-        // la planta comparte IP: sus operarios, con token bueno, siguen trabajando
         for (int i = 0; i < 10; i++) {
             assertThat(callWith("Bearer " + TestTokens.forUser(UUID.randomUUID(), "OPERATOR", UUID.randomUUID()))).isEqualTo(200);
         }

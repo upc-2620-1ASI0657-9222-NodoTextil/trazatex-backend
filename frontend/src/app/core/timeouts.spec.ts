@@ -32,7 +32,7 @@ describe('Plazos por tipo de operación (ADR-010, enmienda 2026-11-04)', () => {
     expect(timeoutFor('POST', '/batches/b1/evidence', new FormData()).ms).toBe(30000);
     expect(timeoutFor('POST', '/quality/evidence', new FormData()).ms).toBe(30000);
     expect(timeoutFor('POST', '/quality/evidence', new FormData()).rule?.name).toBe('subida multipart');
-    expect(timeoutFor('POST', '/quality/evidence', {}).ms).toBe(8000); // sin FormData ya no es una subida
+    expect(timeoutFor('POST', '/quality/evidence', {}).ms).toBe(8000);
   });
 
   it('el alta de empresa usa 30 s, pero no otras rutas de /companies', () => {
@@ -85,7 +85,6 @@ describe('Catálogo de rutas de los servicios frente a la tabla de plazos', () =
   it('las rutas que caen en el plazo por defecto están declaradas «estandar» a propósito (lista para revisar)', () => {
     const porDefecto = SERVICE_ROUTES.filter(route => !timeoutFor(route.method, concreta(route.path), cuerpo(route)).rule);
     expect(porDefecto.every(route => route.clase === 'estandar')).toBe(true);
-    // Toda escritura de Quality o subida declarada «estandar» sería un olvido: no debe haber ninguna.
     expect(porDefecto.filter(route => route.path.startsWith('/quality/') && route.method !== 'GET')).toEqual([]);
     expect(porDefecto.filter(route => route.multipart)).toEqual([]);
   });

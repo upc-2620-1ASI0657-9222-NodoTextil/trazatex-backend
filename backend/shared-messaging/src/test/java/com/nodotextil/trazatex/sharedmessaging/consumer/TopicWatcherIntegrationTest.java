@@ -28,10 +28,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-/**
- * El vigilante contra un broker real y {@code @KafkaListener(autoStartup = "false")} como en un servicio: los contenedores solo
- * arrancan cuando su tópico existe.
- */
 @Testcontainers
 class TopicWatcherIntegrationTest {
 
@@ -106,8 +102,6 @@ class TopicWatcherIntegrationTest {
         await().untilAsserted(() -> assertThat(running(FIRST)).isTrue());
     }
 
-    // ---- ayudas
-
     private static String topic(String base) {
         return base + "." + UUID.randomUUID();
     }
@@ -116,7 +110,6 @@ class TopicWatcherIntegrationTest {
         return context.getBean(KafkaListenerEndpointRegistry.class).getListenerContainer(listenerId).isRunning();
     }
 
-    /** Levanta un contexto con dos {@code @KafkaListener(autoStartup=false)} (uno por tópico) y devuelve el vigilante sobre las fuentes dadas. */
     private TopicWatcher start(String firstTopic, String secondTopic, AtomicInteger brokerQueries, TopicWatcher.Source... sources) {
         context = new AnnotationConfigApplicationContext();
         context.getEnvironment().getPropertySources().addFirst(new MapPropertySource("topics",

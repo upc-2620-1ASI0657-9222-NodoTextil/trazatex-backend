@@ -21,16 +21,6 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Reglas sobre los pasos de los escenarios, para que un paso no sea de adorno (el modo estricto atrapa lo que falta o está pendiente; esto,
- * lo que existe pero no hace nada):
- * <ul>
- *   <li>Ningún paso tiene el cuerpo vacío: todo paso hace al menos una llamada.</li>
- *   <li>Todo {@code Entonces} (y los {@code Y} que lo continúan) llega a una aserción de AssertJ, directamente o a través de los
- *       métodos auxiliares de las clases de pasos.</li>
- *   <li>Los pasos hablan con el servicio solo por HTTP: no usan MockMvc, Mockito, los casos de uso, el dominio ni la infraestructura.</li>
- * </ul>
- */
 class StepDefinitionsTest {
 
     private static final String ACCEPTANCE = "com.nodotextil.trazatex.production.acceptance";

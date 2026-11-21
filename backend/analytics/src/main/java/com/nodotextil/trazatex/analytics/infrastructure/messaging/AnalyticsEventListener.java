@@ -5,10 +5,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
-/**
- * Un contenedor y un grupo por tópico, todos con {@code autoStartup = "false"}: los arranca el {@link TopicWatcherJob} cuando el tópico
- * existe. Sin lógica: cada mensaje va al servicio de proyección, que es idempotente por {@code eventId}.
- */
 @Component
 @ConditionalOnProperty(name = "trazatex.messaging.enabled", havingValue = "true", matchIfMissing = true)
 public class AnalyticsEventListener {

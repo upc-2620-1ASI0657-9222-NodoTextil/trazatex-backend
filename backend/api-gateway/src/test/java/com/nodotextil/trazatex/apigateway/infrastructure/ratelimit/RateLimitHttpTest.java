@@ -26,11 +26,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * 03c con el Gateway completo: login por IP (5/min en la prueba), invitaciones por IP (4), y en las rutas autenticadas un cubo
- * por usuario (6) y otro por empresa (10) que deben cumplirse a la vez. Cada prueba arranca un contexto nuevo: los cubos viven en
- * memoria y todas las peticiones salen de la misma IP.
- */
 @TestPropertySource(properties = {"trazatex.rate-limit.login.permits=5", "trazatex.rate-limit.invitation.permits=4",
         "trazatex.rate-limit.user.permits=6", "trazatex.rate-limit.company.permits=10"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
@@ -62,8 +57,6 @@ class RateLimitHttpTest extends GatewayTestSupport {
         return ORG_ACCESS.findAll(anyRequestedFor(urlPathEqualTo(path))).size();
     }
 
-    // ---- login por IP ----
-
     @Test
     void loginIsLimitedPerIpAndTheRejectionIsAnApiErrorWithRetryAfter() {
         for (int i = 0; i < 5; i++) {
@@ -87,7 +80,6 @@ class RateLimitHttpTest extends GatewayTestSupport {
 
     @Test
     void aForgedForwardedForDoesNotChangeBucketNorEvadeTheLimit() {
-        // cada petición dice venir de una IP distinta: no sirve, la IP es la de la conexión
         for (int i = 0; i < 5; i++) {
             assertThat(login("X-Forwarded-For", "10.9.8." + i, "X-Real-IP", "10.7.7." + i, "Forwarded", "for=10.6.6." + i)).isEqualTo(200);
         }
@@ -121,8 +113,6 @@ class RateLimitHttpTest extends GatewayTestSupport {
         assertThat(login()).isEqualTo(429);
     }
 
-    // ---- invitaciones por IP ----
-
     @Test
     void theTwoPublicInvitationRoutesShareOneBucketPerIp() {
         anonymous.get().uri("/api/invitations/abc123").exchange().expectStatus().isOk();
@@ -134,8 +124,6 @@ class RateLimitHttpTest extends GatewayTestSupport {
         anonymous.post().uri("/api/invitations/otro/accept").contentType(MediaType.APPLICATION_JSON).bodyValue("{}").exchange().expectStatus().isEqualTo(429);
         assertThat(login()).as("el login tiene su propio cubo").isEqualTo(200);
     }
-
-    // ---- rutas autenticadas: usuario Y empresa ----
 
     @Test
     void theUserBucketLimitsOneUserWithoutAffectingOthersOfTheSameCompany() {
@@ -160,10 +148,10 @@ class RateLimitHttpTest extends GatewayTestSupport {
         String luis = token(UUID.randomUUID(), company);
         String rosa = token(UUID.randomUUID(), company);
         for (int i = 0; i < 6; i++) {
-            assertThat(authed(ana)).isEqualTo(200);   // empresa 6/10
+            assertThat(authed(ana)).isEqualTo(200);
         }
         for (int i = 0; i < 4; i++) {
-            assertThat(authed(luis)).isEqualTo(200);  // empresa 10/10
+            assertThat(authed(luis)).isEqualTo(200);
         }
 
         assertThat(authed(luis)).as("a Luis le quedaban 2 de los suyos, pero la empresa se agotó").isEqualTo(429);

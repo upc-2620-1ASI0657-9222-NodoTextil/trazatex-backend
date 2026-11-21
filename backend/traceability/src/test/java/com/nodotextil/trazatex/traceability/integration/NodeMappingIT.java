@@ -17,7 +17,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Los nodos de Spring Data Neo4j leen lo que los consumidores escriben con Cypher (UUID, enums, fechas, decimales y nulos). */
 class NodeMappingIT extends IntegrationTestBase {
 
     private static final UUID BATCH = UUID.fromString("00000000-0000-0000-0000-0000000000b1");

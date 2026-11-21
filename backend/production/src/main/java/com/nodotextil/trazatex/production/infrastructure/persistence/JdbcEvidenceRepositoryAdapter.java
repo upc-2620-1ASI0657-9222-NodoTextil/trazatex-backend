@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/** Evidencias y su cola de bytes en PostgreSQL ({@code evidence}, {@code evidence_upload_queue}, V5). */
 @Component
 class JdbcEvidenceRepositoryAdapter implements EvidenceRepositoryPort {
 

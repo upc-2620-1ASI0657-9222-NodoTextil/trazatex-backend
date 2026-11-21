@@ -52,11 +52,11 @@ type Vista = 'pendientes' | 'confirmadas' | 'resueltas' | 'derivadas';
           <div class="rows">
             @for (f of pagina(); track f.id) {
               @let e = store.estadoFalla(f);
-              <button type="button" class="row-card row-card--{{ e === 'Confirmada' ? 'hist' : tonoFalla(e) }}" [class.is-sel]="selId() === f.id" (click)="selId.set(f.id)">
-                <span class="rc-id">{{ f.id }}</span>
+              <button type="button" class="row-card row-card--{{ e === 'Confirmada' ? 'hist' : tonoFalla(e) }}" [class.is-sel]="selId() === f.id" [attr.aria-label]="'Falla ' + store.referencia(f.id) + ', ' + e" (click)="selId.set(f.id)">
+                <span class="rc-id" [attr.title]="f.id">Falla {{ store.referencia(f.id) }}</span>
                 <span class="rc-state">{{ e }}</span>
-                <span class="rc-title">@if (store.puedeVer('causaFalla', f.empresaId)) {{{ f.causa || 'Causa por registrar' }}} @else {Causa privada}</span>
-                <span class="rc-meta">Lote {{ f.loteId }} / {{ f.controlId }} / <span class="num">{{ f.fecha | fecha: false }}</span></span>
+                <span class="rc-title">Causa: @if (store.puedeVer('causaFalla', f.empresaId)) {{{ f.causa || 'por registrar' }}} @else {privada}</span>
+                <span class="rc-meta">Lote {{ store.nombreLote(f.loteId) }} ({{ f.loteId }}) / Generada el <span class="num">{{ f.fecha | fecha: false }}</span></span>
               </button>
             }
           </div>
@@ -90,14 +90,16 @@ type Vista = 'pendientes' | 'confirmadas' | 'resueltas' | 'derivadas';
 
     @if (sel(); as f) {
       @let e = store.estadoFalla(f);
-      <app-drawer [title]="f.id" eyebrow="Falla" [sub]="'Lote ' + f.loteId + ' / ' + store.nombreEmpresa(f.empresaId)" (closed)="selId.set(null)">
+      <app-drawer [title]="'Falla ' + store.referencia(f.id)" eyebrow="Falla" [sub]="'Lote ' + store.nombreLote(f.loteId) + ' (' + f.loteId + ') / ' + store.nombreEmpresa(f.empresaId)" (closed)="selId.set(null)">
         <app-badge [text]="e" [tone]="tonoFalla(e)" />
         <section class="d-section">
           <h3>Registro</h3>
           <dl class="dl">
+            <dt>Identificador</dt><dd><app-copy-id [id]="f.id" /></dd>
             <dt>Causa</dt><dd>@if (store.puedeVer('causaFalla', f.empresaId)) {{{ f.causa || 'Por registrar' }}} @else {<app-priv />}</dd>
+            <dt>Lote</dt><dd><app-lot-link [id]="f.loteId" /> <span class="id small muted">{{ f.loteId }}</span></dd>
             <dt>Cantidad afectada</dt><dd>@if (store.puedeVer('cantidad', f.empresaId)) {<span class="num">{{ f.cantidadAfectadaKg | kg }}</span>} @else {<app-priv />}</dd>
-            <dt>Control</dt><dd><a class="id" [routerLink]="['/calidad', f.controlId]">{{ f.controlId }}</a></dd>
+            <dt>Control</dt><dd><a class="id" [routerLink]="['/calidad', f.controlId]" [attr.title]="f.controlId">{{ store.refControl({ id: f.controlId }) }}</a></dd>
             <dt>Generada</dt><dd class="num">{{ f.fecha | fecha }}</dd>
           </dl>
         </section>
@@ -130,7 +132,7 @@ export class FallasPage {
     const q = this.q().trim().toLowerCase();
     return this.store
       .misFallas()
-      .filter((f) => (!q || [f.id, f.loteId, f.controlId].some((x) => x.toLowerCase().includes(q))) && (!this.fEmpresa() || f.empresaId === this.fEmpresa()))
+      .filter((f) => (!q || [f.id, f.loteId, f.controlId, this.store.nombreLote(f.loteId), this.store.puedeVer('causaFalla', f.empresaId) ? f.causa ?? '' : ''].some((x) => x.toLowerCase().includes(q))) && (!this.fEmpresa() || f.empresaId === this.fEmpresa()))
       .sort((a, b) => b.fecha.localeCompare(a.fecha));
   });
   private en(v: Vista, estado: string) {

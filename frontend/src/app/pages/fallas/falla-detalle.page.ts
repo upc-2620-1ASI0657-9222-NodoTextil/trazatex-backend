@@ -24,9 +24,13 @@ import { tonoFalla } from './fallas.page';
         <header class="page-head">
           <div>
             <a class="eyebrow" routerLink="/fallas" style="text-decoration:none">Fallas</a>
-            <h2 class="page-title">Falla <span class="id">{{ f.id }}</span></h2>
+            <h2 class="page-title">Falla <app-copy-id [id]="f.id" /></h2>
             <p class="page-lead">
-              Lote <app-lot-link [id]="f.loteId" /> / {{ lote?.material || 'Lote histórico' }} / {{ store.nombreEmpresa(f.empresaId) }} /
+              Causa: @if (store.puedeVer('causaFalla', f.empresaId)) {<b>{{ f.causa || 'por registrar' }}</b>} @else {<app-priv />} /
+              Generada el <span class="num">{{ f.fecha | fecha }}</span>
+            </p>
+            <p class="page-lead">
+              Lote <app-lot-link [id]="f.loteId" /> <span class="id small muted">{{ f.loteId }}</span> / {{ lote?.material || 'Lote histórico' }} / {{ store.nombreEmpresa(f.empresaId) }} /
               <app-badge [text]="estado" [tone]="tonoFalla(estado)" />
             </p>
           </div>
@@ -52,7 +56,7 @@ import { tonoFalla } from './fallas.page';
 
         <div class="split">
           <div class="folds">
-            <app-fold n="01" title="Pruebas que originaron la falla" [summary]="fallidas().length + ' con falla / ' + ctl.id" [open]="true">
+            <app-fold n="01" title="Pruebas que originaron la falla" [summary]="fallidas().length + ' con falla / ' + store.refControl(ctl)" [open]="true">
               <div class="mini-cards">
                 @for (p of fallidas(); track p.id) {
                   <div class="mini mini--fail">
@@ -129,8 +133,8 @@ import { tonoFalla } from './fallas.page';
               <dl class="dl">
                 <dt>Lote</dt><dd><app-lot-link [id]="lote.id" /></dd>
                 <dt>Material</dt><dd>{{ lote?.material || 'Lote histórico' }}</dd>
-                <dt>Estado</dt><dd><app-lot-status [lote]="lote" /></dd>
-                <dt>Control</dt><dd><a class="id" [routerLink]="['/calidad', ctl.id]">{{ ctl.id }}</a> {{ ctl.tipo }}</dd>
+                <dt>Estado</dt><dd><app-lot-status [lote]="lote" [showReason]="true" /></dd>
+                <dt>Control</dt><dd><a class="id" [routerLink]="['/calidad', ctl.id]" [attr.title]="ctl.id">{{ store.refControl(ctl) }}</a> {{ ctl.tipo }}</dd>
                 <dt>Generada</dt><dd class="num">{{ f.fecha | fecha }}</dd>
                 <dt>Resolución</dt><dd><app-badge [text]="estado" [tone]="tonoFalla(estado)" /></dd>
               </dl>
@@ -147,7 +151,7 @@ import { tonoFalla } from './fallas.page';
         <app-dialog [title]="'Descartar ' + f.loteId" eyebrow="Decisión sobre la falla" (closed)="confirmarDescarte.set(false)">
           <ul class="small" style="padding-left:1.1rem;margin:0">
             <li>{{ f.loteId }} pasará a fase <b>Descartado</b> y quedará como lote histórico.</li>
-            <li>{{ f.id }} pasará a <b>Confirmada</b>.</li>
+            <li>La falla {{ store.referencia(f.id) }} pasará a <b>Confirmada</b>.</li>
             @if (candidatos().length) {
               <li>{{ candidatos().join(', ') }} quedarán en <b>bloqueo preventivo</b> (Posible falla derivada).</li>
             }
@@ -232,10 +236,6 @@ export class FallaDetallePage {
     this.ui.toast('Registro de la falla guardado');
     return true;
   }
-  /**
-   * US26 esc. 2 y `api.md`: reevaluar NO exige registrar nada (el servidor no pide información). Solo si el registro está completo se guarda
-   * antes (con sus validaciones); si hay datos a medias, se avisa de que no se guardarán en vez de impedir la reevaluación (FE-M12).
-   */
   async reevaluar() {
     const algo = !!this.causa.trim() || this.cantidad !== null || !!this.observaciones.trim();
     const completo = !!this.causa.trim() && this.cantidad !== null && this.cantidad > 0;

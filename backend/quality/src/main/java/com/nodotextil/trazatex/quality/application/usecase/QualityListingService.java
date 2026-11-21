@@ -13,7 +13,6 @@ import com.nodotextil.trazatex.sharedkernel.paging.PageResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Controles, fallas y estado de calidad de los lotes de la empresa del solicitante, una página por consulta. */
 @Service
 class QualityListingService implements ListQualityUseCase {
 

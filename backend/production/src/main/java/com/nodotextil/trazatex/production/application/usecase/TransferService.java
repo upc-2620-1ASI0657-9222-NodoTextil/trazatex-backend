@@ -95,7 +95,6 @@ class TransferService implements ManageTransfersUseCase {
                 .map(TransferResult::from));
     }
 
-    /** {@code quantitiesKg}: solo de lotes de la selección y cantidades válidas (400 antes de bloquear nada). */
     private static Map<UUID, Quantity> requestedQuantities(InitiateTransferCommand command, List<UUID> batchIds) {
         Map<UUID, Quantity> requested = new HashMap<>();
         if (command.quantitiesKg() == null) {
@@ -111,7 +110,6 @@ class TransferService implements ManageTransfersUseCase {
         return requested;
     }
 
-    /** Aceptar incorpora material a la empresa: se bloquea si está inactiva (RF-003). */
     @Override
     public TransferResult accept(UUID transferId, Actor actor) {
         companyGuard.requireActive(actor.companyId());
@@ -126,7 +124,6 @@ class TransferService implements ManageTransfersUseCase {
         return TransferResult.from(transfer);
     }
 
-    /** Rechazar devuelve los lotes al origen: se permite aunque la empresa esté inactiva (RF-003, sin lotes atascados). */
     @Override
     public TransferResult reject(UUID transferId, String reason, Actor actor) {
         Transfer transfer = transfers.findByIdForUpdate(transferId).filter(t -> involves(t, actor)).orElseThrow(TransferService::notFound);
@@ -140,7 +137,6 @@ class TransferService implements ManageTransfersUseCase {
         return TransferResult.from(transfer);
     }
 
-    /** Solo las dos empresas de la transferencia la ven; para cualquier otra "no existe". */
     private static boolean involves(Transfer transfer, Actor actor) {
         return actor.companyId().equals(transfer.originCompanyId()) || actor.companyId().equals(transfer.targetCompanyId());
     }

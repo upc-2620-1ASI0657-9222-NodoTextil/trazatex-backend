@@ -31,7 +31,6 @@ class JdbcPhaseCommandLogAdapter implements PhaseCommandLogPort {
                 .optional();
     }
 
-    /** INSERT simple: la PK es la barrera ante dos comandos idénticos simultáneos; el perdedor recibe {@code DuplicateKeyException}. */
     @Override
     public void save(UUID batchId, String requestId, PhaseOperation operation, PhaseCommandResult result, Instant at) {
         jdbc.sql("""

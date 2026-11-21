@@ -22,11 +22,6 @@ import static com.nodotextil.trazatex.quality.domain.SampleImages.png;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-/**
- * ADR-007 con Cloudinary simulado: timeout, 5xx y circuito abierto dejan la evidencia PENDING (la petición termina bien, 201), y el
- * job la sube cuando el servicio vuelve, con espera creciente, sin duplicar y sin consumir intentos cuando no se llegó a intentar.
- * Además, una subida lenta no retiene el control: agregar una prueba a la vez no espera a Cloudinary.
- */
 class EvidenceResilienceIT extends EvidenceItBase {
 
     @Autowired
@@ -63,11 +58,9 @@ class EvidenceResilienceIT extends EvidenceItBase {
         return count("SELECT count(*) FROM evidence_upload_queue WHERE evidence_id = ?", id);
     }
 
-    // ---- la petición termina bien aunque Cloudinary falle ----
-
     @Test
     void aCloudinaryTimeoutLeavesTheEvidencePendingWithItsBytesInTheDatabaseAndTheRequestStillSucceeds() throws Exception {
-        stubUploadDelayed(6_000);                       // el timeout de lectura de las pruebas es de 2 s
+        stubUploadDelayed(6_000);
         UUID batch = inProgressControl();
         byte[] bytes = jpeg();
 
@@ -139,8 +132,6 @@ class EvidenceResilienceIT extends EvidenceItBase {
         assertThat(circuitBreakers.circuitBreaker("cloudinary").getMetrics().getNumberOfFailedCalls()).as("un archivo malo no es una falla del servicio").isZero();
     }
 
-    // ---- borrar también pasa por el circuito (M5) ----
-
     @Autowired
     com.nodotextil.trazatex.quality.application.port.out.EvidenceStoragePort storage;
 
@@ -151,7 +142,7 @@ class EvidenceResilienceIT extends EvidenceItBase {
                 com.github.tomakehurst.wiremock.client.WireMock.aResponse().withStatus(503).withBody("{}")));
         String publicId = UUID.randomUUID().toString();
 
-        for (int i = 0; i < 2; i++) {                      // minimum-calls = 2, 100 % de fallos → abre
+        for (int i = 0; i < 2; i++) {
             org.assertj.core.api.Assertions.assertThatThrownBy(() -> storage.delete(publicId))
                     .isInstanceOf(com.nodotextil.trazatex.quality.application.exception.StorageTransientException.class);
         }
@@ -163,8 +154,6 @@ class EvidenceResilienceIT extends EvidenceItBase {
         assertThat(CLOUDINARY.findAll(com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor(destroy)).size())
                 .as("con el circuito abierto no se llama a Cloudinary").isEqualTo(before);
     }
-
-    // ---- el borrado: una evidencia que falla no frena a las demás ----
 
     @Autowired
     com.nodotextil.trazatex.quality.application.port.in.DeleteEvidenceUseCase deletions;
@@ -179,7 +168,7 @@ class EvidenceResilienceIT extends EvidenceItBase {
         var actor = new com.nodotextil.trazatex.quality.application.dto.Actor(ADMIN_A, COMPANY_A, com.nodotextil.trazatex.quality.application.dto.Role.COMPANY_ADMIN);
         deletions.delete(com.nodotextil.trazatex.quality.domain.model.EvidenceOwnerType.CONTROL, control, bad, actor);
         deletions.delete(com.nodotextil.trazatex.quality.domain.model.EvidenceOwnerType.CONTROL, control, good, actor);
-        jdbc.sql("UPDATE evidence SET deleted_at = deleted_at - interval '1 hour' WHERE id = :id").param("id", bad).update();   // la fallida es la más antigua: va primero
+        jdbc.sql("UPDATE evidence SET deleted_at = deleted_at - interval '1 hour' WHERE id = :id").param("id", bad).update();
         CLOUDINARY.stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(destroy).willReturn(com.github.tomakehurst.wiremock.client.WireMock.okJson("{\"result\":\"ok\"}")));
         CLOUDINARY.stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(destroy).atPriority(1)
                 .withRequestBody(com.github.tomakehurst.wiremock.client.WireMock.containing(bad.toString()))
@@ -196,26 +185,24 @@ class EvidenceResilienceIT extends EvidenceItBase {
         assertThat(CLOUDINARY.findAll(com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor(destroy))).as("antes de su hora no se toca").hasSize(calls);
 
         clock.advance(Duration.ofSeconds(11));
-        assertThat(deletions.purgeDeleted()).isZero();                                    // falla otra vez
+        assertThat(deletions.purgeDeleted()).isZero();
         assertThat(column(bad, "purge_attempts")).isEqualTo(2);
         assertThat(Duration.between(clock.instant(), timestamp(bad, "purge_retry_at").toInstant())).as("2.ª espera, el doble").isEqualTo(Duration.ofSeconds(20));
 
         clearStubs();
         CLOUDINARY.stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(destroy).willReturn(com.github.tomakehurst.wiremock.client.WireMock.okJson("{\"result\":\"not found\"}")));
-        circuitBreakers.circuitBreaker("cloudinary").reset();                            // los dos fallos abrieron el circuito
+        circuitBreakers.circuitBreaker("cloudinary").reset();
         clock.advance(Duration.ofSeconds(21));
         assertThat(deletions.purgeDeleted()).isEqualTo(1);
         assertThat(count("SELECT count(*) FROM evidence WHERE id = ?", bad)).isZero();
     }
-
-    // ---- el circuito ----
 
     @Test
     void theCircuitOpensAfterRepeatedFailuresThenRequestsStopReachingCloudinaryAndTheyQueueInstantly() throws Exception {
         stubUploadStatus(503, "{}");
         UUID batch = inProgressControl();
         attach(batch, null, photo());
-        attach(batch, null, photo());          // minimum-calls = 2, 100 % de fallos → abre
+        attach(batch, null, photo());
         CircuitBreaker breaker = circuitBreakers.circuitBreaker("cloudinary");
         assertThat(breaker.getState()).isEqualTo(CircuitBreaker.State.OPEN);
         int callsBefore = uploadRequests().size();
@@ -240,7 +227,7 @@ class EvidenceResilienceIT extends EvidenceItBase {
         assertThat(breaker.getState()).isEqualTo(CircuitBreaker.State.OPEN);
         clearStubs();
         stubUploadOk();
-        Thread.sleep(3_200);        // wait-in-open-state de las pruebas: 3 s; la siguiente llamada pasa a HALF_OPEN y prueba
+        Thread.sleep(3_200);
 
         HttpResponse<String> probe1 = attach(batch, null, photo());
         HttpResponse<String> probe2 = attach(batch, null, photo());
@@ -249,8 +236,6 @@ class EvidenceResilienceIT extends EvidenceItBase {
         assertThat(items(probe2).get(0).path("status").asString()).isEqualTo("UPLOADED");
         assertThat(breaker.getState()).isEqualTo(CircuitBreaker.State.CLOSED);
     }
-
-    // ---- el job ----
 
     @Test
     void theJobUploadsWhatWasPendingOnceCloudinaryIsBackAndFreesTheBytes() throws Exception {
@@ -288,7 +273,6 @@ class EvidenceResilienceIT extends EvidenceItBase {
         UUID batch = inProgressControl();
         UUID id = idOfItem(items(attach(batch, null, photo())).get(0));
         circuitBreakers.circuitBreaker("cloudinary").reset();
-        // intento 1 → +30 s, intento 2 → +60 s
         long[] expectedWaits = {30, 60};
         Object previous = timestamp(id, "next_attempt_at");
         for (int attempt = 1; attempt <= 2; attempt++) {
@@ -312,7 +296,7 @@ class EvidenceResilienceIT extends EvidenceItBase {
     void afterTheMaximumAttemptsItFailsKeepingItsBytesAndAManualRequeueUploadsIt() throws Exception {
         stubUploadStatus(500, "{}");
         UUID batch = inProgressControl();
-        UUID id = idOfItem(items(attach(batch, null, photo())).get(0));           // max-attempts de las pruebas = 3
+        UUID id = idOfItem(items(attach(batch, null, photo())).get(0));
         for (int attempt = 1; attempt <= 3; attempt++) {
             clock.advance(Duration.ofHours(1));
             circuitBreakers.circuitBreaker("cloudinary").reset();
@@ -328,8 +312,6 @@ class EvidenceResilienceIT extends EvidenceItBase {
         clock.advance(Duration.ofDays(1));
         assertThat(pendingUploads.uploadDue()).as("una FAILED no se vuelve a intentar sola").isZero();
 
-        // El reencolado manual documentado en docs/progress.md (con la hora del reloj de la prueba: el now() de PostgreSQL es la hora real, que
-        // desde que el reloj simulado quedó atrás ya no sirve para decir cuándo vence)
         clearStubs();
         stubUploadOk();
         jdbc.sql("UPDATE evidence SET status = 'PENDING', attempts = 0, next_attempt_at = :now, last_error = NULL WHERE id = :id AND status = 'FAILED'")
@@ -363,7 +345,7 @@ class EvidenceResilienceIT extends EvidenceItBase {
         stubUploadStatus(503, "{}");
         UUID batch = inProgressControl();
         UUID id = idOfItem(items(attach(batch, null, photo())).get(0));
-        attach(batch, null, photo());                       // abre el circuito
+        attach(batch, null, photo());
         assertThat(circuitBreakers.circuitBreaker("cloudinary").getState()).isEqualTo(CircuitBreaker.State.OPEN);
         int callsBefore = uploadRequests().size();
 
@@ -377,17 +359,13 @@ class EvidenceResilienceIT extends EvidenceItBase {
         assertThat(column(id, "status")).isEqualTo("PENDING");
     }
 
-    // ---- sin duplicar ----
-
     @Test
     void aLostResponseIsRetriedWithTheSamePublicIdAndNeverOverwritesOrDuplicates() throws Exception {
-        // Cloudinary SÍ guardó la imagen, pero la respuesta tardó más que el timeout: el cliente la da por perdida
         stubUploadDelayed(6_000);
         UUID batch = inProgressControl();
         UUID id = idOfItem(items(attach(batch, null, photo())).get(0));
         assertThat(column(id, "status")).isEqualTo("PENDING");
         clearStubs();
-        // En el reintento Cloudinary (overwrite=false) devuelve la imagen que ya tenía
         stubUploadStatus(200, "{\"public_id\":\"" + id + "\",\"existing\":true,\"secure_url\":\"https://res.cloudinary.com/demo/image/upload/v1/" + id + ".jpg\"}");
         circuitBreakers.circuitBreaker("cloudinary").reset();
         clock.advance(Duration.ofMinutes(1));
@@ -408,7 +386,7 @@ class EvidenceResilienceIT extends EvidenceItBase {
         UUID batch = inProgressControl();
         UUID id = idOfItem(items(attach(batch, null, photo())).get(0));
         clearStubs();
-        stubUploadDelayed(1_000);                           // la subida tarda: el segundo job llega mientras el primero sube
+        stubUploadDelayed(1_000);
         circuitBreakers.circuitBreaker("cloudinary").reset();
         clock.advance(Duration.ofMinutes(1));
         ExecutorService pool = Executors.newFixedThreadPool(2);
@@ -431,17 +409,14 @@ class EvidenceResilienceIT extends EvidenceItBase {
         assertThat(column(id, "status")).isEqualTo("UPLOADED");
     }
 
-    // ---- una subida lenta no retiene el control ni la falla ----
-
     @Test
     void aSlowUploadDoesNotMakeAnotherOperationOnTheSameControlWait() throws Exception {
-        for (String key : new String[]{null, UUID.randomUUID().toString()}) {          // sin y con Idempotency-Key (el filtro abre una transacción)
+        for (String key : new String[]{null, UUID.randomUUID().toString()}) {
             CLOUDINARY.resetAll();
             stubUploadDelayed(1_500);
             UUID control = inProgressControl();
             CompletableFuture<HttpResponse<String>> upload = CompletableFuture.supplyAsync(() -> attach(control, key, photo()));
             await().atMost(Duration.ofSeconds(10)).until(() -> uploadRequests().size() >= 1);
-            // si la subida tuviera el control bloqueado, FOR UPDATE NOWAIT fallaría
             new org.springframework.transaction.support.TransactionTemplate(transactionManager).executeWithoutResult(tx ->
                     jdbc.sql("SELECT id FROM quality_control WHERE id = :id FOR UPDATE NOWAIT").param("id", control).query(UUID.class).single());
 

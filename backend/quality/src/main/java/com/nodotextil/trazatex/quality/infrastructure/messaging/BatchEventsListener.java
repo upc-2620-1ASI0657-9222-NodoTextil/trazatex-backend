@@ -21,11 +21,6 @@ import java.util.UUID;
 
 import static com.nodotextil.trazatex.quality.infrastructure.messaging.ProductionEventListeners.require;
 
-/**
- * {@code production.batch}: {@code BatchRegistered}, {@code BatchSplit} y {@code BatchPhaseChanged} alimentan {@code batch_projection}.
- * Lo demás que viaje por el tópico se ignora sin error y sin DLT; como se filtra <b>antes</b> del consumo idempotente tampoco deja
- * filas en {@code processed_events}. Lo ilegible sí va a la DLT sin reintentos.
- */
 @Component
 @ConditionalOnProperty(name = "trazatex.messaging.enabled", havingValue = "true", matchIfMissing = true)
 class BatchEventsListener {
@@ -62,7 +57,6 @@ class BatchEventsListener {
         this.objectMapper = objectMapper;
     }
 
-    /** {@code autoStartup=false}: lo arranca el vigilante cuando el tópico existe (suscribirse a uno ausente inunda el log). */
     @KafkaListener(id = ConsumedTopics.BATCH_LISTENER_ID, topics = ConsumedTopics.PRODUCTION_BATCH, autoStartup = "false",
             groupId = "${trazatex.messaging.consumer.batch.group:quality.production-batch}")
     void onMessage(ConsumerRecord<String, String> record) {

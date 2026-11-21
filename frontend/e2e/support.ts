@@ -5,8 +5,6 @@ import { randomBytes } from 'node:crypto';
 import { APIRequestContext, Page, expect } from '@playwright/test';
 import { authDir, composeProject, credentialsFile } from './paths';
 const root = resolve(process.cwd(), '..');
-// TRAZATEX_TEST_ENV_FILE: valores de la instalación bajo prueba (POSTGRES_USER, TRAZATEX_OWNER_EMAIL, ADMIN_USERNAME…).
-// En la ronda 5 es el archivo aislado generado al azar; las claves de proveedores (Chequea, Cloudinary) NO se leen aquí.
 const backendEnv = readFileSync(process.env['TRAZATEX_TEST_ENV_FILE'] ?? resolve(root, '.env'), 'utf8');
 export const env = Object.fromEntries(
   backendEnv
@@ -17,6 +15,10 @@ export const env = Object.fromEntries(
       return [l.slice(0, index), l.slice(index + 1).replace(/^['"]|['"]$/g, '')];
     }),
 );
+export async function chooseLoginRole(page: Page, role: string) {
+  const label = /^(LICENSE_OWNER|owner)/.test(role) ? 'Dueño' : /^(COMPANY_ADMIN|admin)/.test(role) ? 'Administrador' : 'Operario';
+  await page.getByRole('button', { name: label, exact: true }).click();
+}
 interface Account {
   email: string;
   password: string;
@@ -44,11 +46,6 @@ export function account(name: string, email?: string): Account {
   return all[name];
 }
 
-/**
- * Ejecuta SQL en la base `db` del PostgreSQL del proyecto bajo prueba. El contenedor se busca por las etiquetas de
- * Compose (proyecto + servicio), nunca por nombre ni por `docker compose` sin `-p`: así no puede tocar otra instalación
- * y no hace falta interpolar el compose (que exige variables privadas).
- */
 export function psql(db: string, sql: string): string {
   const project = composeProject();
   const id = execFileSync('docker', ['ps', '-q', '--filter', 'label=com.docker.compose.project=' + project,
@@ -119,11 +116,6 @@ export function invitationId(email: string): string {
   throw new Error('No se encontró la invitación de prueba en el outbox aislado.');
 }
 
-/**
- * La app confirma las acciones con su propio diálogo «Confirmar acción» (ui.confirm), no con window.confirm: el equivalente de
- * `page.once('dialog', d => d.accept())`. Se llama antes del clic que lo abre; en segundo plano espera el diálogo (hasta 30 s)
- * y pulsa «Confirmar» (o «Cancelar»). Un addLocatorHandler no sirve aquí: solo actúa durante otra acción de Playwright.
- */
 export async function confirmNext(page: Page, accept = true) {
   void page
     .getByRole('dialog', { name: 'Confirmar acción', exact: true })
@@ -132,7 +124,6 @@ export async function confirmNext(page: Page, accept = true) {
     .catch(() => undefined);
 }
 
-/** Abre una sección plegable («app-fold») por su título si está cerrada: las secciones de detalle arrancan plegadas. */
 export async function unfold(page: Page, title: string | RegExp) {
   const head = page.locator('button.fold-head').filter({ has: page.locator('.fold-t', { hasText: title }) }).first();
   await head.waitFor({ state: 'visible', timeout: 30000 });
@@ -140,12 +131,10 @@ export async function unfold(page: Page, title: string | RegExp) {
   await expect(head).toHaveAttribute('aria-expanded', 'true');
 }
 
-/** La evidencia se prepara (archivo + nombre) y solo se envía al pulsar «Guardar evidencia». */
 export async function saveEvidence(page: Page) {
   await page.locator('app-evidence').getByRole('button', { name: 'Guardar evidencia', exact: true }).click();
 }
 
-/** Pulsa un botón que abre el diálogo «Confirmar acción» y decide en él, en orden (sin carreras con el fondo del diálogo). */
 export async function clickAndDecide(page: Page, button: ReturnType<Page['locator']>, accept = true) {
   await button.click();
   const dialog = page.getByRole('dialog', { name: 'Confirmar acción', exact: true });

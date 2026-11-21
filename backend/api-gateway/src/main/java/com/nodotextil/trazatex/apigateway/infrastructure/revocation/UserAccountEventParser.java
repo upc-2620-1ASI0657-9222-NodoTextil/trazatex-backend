@@ -6,15 +6,6 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.util.UUID;
 
-/**
- * Lee el sobre de {@code UserAccountUpdated} (docs/architecture/communication.md). Es tolerante: solo importan
- * {@code payload.userId} y {@code payload.status}; cualquier campo desconocido se ignora, de modo que organization-access puede
- * agregar campos sin romper al Gateway. Es <b>ilegible</b> únicamente si falta {@code userId} (o no es un UUID) o falta
- * {@code status}.
- *
- * <p>Un {@code status} que no sea {@code ACTIVE} revoca (también uno desconocido): el glosario solo tiene {@code ACTIVE} e
- * {@code INACTIVE}, y un estado nuevo sería casi con seguridad "no activo"; ante la duda se niega el acceso.
- */
 final class UserAccountEventParser {
 
     static final String TYPE = "UserAccountUpdated";
@@ -23,11 +14,9 @@ final class UserAccountEventParser {
     sealed interface Result permits Update, Ignored, Unreadable {
     }
 
-    /** @param recognized {@code false} si el estado no es ni {@code ACTIVE} ni {@code INACTIVE} (se revoca igual) */
     record Update(UUID userId, String status, boolean inactive, boolean recognized) implements Result {
     }
 
-    /** Evento de otro tipo en el tópico: no es de este consumidor. */
     record Ignored(String type) implements Result {
     }
 

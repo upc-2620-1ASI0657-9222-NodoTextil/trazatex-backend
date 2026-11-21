@@ -32,20 +32,10 @@ import static com.nodotextil.trazatex.production.domain.Fixtures.COMPANY;
 import static com.nodotextil.trazatex.production.domain.Fixtures.OPERATOR;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Las operaciones sobre un mismo lote se serializan con {@code SELECT ... FOR UPDATE} (los lotes, siempre en orden de
- * id): de dos operaciones simultáneas sobre el mismo lote prospera una y la otra ve el estado nuevo y recibe el
- * conflicto del dominio (409), no un error de la base ni de bloqueo optimista. Cada escenario se repite 8 veces.
- *
- * <p>Los métodos {@code startTransformation}, {@code split}... imitan lo que harán los casos de uso de 04b-2:
- * bloquear, aplicar el dominio y guardar, todo en una transacción.
- */
 class ConcurrencyIT extends IntegrationTestBase {
 
     private static final UUID ADMIN = UUID.fromString("00000000-0000-0000-0000-0000000000ad");
     private final CompanyProjection target = CompanyProjection.of(OTHER_COMPANY, "Tintorería Sur", CompanyStatus.ACTIVE, START);
-
-    // ---- los "casos de uso" ----
 
     private List<Batch> lock(List<UUID> ids) {
         List<Batch> locked = batches.findAllForUpdate(ids);
@@ -116,9 +106,6 @@ class ConcurrencyIT extends IntegrationTestBase {
         });
     }
 
-    // ---- carrera ----
-
-    /** Lanza todas las tareas a la vez y devuelve, por tarea, su resultado o la excepción que lanzó. */
     private List<Object> race(List<Callable<Object>> tasks) throws Exception {
         ExecutorService pool = Executors.newFixedThreadPool(tasks.size());
         CyclicBarrier start = new CyclicBarrier(tasks.size());
@@ -153,8 +140,6 @@ class ConcurrencyIT extends IntegrationTestBase {
         assertThat(failures(outcomes)).as("las demás reciben el conflicto del dominio, no un error de base o bloqueo")
                 .allSatisfy(failure -> assertThat(failure).isInstanceOf(ConflictException.class));
     }
-
-    // ---- escenarios ----
 
     @RepeatedTest(8)
     void twoTransformationsOverTheSameBatchOnlyOneStarts() throws Exception {
@@ -277,7 +262,7 @@ class ConcurrencyIT extends IntegrationTestBase {
         List<Callable<Object>> tasks = new ArrayList<>();
         for (int i = 0; i < 6; i++) {
             List<UUID> mine = new ArrayList<>(pool);
-            Collections.shuffle(mine, random);                       // cada uno pide los mismos lotes en otro orden
+            Collections.shuffle(mine, random);
             tasks.add(() -> startTransformation(machine.id(), mine));
         }
 

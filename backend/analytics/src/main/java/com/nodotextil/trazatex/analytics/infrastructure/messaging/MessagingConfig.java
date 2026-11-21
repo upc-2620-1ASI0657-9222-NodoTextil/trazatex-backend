@@ -34,13 +34,11 @@ class MessagingConfig {
     @Bean
     KafkaAdmin kafkaAdmin(@Value("${spring.kafka.bootstrap-servers}") String bootstrap) {
         var admin = new KafkaAdmin(Map.of("bootstrap.servers", bootstrap));
-        // Sin broker al arrancar el servicio sí arranca: los contenedores no empiezan hasta que el vigilante vea los tópicos
         admin.setFatalIfBrokerNotAvailable(false);
         admin.setOperationTimeout(10);
         return admin;
     }
 
-    /** Los {@code .DLT} de lo que se consume (los declara el consumidor, ver docs/conventions.md); los tópicos de origen son ajenos y no se crean. */
     @Bean
     KafkaAdmin.NewTopics deadLetterTopics(@Value("${trazatex.messaging.partitions:1}") int partitions,
                                           @Value("${trazatex.messaging.replicas:1}") int replicas) {
@@ -49,7 +47,6 @@ class MessagingConfig {
                 .toArray(NewTopic[]::new));
     }
 
-    /** Arranca cada contenedor cuando su tópico ajeno existe (lo programa {@link TopicWatcherJob}). */
     @Bean
     TopicWatcher topicWatcher(KafkaListenerEndpointRegistry registry, KafkaAdmin kafkaAdmin) {
         return new TopicWatcher(registry, kafkaAdmin, ConsumedTopics.ALL);

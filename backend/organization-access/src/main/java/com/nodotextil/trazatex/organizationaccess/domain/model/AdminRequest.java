@@ -7,11 +7,6 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * Solicitud de un {@code COMPANY_ADMIN} para incorporar otro administrador (US07), que el {@code LICENSE_OWNER} aprueba o
- * rechaza (US08). La capacidad de usuarios se valida antes de aprobar ({@link License#ensureUserCapacity}); si falta, la
- * solicitud sigue {@code PENDING}.
- */
 public final class AdminRequest {
 
     private final UUID id;
@@ -39,7 +34,6 @@ public final class AdminRequest {
         this.resolvedBy = resolvedBy;
     }
 
-    /** Nombre, correo y cargo son obligatorios; si falta alguno el error 400 los lista. */
     public static AdminRequest create(UUID id, UUID companyId, UUID requestedBy, String fullName, String email,
                                       String position, Instant now) {
         new RequiredFields()

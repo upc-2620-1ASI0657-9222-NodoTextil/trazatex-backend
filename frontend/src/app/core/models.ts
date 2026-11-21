@@ -1,5 +1,3 @@
-                                                                                              
-
 export type Rol = 'Operario' | 'Administrador de Empresa' | 'Dueño de Licencia';
 
 export type FaseOperativa =
@@ -176,7 +174,6 @@ export interface ControlCalidad {
   evidencias: Evidencia[];
 }
 
-                                                                                             
 export type ResolucionFalla = 'Confirmada' | 'Resuelta';
 
 export interface Falla {
@@ -310,7 +307,6 @@ export type TipoNotificacion =
   | 'Capacidad'
   | 'Notificación';
 
-/** `type` de `GET /notifications`: un código estable del servicio; el texto que se muestra lo decide el front. */
 export type CodigoNotificacion =
   | 'ADMIN_REQUEST_SUBMITTED'
   | 'ADMIN_REQUEST_RESOLVED'
@@ -328,7 +324,6 @@ export const TIPO_DE_NOTIFICACION: Readonly<Record<CodigoNotificacion, TipoNotif
   POTENTIAL_DERIVED_FAILURE: 'Posible falla derivada',
 };
 
-/** Un código que este front no conoce (un tipo nuevo del servicio) se muestra como «Notificación», nunca en blanco. */
 export function tipoDeNotificacion(codigo: string): TipoNotificacion {
   return TIPO_DE_NOTIFICACION[codigo as CodigoNotificacion] ?? 'Notificación';
 }
@@ -348,8 +343,5 @@ export interface Notificacion {
   leida: boolean;
   para: Rol;
   empresaId?: string;
-  /** Ids que acompañan a la notificación (`data` del servicio): transferencia, solicitud, falla, lotes. */
   datos?: Record<string, unknown>;
 }
-
-

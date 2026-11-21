@@ -12,7 +12,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** US21 iniciar, US22 resolver. */
 class TransferApiIT extends ApiTestBase {
 
     private JsonNode transfer(JsonNode... batches) throws Exception {
@@ -23,8 +22,6 @@ class TransferApiIT extends ApiTestBase {
     private String phaseOf(JsonNode batch) throws Exception {
         return read(getAs(OPERATOR_OF_A, "/api/batches/" + batch.path("id").asString()).andExpect(status().isOk())).path("phase").asString();
     }
-
-    // ---- US21 esc. 2: solo lotes completos ----
 
     private int transferStatus(Object body) throws Exception {
         return postAs(OPERATOR_OF_A, "/api/transfers", body).andReturn().getResponse().getStatus();
@@ -120,8 +117,6 @@ class TransferApiIT extends ApiTestBase {
         assertThat(transferStatus(obj("targetCompanyId", COMPANY_B, "batchIds", List.of(idOf(batch))))).isEqualTo(201);
     }
 
-    // ---- US21 iniciar ----
-
     @Test
     void initiatingRegistersTheDepartureAndMovesTheBatchesToInTransfer() throws Exception {
         JsonNode a = registerBatch(10);
@@ -187,8 +182,6 @@ class TransferApiIT extends ApiTestBase {
         assertThat(phaseOf(own)).isEqualTo("AVAILABLE");
     }
 
-    // ---- US22 resolver ----
-
     @Test
     void acceptingMovesTheResponsibilityKeepsTheCodesAndRegistersTheReception() throws Exception {
         JsonNode batch = registerBatch(10);
@@ -206,7 +199,6 @@ class TransferApiIT extends ApiTestBase {
         assertThat(moved.path("traceabilityId").asString()).isEqualTo(batch.path("traceabilityId").asString());
         assertThat(moved.path("qrCode").asString()).isEqualTo(batch.path("qrCode").asString());
         getAs(OPERATOR_OF_A, "/api/batches/" + batch.path("id").asString()).andExpect(status().isNotFound());
-        // el nuevo dueño ya puede operarlo
         postAs(OPERATOR_OF_B, "/api/batches/" + batch.path("id").asString() + "/split",
                 obj("children", List.of(obj("quantityKg", 4), obj("quantityKg", 6)))).andExpect(status().isCreated());
     }
@@ -283,8 +275,6 @@ class TransferApiIT extends ApiTestBase {
         assertThat(read(getAs(outsiderAdmin, "/api/transfers")).path("items")).isEmpty();
         getAs(OPERATOR_OF_A, "/api/transfers/" + UUID.randomUUID()).andExpect(status().isNotFound());
     }
-
-    // ---- consulta ----
 
     @Test
     void theDetailShowsWhatIsBeingTransferredToBothCompanies() throws Exception {

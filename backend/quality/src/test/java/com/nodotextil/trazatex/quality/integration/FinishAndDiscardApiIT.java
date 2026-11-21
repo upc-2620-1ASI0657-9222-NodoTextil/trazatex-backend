@@ -26,10 +26,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * US24…US28 y US34 de punta a punta: finalizar y descartar cambian el estado SOLO con la confirmación de Production (RELEASE / DISCARD); sin
- * respuesta quedan pendientes y los reintenta el job con el mismo requestId; los eventos salen una sola vez y en la misma transacción que el cambio.
- */
 @SpringBootTest(properties = {
         "trazatex.messaging.enabled=false", "trazatex.quality.start.job-enabled=false",
         "trazatex.production.read-timeout=PT0.5S", "trazatex.production.connect-timeout=PT0.5S",
@@ -41,9 +37,6 @@ class FinishAndDiscardApiIT extends FlowTestBase {
     @MockitoSpyBean
     QualityControlRepositoryPort controlsSpy;
 
-    // ---- ayudas ----
-
-    /** Un control en curso con una prueba con el resultado dado. */
     UUID controlWith(UUID batch, String... results) throws Exception {
         UUID control = startControl(batch);
         for (String result : results) {
@@ -59,10 +52,6 @@ class FinishAndDiscardApiIT extends FlowTestBase {
     record ResultActionsWrapper(org.springframework.test.web.servlet.ResultActions actions) {
     }
 
-    /**
-     * {@code QualityFailureUpdated} (agregado en V2): tópico {@code quality.failure}, clave {@code failureId} y exactamente estos seis campos, cada uno
-     * con su valor ({@code cause} y {@code affectedQuantityKg} van en {@code null} mientras la falla no se completa).
-     */
     static void assertFailureUpdated(Outboxed event, UUID failure, UUID batch, String cause, String affectedQuantityKg, String status) {
         assertThat(event.type()).isEqualTo("QualityFailureUpdated");
         assertThat(event.topic()).isEqualTo("quality.failure");
@@ -87,7 +76,6 @@ class FinishAndDiscardApiIT extends FlowTestBase {
         assertThat(event.payload().path("status").asString()).isEqualTo(status);
     }
 
-    /** Un lote con un control que falló y su falla {@code OPEN}, todo confirmado por Production. */
     UUID failureOf(UUID batch) throws Exception {
         UUID control = controlWith(batch, "FAILED");
         ProductionStub.answersOk();
@@ -100,8 +88,6 @@ class FinishAndDiscardApiIT extends FlowTestBase {
         putAs(ADMIN_OF_A, "/api/quality/failures/" + failure, Map.of("rootCause", "Humedad excesiva", "affectedQtyKg", new BigDecimal("12.5"),
                 "observations", "lote húmedo")).andExpect(status().isOk());
     }
-
-    // ---- US24: pruebas ----
 
     @Test
     void aTestIsKeptAndTheOtherCompanyOrAnOperatorCannotAddOne() throws Exception {
@@ -138,8 +124,6 @@ class FinishAndDiscardApiIT extends FlowTestBase {
         postAs(ADMIN_OF_A, "/api/quality/controls/" + starting + "/tests", Map.of("criterionName", "Humedad", "expectedValue", "8", "obtainedValue", "7",
                 "unit", "%", "testResult", "CONFORMING")).andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("CONTROL_NOT_IN_PROGRESS"));
     }
-
-    // ---- US25 / US28: finalizar con la confirmación de Production ----
 
     @Test
     void finishingConformingReleasesTheBatchAndEmitsTheEventsOnceInTheSameTransaction_US25Scenario1() throws Exception {
@@ -244,7 +228,6 @@ class FinishAndDiscardApiIT extends FlowTestBase {
         UUID batch = seedAvailable();
         UUID control = controlWith(batch, "CONFORMING");
         ProductionStub.answersOk();
-        // 1.ª lectura con bloqueo: la solicitud (transacción A); 2.ª: aplicar la respuesta (transacción B), que «cae»
         Mockito.doCallRealMethod().doThrow(new IllegalStateException("el proceso cayó antes de guardar la respuesta")).doCallRealMethod()
                 .when(controlsSpy).findByIdForUpdate(any());
 
@@ -329,8 +312,6 @@ class FinishAndDiscardApiIT extends FlowTestBase {
         assertThat(control(control, "finish_requested_at", OffsetDateTime.class)).isNull();
     }
 
-    // ---- US28: reevaluación ----
-
     @Test
     void aReevaluationThatPassesResolvesTheFailureAndReleasesTheBatch_US28Scenario1() throws Exception {
         UUID batch = seedAvailable();
@@ -373,8 +354,6 @@ class FinishAndDiscardApiIT extends FlowTestBase {
         assertThat(auditActions()).contains("FAILURE_REOPENED");
     }
 
-    // ---- US34: revisión de una posible falla derivada ----
-
     @Test
     void aDerivedFailureReviewWithoutPriorControlIsAnEvaluationAndConformingUnblocksTheBatch_US34Scenarios1And3() throws Exception {
         UUID batch = seed(BatchPhase.AVAILABLE, QualityStatus.POTENTIAL_DERIVED_FAILURE, true, false);
@@ -402,8 +381,6 @@ class FinishAndDiscardApiIT extends FlowTestBase {
         assertThat(result.path("failure").path("status").asString()).isEqualTo("OPEN");
         assertThat(failure(UUID.fromString(result.path("failure").path("id").asString()), "control_id", UUID.class)).isEqualTo(control);
     }
-
-    // ---- US26: la información de la falla y enviar a reevaluación ----
 
     @Test
     void theFailureInfoIsKeptAndValidated_US26Scenario1() throws Exception {
@@ -444,8 +421,6 @@ class FinishAndDiscardApiIT extends FlowTestBase {
         postAs(ADMIN_OF_A, "/api/quality/failures/" + failure + "/reevaluation").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("INVALID_QUALITY_TRANSITION"));
     }
-
-    // ---- US27: descartar con la confirmación de Production ----
 
     @Test
     void discardingNeedsTheCauseAndTheQuantityBeforeCallingProduction() throws Exception {

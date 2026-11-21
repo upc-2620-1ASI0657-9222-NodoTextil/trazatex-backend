@@ -38,10 +38,6 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-/**
- * Notification con Kafka real y PostgreSQL real: los tópicos ajenos que aún no existen no se crean ni se consumen hasta que aparecen, cada
- * tópico se lee con su propio grupo (un mensaje que falla no frena a los demás), y lo ilegible va a la {@code .DLT} del tópico.
- */
 @SpringBootTest(properties = {
         "trazatex.messaging.enabled=true", "SENDGRID_API_KEY=", "SENDGRID_FROM_EMAIL=", "trazatex.mail.job-delay=PT1H",
         "trazatex.messaging.consumer.topic-check-interval=PT1S",
@@ -76,7 +72,6 @@ class NotificationKafkaIT {
             for (String id : List.of("notification-orgaccess-user", "notification-orgaccess-invitation", "notification-production-transfer", "notification-traceability-impact"))
                 assertThat(registry.getListenerContainer(id).isRunning()).as(id).isFalse();
         });
-        // lo único que declara son las .DLT de lo que consume
         assertThat(topics()).containsAll(SOURCES.stream().map(topic -> topic + ".DLT").toList());
     }
 
@@ -86,7 +81,6 @@ class NotificationKafkaIT {
         try (AdminClient admins = AdminClient.create(Map.<String, Object>of("bootstrap.servers", KAFKA.getBootstrapServers()))) {
             admins.createTopics(SOURCES.stream().map(topic -> new NewTopic(topic, 1, (short) 1)).toList()).all().get();
         }
-        // el directorio primero: el orden entre tópicos no está garantizado y el correo se decide al crear la notificación
         send("orgaccess.user", admin.toString(), event("UserAccountUpdated", admin, Map.of("userId", admin.toString(), "companyId", company.toString(),
                 "role", "COMPANY_ADMIN", "email", "kafka-" + admin + "@correo.controlado", "status", "ACTIVE")));
         await().atMost(Duration.ofSeconds(30)).untilAsserted(() ->
@@ -105,7 +99,6 @@ class NotificationKafkaIT {
             assertThat(jdbc.sql("SELECT type FROM notification WHERE data->>'failureId'=:f").param("f", failure.toString()).query(String.class).list())
                     .containsExactly("POTENTIAL_DERIVED_FAILURE");
         });
-        // el correo del administrador activo nació con la notificación de la transferencia y con la de la falla
         assertThat(jdbc.sql("SELECT count(*) FROM deferred_email WHERE recipient=:r").param("r", "kafka-" + admin + "@correo.controlado").query(Long.class).single()).isEqualTo(2);
 
         try (AdminClient admins = AdminClient.create(Map.<String, Object>of("bootstrap.servers", KAFKA.getBootstrapServers()))) {
@@ -151,7 +144,6 @@ class NotificationKafkaIT {
         assertThat(types(request.toString())).hasSize(1);
     }
 
-    /** US22: aceptar o rechazar avisa a la empresa de origen —y solo a ella—, con códigos distintos, por Kafka real y con el directorio ya conocido. */
     @Test @Order(5)
     void anAcceptedAndARejectedTransferAlertOnlyTheOriginCompanyThroughKafka() throws Exception {
         UUID origin = UUID.randomUUID(), destination = UUID.randomUUID(), originAdmin = UUID.randomUUID(), destinationAdmin = UUID.randomUUID();

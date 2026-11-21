@@ -14,7 +14,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.any;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static org.awaitility.Awaitility.await;
 
-/** Utilidades de las pruebas de revocación con Kafka real. Cada subclase declara su {@code @DynamicPropertySource} con su tópico. */
 public abstract class RevocationItSupport extends GatewayTestSupport {
 
     protected static final UUID COMPANY = TestTokens.COMPANY_ID;

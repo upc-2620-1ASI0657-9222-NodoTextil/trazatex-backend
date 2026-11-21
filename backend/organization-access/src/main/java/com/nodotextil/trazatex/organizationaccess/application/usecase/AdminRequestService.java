@@ -81,7 +81,6 @@ class AdminRequestService implements ManageAdminRequestsUseCase {
         UUID invitationId = null;
         if (decision == AdminRequestStatus.APPROVED) {
             request.approve(actor.userId(), now);
-            // Con la fila de la empresa bloqueada; si no hay cupo (409) la transacción se revierte y la solicitud sigue PENDING.
             companyGuard.lockCompany(request.companyId());
             License license = licenses.find()
                     .orElseThrow(() -> new NotFoundException("LICENSE_NOT_FOUND", "La licencia no está inicializada."));

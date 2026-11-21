@@ -1,4 +1,3 @@
-# FE-M10: etiquetas fijas (antes node:24-alpine y nginx:alpine, que cambian solas). Subir de versión es un cambio consciente.
 FROM node:24.11.0-alpine3.22 AS build
 WORKDIR /app
 ENV NODE_OPTIONS="--max-old-space-size=1024"

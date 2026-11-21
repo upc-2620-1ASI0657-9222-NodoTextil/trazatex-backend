@@ -51,12 +51,10 @@ class UserAccountEventParserTest {
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = {"   ", "no es json", "{", "[]", "\"texto\"", "42", "null", "{}", "{\"payload\":null}", "{\"payload\":\"x\"}", "{\"payload\":[]}",
-            // falta userId
             "{\"payload\":{\"status\":\"INACTIVE\"}}",
             "{\"payload\":{\"userId\":null,\"status\":\"INACTIVE\"}}",
             "{\"payload\":{\"userId\":42,\"status\":\"INACTIVE\"}}",
             "{\"payload\":{\"userId\":\"no-es-uuid\",\"status\":\"INACTIVE\"}}",
-            // falta status
             "{\"payload\":{\"userId\":\"11111111-1111-1111-1111-111111111111\"}}",
             "{\"payload\":{\"userId\":\"11111111-1111-1111-1111-111111111111\",\"status\":null}}",
             "{\"payload\":{\"userId\":\"11111111-1111-1111-1111-111111111111\",\"status\":\"\"}}",

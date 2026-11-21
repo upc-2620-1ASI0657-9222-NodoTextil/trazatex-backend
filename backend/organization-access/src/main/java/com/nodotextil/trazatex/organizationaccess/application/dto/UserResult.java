@@ -7,7 +7,6 @@ import com.nodotextil.trazatex.organizationaccess.domain.model.UserStatus;
 import java.time.Instant;
 import java.util.UUID;
 
-/** Sin hash de contraseña ni contadores de login. */
 public record UserResult(
         UUID id,
         UUID companyId,

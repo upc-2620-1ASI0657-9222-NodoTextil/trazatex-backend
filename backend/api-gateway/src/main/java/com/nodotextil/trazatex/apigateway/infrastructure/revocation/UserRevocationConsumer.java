@@ -24,21 +24,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-/**
- * RF-012: mantiene en {@link RevokedUsersRegistry} quiénes están inactivos leyendo {@code orgaccess.user} (compactado) en un hilo
- * propio. Sin grupo de consumidores ni commits: cada instancia del Gateway lee el tópico entero.
- *
- * <ol>
- *   <li><b>Arranque</b>: espera a que el tópico exista, lo relee desde el inicio y recuerda dónde terminaba (fin de cada
- *       partición) en ese momento. El registro no se declara cargado —y el Gateway no está listo— hasta alcanzar ese fin. Un
- *       tópico vacío queda cargado de inmediato.</li>
- *   <li><b>Régimen</b>: sigue leyendo; cada mensaje es el estado completo del usuario, así que aplicarlo es idempotente.</li>
- *   <li><b>Fallos</b>: si Kafka no responde reintenta con espera creciente. Con el registro ya cargado conserva el último conjunto
- *       conocido y retoma desde donde iba (no vuelve a leer desde el inicio).</li>
- *   <li><b>Apagado</b>: {@link #stop()} despierta el consumidor (incluso si está bloqueado esperando a Kafka) y espera a que el hilo
- *       termine y cierre el consumidor.</li>
- * </ol>
- */
 public class UserRevocationConsumer implements SmartLifecycle {
 
     static final String THREAD_NAME = "revocation-consumer";
@@ -55,7 +40,6 @@ public class UserRevocationConsumer implements SmartLifecycle {
     private volatile CountDownLatch stopSignal = new CountDownLatch(1);
     private Thread thread;
 
-    // Estado del hilo del consumidor (solo él lo toca)
     private final Map<TopicPartition, Long> nextOffsets = new HashMap<>();
     private final Map<TopicPartition, Long> lastRead = new HashMap<>();
     private long recordsRead;
@@ -77,15 +61,13 @@ public class UserRevocationConsumer implements SmartLifecycle {
             config.put(ConsumerConfig.CLIENT_ID_CONFIG, "api-gateway-revocation");
             config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
             config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-            config.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");   // sin grupo: nada que confirmar
+            config.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
             config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
             config.put(ConsumerConfig.ALLOW_AUTO_CREATE_TOPICS_CONFIG, "false");
             config.put(ConsumerConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, (int) props.apiTimeout().toMillis());
             return new KafkaConsumer<>(config);
         };
     }
-
-    // ---- ciclo de vida ----
 
     @Override
     public synchronized void start() {
@@ -95,7 +77,7 @@ public class UserRevocationConsumer implements SmartLifecycle {
         stopSignal = new CountDownLatch(1);
         running = true;
         thread = new Thread(this::run, THREAD_NAME);
-        thread.setDaemon(true);   // si el apagado ordenado no llega a correr, no retiene la JVM
+        thread.setDaemon(true);
         thread.start();
     }
 
@@ -108,7 +90,7 @@ public class UserRevocationConsumer implements SmartLifecycle {
         stopSignal.countDown();
         Consumer<String, String> consumer = current;
         if (consumer != null) {
-            consumer.wakeup();   // seguro desde otro hilo; interrumpe también una espera de metadatos
+            consumer.wakeup();
         }
         try {
             thread.join(TimeUnit.SECONDS.toMillis(STOP_TIMEOUT_SECONDS));
@@ -124,8 +106,6 @@ public class UserRevocationConsumer implements SmartLifecycle {
     public boolean isRunning() {
         return running;
     }
-
-    // ---- hilo del consumidor ----
 
     private void run() {
         long backoff = props.retryInitialBackoff().toMillis();
@@ -187,7 +167,7 @@ public class UserRevocationConsumer implements SmartLifecycle {
         }
         sessionReachedPolling = true;
         if (initialLoad) {
-            finishLoadIfReached(consumer, target);   // tópico vacío: ya está
+            finishLoadIfReached(consumer, target);
         }
         while (running) {
             ConsumerRecords<String, String> records = consumer.poll(props.pollTimeout());
@@ -203,7 +183,6 @@ public class UserRevocationConsumer implements SmartLifecycle {
         }
     }
 
-    /** @return las particiones del tópico, o {@code null} si se pidió detener mientras se esperaba a que exista */
     private List<TopicPartition> awaitPartitions(Consumer<String, String> consumer) {
         long wait = props.retryInitialBackoff().toMillis();
         while (running) {
@@ -233,7 +212,6 @@ public class UserRevocationConsumer implements SmartLifecycle {
                 describe(target, true), describe(target, false));
     }
 
-    /** {@code {0=14, 1=vacía}}: último offset leído por partición, o el fin (siguiente offset) del tópico. */
     private String describe(Map<TopicPartition, Long> target, boolean lastReadOffsets) {
         return target.entrySet().stream().sorted(Map.Entry.comparingByKey(java.util.Comparator.comparingInt(TopicPartition::partition)))
                 .map(entry -> {
@@ -270,7 +248,6 @@ public class UserRevocationConsumer implements SmartLifecycle {
                     log.debug("Revocación: evento {} ignorado ({}-{}@{})", ignored.type(), record.topic(), record.partition(), record.offset());
             case UserAccountEventParser.Unreadable bad -> {
                 unreadable++;
-                // Sin el contenido del mensaje: lleva correos y nombres
                 log.warn("Revocación: mensaje ilegible ignorado ({}-{}@{}, clave {}): {}",
                         record.topic(), record.partition(), record.offset(), record.key(), bad.reason());
             }

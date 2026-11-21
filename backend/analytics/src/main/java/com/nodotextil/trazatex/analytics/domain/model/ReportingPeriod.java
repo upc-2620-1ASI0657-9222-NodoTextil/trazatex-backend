@@ -7,10 +7,6 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 
-/**
- * Periodo de una consulta: fechas inclusivas en {@code America/Lima}. {@code from} se toma desde las 00:00 y {@code to} hasta el final de su
- * día. Más de {@link #MAX_DAYS} días, {@code from > to}, un parámetro ausente o una fecha mal escrita son {@code INVALID_PERIOD}.
- */
 public record ReportingPeriod(LocalDate from, LocalDate to) {
     public static final String CODE = "INVALID_PERIOD";
     public static final ZoneId ZONE = ZoneId.of("America/Lima");

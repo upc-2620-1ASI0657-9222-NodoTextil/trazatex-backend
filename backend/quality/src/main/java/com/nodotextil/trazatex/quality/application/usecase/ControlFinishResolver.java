@@ -31,17 +31,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Resuelve la finalización pendiente de un control: manda {@code RELEASE} a Production <b>fuera de toda transacción</b> con
- * {@code requestId = controlId} y la retención del resultado congelado, y aplica la respuesta en una transacción propia. Lo usan la petición del
- * usuario y el job, con el mismo {@code requestId}: Production es idempotente y devuelve lo que ya guardó, así que repetirlo es seguro.
- *
- * <p><b>El control solo cambia de estado con la confirmación.</b> Con un 200, en <b>una</b> transacción: el control pasa a {@code FINISHED}, la
- * proyección recibe el resultado (calidad, retención, {@code everControlled}), la falla se genera, se reutiliza o se resuelve, y se escriben en el
- * outbox {@code QualityControlCompleted} y {@code QualityStatusChanged}. Sin respuesta, nada de eso ocurre y se reintenta. Con un 409, 404 o 400 la
- * finalización pendiente se descarta (el control sigue {@code IN_PROGRESS} y sus pruebas vuelven a admitir cambios) y se registra un ERROR: el lote
- * no está donde Quality cree y hay que reconciliarlo (procedimiento en docs/progress.md).
- */
 @Component
 class ControlFinishResolver {
 
@@ -78,7 +67,6 @@ class ControlFinishResolver {
         this.requiresNew.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
-    /** @param attemptsSoFar intentos sin respuesta que ya lleva la finalización (0 en la petición que la pidió) */
     ControlResolution resolve(QualityControl control, int attemptsSoFar) {
         PhaseCommandOutcome outcome = production.send(new PhaseCommand(control.batchId(), PhaseOperation.RELEASE, control.id().toString(),
                 control.finishResult() == TestResult.FAILED, null, control.finishRequestedBy()));
@@ -125,7 +113,6 @@ class ControlFinishResolver {
         };
     }
 
-    /** Todo lo que cambia con la confirmación, en la misma transacción. */
     private ControlResolution complete(QualityControl control) {
         Instant now = clock.instant();
         UUID requester = control.finishRequestedBy();

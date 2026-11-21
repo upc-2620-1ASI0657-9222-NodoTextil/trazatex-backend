@@ -2,7 +2,6 @@ package com.nodotextil.trazatex.apigateway.domain.model;
 
 import java.time.Duration;
 
-/** {@code permits} peticiones por {@code window}. */
 public record RateLimit(long permits, Duration window) {
 
     public RateLimit {

@@ -10,18 +10,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * {@code (:Batch)}. Nodo plano, para leer: las relaciones (Figura 40) se crean y recorren con Cypher y las escrituras de los
- * consumidores van por {@code MERGE}, no por {@code save()} (que lee y luego escribe, y pisaría datos nuevos con valores viejos).
- *
- * <p>Siempre compartidos: {@code batchId}, {@code traceabilityId}, {@code qrCode}, {@code companyId}, {@code materialType},
- * {@code phase}, {@code qualityStatus}, {@code createdAt}, {@code finalProduct}. Configurables: {@code supplierName},
- * {@code origin}, {@code quantityKg}, {@code composition} (JSON), {@code receptionCharacteristics}.
- *
- * <p>{@code provisional}: se creó por un evento que llegó antes que {@code BatchRegistered} y aún no tiene sus datos.
- * {@code batchVersion}: la del último {@code BatchPhaseChanged} aplicado (fase, retención y dueño solo cambian con una
- * mayor); {@code null} = ninguno todavía. Un nodo provisional puede tener casi todo en {@code null}.
- */
 @Node("Batch")
 public class BatchNode {
 
@@ -104,7 +92,6 @@ public class BatchNode {
         return quantityKg;
     }
 
-    /** JSON {@code [{"name": ..., "percentage": ...}]}: una propiedad de Neo4j no puede ser una lista de mapas. */
     public String composition() {
         return composition;
     }

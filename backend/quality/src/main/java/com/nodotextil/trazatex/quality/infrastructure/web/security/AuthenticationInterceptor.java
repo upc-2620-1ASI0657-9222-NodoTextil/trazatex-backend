@@ -11,12 +11,6 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import java.util.Arrays;
 import java.util.UUID;
 
-/**
- * Identidad y rol a partir de {@code X-User-Id}, {@code X-Company-Id} y {@code X-User-Role} (ADR-005): el Gateway valida el
- * JWT, descarta las cabeceras {@code X-User-*}/{@code X-Company-*} que traiga el cliente e inyecta estas; el servicio solo es
- * alcanzable por la red interna. Todo endpoint {@code /api/**} exige identidad; con {@link RequiresRole}, además uno de los
- * roles. Cualquiera de ellos pertenece a una empresa: el Dueño de Licencia (sin empresa) no opera en calidad (403).
- */
 class AuthenticationInterceptor implements HandlerInterceptor {
 
     static final String ACTOR_ATTRIBUTE = AuthenticationInterceptor.class.getName() + ".ACTOR";

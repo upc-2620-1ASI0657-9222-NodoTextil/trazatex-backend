@@ -18,7 +18,6 @@ import java.util.UUID;
 
 import static com.nodotextil.trazatex.quality.infrastructure.messaging.ProductionEventListeners.require;
 
-/** {@code production.transfer}: solo {@code TransferAccepted}, que cambia la empresa responsable de los lotes. */
 @Component
 @ConditionalOnProperty(name = "trazatex.messaging.enabled", havingValue = "true", matchIfMissing = true)
 class TransferEventsListener {

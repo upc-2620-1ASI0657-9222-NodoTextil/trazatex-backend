@@ -10,7 +10,6 @@ async function token(request:APIRequestContext,key:string){const a=account(key);
 
 test('genealogía litoral, estados reales, filtros, falla y PDF autorizado',async({page,request})=>{
  test.setTimeout(150000);
- // Precondición: la hilandería (dueña de las raíces) mantiene el proveedor PRIVADO, como la siembra; otros specs pueden haberlo compartido.
  {const owner=await token(request,'admin/hilanderia');const put=await request.put('/api/privacy-settings',{headers:{Authorization:'Bearer '+owner},data:{fields:{SUPPLIER:'PRIVATE'}}});expect(put.status()).toBe(200);}await login(page,'admin/tejeduria');
  await page.getByLabel('Buscar lote',{exact:true}).fill(treeBatch.traceabilityId);await page.getByRole('button',{name:'Trazar',exact:true}).click();
  const failed=page.locator('.node.lot[data-node="'+state.failedBatch.traceabilityId+'"]');
@@ -33,7 +32,7 @@ test('analítica y notificaciones de las cinco empresas con datos del backend',a
   await page.getByRole('tab',{name:'Pérdidas',exact:true}).click();await expect(page.getByText('Merma acumulada',{exact:true})).toBeVisible();expect(data.materials.completedTransformations).toBeGreaterThan(0);
   if(key==='tejeduria'){await page.getByRole('tab',{name:'Fallas',exact:true}).click();await expect(page.getByText('Cantidad de fallas por causa',{exact:true})).toBeVisible();await expect(page.getByRole('link',{name:'Fallas',exact:true})).toHaveCount(0);}
   await page.getByRole('link', { name: /^Notificaciones/ }).click();await page.getByLabel('Tipo',{exact:true}).selectOption(key==='tintoreria'?'Transferencia aceptada':'Posible falla derivada');await expect(page.locator('.inbox li').first()).toBeVisible();
-  if(key==='tejeduria'){const row=page.locator('.inbox li').first();const button=row.getByRole('button',{name:'Marcar como leída',exact:true});if(await button.count())await button.click({timeout:5000}).catch(()=>undefined);await expect(row).not.toHaveClass(/unread/);await row.locator('button.body').click();await expect(page).toHaveURL(/\/lotes\/TT-/);/* el aviso abre el lote que falló (resourceId); «Posible falla derivada» es el estado de sus lotes relacionados, que van en data.batchIds */await expect(page.locator('main.content')).toContainText(/Con falla|Por reevaluar/);}
+  if(key==='tejeduria'){const row=page.locator('.inbox li').first();const button=row.getByRole('button',{name:'Marcar como leída',exact:true});if(await button.count())await button.click({timeout:5000}).catch(()=>undefined);await expect(row).not.toHaveClass(/unread/);await row.locator('button.body').click();await expect(page).toHaveURL(/\/lotes\/TT-/);await expect(page.locator('main.content')).toContainText(/Con falla|Por reevaluar/);}
  }
 });
 

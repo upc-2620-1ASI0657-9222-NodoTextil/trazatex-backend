@@ -1,7 +1,6 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-/** FE-M1: código y recursos muertos que se quitaron no deben volver, y lo que queda en `public/` tiene que estar referenciado. */
 const raiz = process.cwd();
 const fuentes = (dir: string): string[] => readdirSync(dir).flatMap((n: string) => {
   const p = join(dir, n);

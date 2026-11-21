@@ -20,7 +20,6 @@ import static com.nodotextil.trazatex.quality.domain.Fixtures.id;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** El patrón State del control: cada operación en cada estado, sin excepciones olvidadas. */
 class QualityControlStateTest {
 
     enum Operation {
@@ -36,7 +35,6 @@ class QualityControlStateTest {
         }
     }
 
-    /** Un control en el estado pedido, llevado hasta ahí solo con operaciones públicas. */
     static QualityControl controlIn(ControlStatus status) {
         QualityControl control = QualityControl.start(id(), available(QualityStatus.NOT_REVIEWED), INSPECTOR, null, NOW);
         switch (status) {
@@ -53,7 +51,6 @@ class QualityControlStateTest {
         return control;
     }
 
-    /** Estado al que pasa cada operación, o el código del 409 si ese estado no la admite. */
     static Stream<org.junit.jupiter.params.provider.Arguments> everyOperationInEveryState() {
         record Case(ControlStatus from, Operation operation, ControlStatus to, String errorCode) {
         }
@@ -66,7 +63,6 @@ class QualityControlStateTest {
                 new Case(ControlStatus.IN_PROGRESS, Operation.CONFIRM_STARTED, null, ErrorCodes.INVALID_CONTROL_TRANSITION),
                 new Case(ControlStatus.IN_PROGRESS, Operation.CANCEL, null, ErrorCodes.INVALID_CONTROL_TRANSITION),
                 new Case(ControlStatus.IN_PROGRESS, Operation.ADD_TEST, ControlStatus.IN_PROGRESS, null),
-                // sin pruebas no se puede finalizar (su propio caso abajo); con la prueba que ADD_TEST deja sí
                 new Case(ControlStatus.FINISHED, Operation.CONFIRM_STARTED, null, ErrorCodes.INVALID_CONTROL_TRANSITION),
                 new Case(ControlStatus.FINISHED, Operation.CANCEL, null, ErrorCodes.INVALID_CONTROL_TRANSITION),
                 new Case(ControlStatus.FINISHED, Operation.ADD_TEST, null, ErrorCodes.CONTROL_NOT_IN_PROGRESS),
@@ -81,7 +77,6 @@ class QualityControlStateTest {
 
     @Test
     void theTableCoversEveryOperationInEveryStateExceptFinishingAControlInProgress() {
-        // 4 estados × 4 operaciones = 16; falta solo IN_PROGRESS + FINISH, que depende de si hay pruebas (se prueba aparte)
         assertThat(everyOperationInEveryState().count()).isEqualTo(ControlStatus.values().length * Operation.values().length - 1);
     }
 

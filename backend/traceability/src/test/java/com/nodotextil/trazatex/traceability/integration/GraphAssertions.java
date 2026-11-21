@@ -11,7 +11,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Esperar a que el servicio consuma y comparar su grafo con el esperado. */
 final class GraphAssertions {
 
     private GraphAssertions() {
@@ -22,14 +21,12 @@ final class GraphAssertions {
                 .bind(eventIds.stream().map(Object::toString).toList()).to("ids").fetch().one().orElseThrow().get("n");
     }
 
-    /** Espera (hasta {@code timeout}) a que todos esos eventos estén registrados como procesados. */
     static void awaitProcessed(Neo4jClient neo4j, Collection<UUID> eventIds, Duration timeout) {
         long expected = eventIds.stream().distinct().count();
         Awaitility.await().atMost(timeout).pollInterval(Duration.ofMillis(50)).alias("eventos procesados")
                 .untilAsserted(() -> assertThat(processed(neo4j, eventIds)).isEqualTo(expected));
     }
 
-    /** El grafo de la corrida es exactamente el esperado (escrito a mano). */
     static void assertExpectedGraph(Neo4jClient neo4j, OrderScenario.Instance instance) {
         List<String> actual = GraphSnapshot.of(neo4j, instance.entityIds(), instance.names());
         List<String> missing = new ArrayList<>(instance.expected());

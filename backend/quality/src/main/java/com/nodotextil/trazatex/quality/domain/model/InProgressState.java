@@ -1,6 +1,5 @@
 package com.nodotextil.trazatex.quality.domain.model;
 
-/** {@code EN_CURSO}: el lote está en {@code IN_QUALITY_CONTROL}; acepta pruebas y se puede finalizar. */
 final class InProgressState implements ControlState {
 
     @Override
@@ -10,12 +9,10 @@ final class InProgressState implements ControlState {
 
     @Override
     public void requireAcceptsTests() {
-        // las acepta
     }
 
     @Override
     public void requestFinish() {
-        // la admite
     }
 
     @Override

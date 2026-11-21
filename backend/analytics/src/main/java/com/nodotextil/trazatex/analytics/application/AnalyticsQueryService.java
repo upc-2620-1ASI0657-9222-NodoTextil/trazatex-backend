@@ -15,10 +15,6 @@ public class AnalyticsQueryService {
     private final Clock clock;
     public AnalyticsQueryService(AnalyticsQueryPort queries, Clock clock) { this.queries=queries; this.clock=clock; }
 
-    /**
-     * @param from fecha inicial inclusiva (AAAA-MM-DD, America/Lima); {@code INVALID_PERIOD} si falta o está mal escrita
-     * @param to   fecha final inclusiva; {@code INVALID_PERIOD} si falta, es anterior a {@code from} o el periodo supera 366 días
-     */
     @Transactional(readOnly=true)
     public AnalyticsSummary summary(UUID company, String from, String to) {
         ReportingPeriod period = ReportingPeriod.parse(from, to);

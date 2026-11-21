@@ -26,10 +26,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-/**
- * {@link QualityDetailsListener} traduce {@code QualityControlCompleted} (con pruebas) y {@code QualityFailureUpdated} a comandos del puerto de entrada
- * {@link ApplyQualityDetailsUseCase}, una sola vez por evento; lo demás de esos tópicos se ignora sin registrarse como procesado.
- */
 class QualityDetailsListenerTest {
 
     private static final ObjectMapper MAPPER = JsonMapper.builder().build();

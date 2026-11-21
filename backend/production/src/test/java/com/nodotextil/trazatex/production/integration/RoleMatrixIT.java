@@ -15,18 +15,12 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Quién puede llamar a cada endpoint: OPERATOR opera, COMPANY_ADMIN gestiona maquinaria y resuelve transferencias, ambos
- * consultan, LICENSE_OWNER (sin empresa) no entra a ninguno (403), y sin identidad válida es 401. Los recursos no existen:
- * lo que se comprueba es la puerta (401/403), no el resultado de la operación.
- */
 class RoleMatrixIT extends ApiTestBase {
 
     private static final String ID = "00000000-0000-0000-0000-00000000dead";
     private static final String OPERATOR = "OPERATOR";
     private static final String ADMIN = "COMPANY_ADMIN";
 
-    /** método, ruta, roles autorizados. */
     private record Endpoint(HttpMethod method, String path, List<String> allowed) {
         @Override
         public String toString() {
@@ -70,7 +64,6 @@ class RoleMatrixIT extends ApiTestBase {
         if (endpoint.method() == HttpMethod.GET) {
             return builder;
         }
-        // Las evidencias son multipart: con otro tipo el 415 ocurre al elegir el controlador, antes de la puerta de roles
         return endpoint.path().endsWith("/evidence") ? builder.contentType("multipart/form-data; boundary=X").content("--X--")
                 : builder.contentType(MediaType.APPLICATION_JSON).content("{}");
     }
@@ -102,12 +95,9 @@ class RoleMatrixIT extends ApiTestBase {
     @ParameterizedTest(name = "{0}")
     @MethodSource("endpoints")
     void withoutAValidIdentityTheAnswerIs401(Endpoint endpoint) throws Exception {
-        // sin cabeceras
         assertThat(mockMvc.perform(request(endpoint)).andReturn().getResponse().getStatus()).as("%s sin identidad", endpoint).isEqualTo(401);
-        // identidad inconsistente: un rol de empresa sin empresa, y el Dueño con una empresa
         assertThat(statusOf(endpoint, new Caller(OPERATOR_A, null, OPERATOR))).as("operario sin empresa").isEqualTo(401);
         assertThat(statusOf(endpoint, new Caller(OWNER, COMPANY_A, "LICENSE_OWNER"))).as("Dueño con empresa").isEqualTo(401);
-        // valores inválidos
         assertThat(statusOf(endpoint, new Caller(OPERATOR_A, COMPANY_A, "SUPERUSER"))).as("rol desconocido").isEqualTo(401);
         assertThat(mockMvc.perform(request(endpoint).header("X-User-Id", "no-es-uuid").header("X-User-Role", OPERATOR)
                 .header("X-Company-Id", COMPANY_A.toString())).andReturn().getResponse().getStatus()).as("X-User-Id inválido").isEqualTo(401);

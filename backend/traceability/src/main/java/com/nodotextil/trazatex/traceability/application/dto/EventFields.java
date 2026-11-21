@@ -9,10 +9,6 @@ import java.math.RoundingMode;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * Validación de los datos que un evento debe traer. Un evento al que le falta algo obligatorio es ilegible: reintentar no
- * lo arregla, así que el consumidor lo manda a la DLT. Los mensajes nombran el campo y nunca el contenido.
- */
 public final class EventFields {
 
     private EventFields() {
@@ -32,7 +28,6 @@ public final class EventFields {
         return values;
     }
 
-    /** Kilogramos positivos, a 3 decimales como en Production. */
     public static BigDecimal positiveKg(BigDecimal value, String field) {
         if (value == null || value.signum() <= 0) {
             throw invalid(field, "debe ser mayor que cero");
@@ -40,7 +35,6 @@ public final class EventFields {
         return value.setScale(3, RoundingMode.HALF_UP);
     }
 
-    /** Kilogramos que pueden ser cero (merma, desperdicio). */
     public static BigDecimal nonNegativeKg(BigDecimal value, String field) {
         if (value == null || value.signum() < 0) {
             throw invalid(field, "no puede ser negativo");

@@ -12,12 +12,6 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
 
-/**
- * Los cinco consumidores corren en hilos distintos y tocan los mismos nodos (empresas, lotes): Neo4j puede abortar una de
- * las transacciones por interbloqueo ({@code Neo.TransientError...}). Es un fallo que se arregla repitiendo, así que se repite
- * aquí —la transacción entera, incluido el registro del {@code ProcessedEvent}— unas pocas veces con una espera corta, antes
- * de dejárselo al manejo de errores de Kafka (que espera segundos y acaba en la DLT).
- */
 @Component
 @ConditionalOnProperty(name = "trazatex.messaging.enabled", havingValue = "true", matchIfMissing = true)
 public class TransientRetry {

@@ -9,14 +9,8 @@ import org.springframework.web.util.pattern.PathPatternParser;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Rutas que no exigen JWT (api.md): login y las dos de la invitación por enlace. Todo lo demás exige token. Coincidencia
- * exacta por método y ruta, con el mismo {@code PathPattern} que usa el enrutamiento; ante la duda (barra final, segmentos de más)
- * la ruta <b>no</b> es pública y se exige JWT.
- */
 public class PublicRoutes {
 
-    /** Qué ruta pública es (para limitar cada una con su cubo). */
     public enum PublicRoute {
         LOGIN,
         INVITATION
@@ -25,7 +19,6 @@ public class PublicRoutes {
     private record Entry(HttpMethod method, PathPattern pattern, PublicRoute route) {
     }
 
-    // Spring 7: un patrón sin barra final no coincide con una ruta que la lleve (/api/auth/login/ no es pública)
     private static final PathPatternParser PARSER = new PathPatternParser();
 
     private final List<Entry> entries = List.of(

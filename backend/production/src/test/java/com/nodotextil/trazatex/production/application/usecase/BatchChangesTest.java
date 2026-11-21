@@ -25,7 +25,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/** {@code batchVersion} de {@code BatchPhaseChanged}: es la versión que devuelve la base tras guardar, por lote. */
 class BatchChangesTest {
 
     private final BatchRepositoryPort batches = mock(BatchRepositoryPort.class);

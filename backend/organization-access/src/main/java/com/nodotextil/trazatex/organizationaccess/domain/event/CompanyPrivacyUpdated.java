@@ -7,7 +7,6 @@ import com.nodotextil.trazatex.organizationaccess.domain.model.Visibility;
 import java.util.Map;
 import java.util.UUID;
 
-/** Tópico {@code orgaccess.company}, clave companyId. Lo consume traceability. {@code fields} es siempre el mapa completo. */
 public record CompanyPrivacyUpdated(UUID companyId, Map<ConfigurableField, Visibility> fields) implements OrganizationEvent {
 
     public static final String TYPE = "CompanyPrivacyUpdated";

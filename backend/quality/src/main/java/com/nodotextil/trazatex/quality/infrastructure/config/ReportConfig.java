@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.regex.Pattern;
 
-/** El reporte PDF (US44, ADR-011): el generador local y la cabecera {@code Cache-Control: no-store} de todo lo que sale por su ruta. */
 @Configuration
 class ReportConfig {
 
@@ -28,10 +27,6 @@ class ReportConfig {
         return new OpenHtmlToPdfAdapter(timeout, maxConcurrent);
     }
 
-    /**
-     * Lo que se ve depende de quien pide (empresa y rol) y es un documento para compartir: ningún caché compartido debe guardarlo. La cabecera se pone
-     * <b>antes</b> de la cadena, así que también la llevan los errores (401, 403, 404, 409, 503).
-     */
     @Bean
     FilterRegistrationBean<OncePerRequestFilter> reportNoStoreFilter() {
         FilterRegistrationBean<OncePerRequestFilter> registration = new FilterRegistrationBean<>(new OncePerRequestFilter() {

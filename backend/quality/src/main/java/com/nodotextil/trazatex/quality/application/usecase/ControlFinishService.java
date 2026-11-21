@@ -22,15 +22,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * Finaliza un control con el mismo cuidado que el inicio, en tres fases y ninguna dentro de la transacción del llamador:
- * <ol>
- *   <li><b>A</b> ({@code REQUIRES_NEW}): congela el resultado y deja la finalización pendiente (el control sigue {@code IN_PROGRESS}).</li>
- *   <li>Sin transacción: {@code RELEASE} a Production con {@code requestId = controlId}.</li>
- *   <li><b>B</b> ({@code REQUIRES_NEW}): con la confirmación, todo lo demás ({@link ControlFinishResolver}).</li>
- * </ol>
- * Esta clase no es {@code @Transactional} a propósito.
- */
 @Service
 class ControlFinishService implements FinishQualityControlUseCase {
 
@@ -59,7 +50,6 @@ class ControlFinishService implements FinishQualityControlUseCase {
     public FinishControlResult finish(UUID controlId, Actor actor) {
         Requested requested = requiresNew.execute(tx -> request(controlId, actor));
         if (!requested.sendCommand()) {
-            // Ya estaba pedida: la petición anterior (o el job) es la dueña del comando
             return answer(ControlResolution.pending(requested.control()));
         }
         return answer(resolver.resolve(requested.control(), 0));
@@ -99,7 +89,6 @@ class ControlFinishService implements FinishQualityControlUseCase {
         };
     }
 
-    /** La falla ligada a este control como el último que la originó o reabrió; si el control salió conforme, ninguna. */
     private QualityFailure openOrLatestFailureOf(QualityControl control) {
         return failures.findByControlId(control.id()).orElse(null);
     }

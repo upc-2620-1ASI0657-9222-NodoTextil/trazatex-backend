@@ -7,7 +7,6 @@ import org.springframework.test.context.TestPropertySource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Modo Azure: el cubo de fallos es por cliente real (el valor que agrega el ingress), no por la IP del ingress. */
 @TestPropertySource(properties = {"trazatex.rate-limit.auth-failure.permits=3", "trazatex.rate-limit.trust-forwarded-for=true"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class AuthFailureTrustedForwardedForTest extends GatewayTestSupport {

@@ -24,9 +24,9 @@ class ReportingPeriodTest {
     }
 
     @Test void theLimitIs366InclusiveDaysAndNotOneMore() {
-        assertThat(ReportingPeriod.parse("2025-01-01", "2026-01-01")).isNotNull();            // 366 días
-        assertThat(ReportingPeriod.parse("2024-01-01", "2024-12-31")).isNotNull();            // un año bisiesto completo, 366 días
-        assertInvalid("2025-01-01", "2026-01-02");                                            // 367
+        assertThat(ReportingPeriod.parse("2025-01-01", "2026-01-01")).isNotNull();
+        assertThat(ReportingPeriod.parse("2024-01-01", "2024-12-31")).isNotNull();
+        assertInvalid("2025-01-01", "2026-01-02");
     }
 
     @ParameterizedTest @NullAndEmptySource

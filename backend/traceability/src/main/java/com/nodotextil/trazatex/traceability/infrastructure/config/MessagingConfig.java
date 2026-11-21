@@ -36,12 +36,6 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Consumo de eventos (ADR-004): lectura idempotente, reintentos con espera creciente y {@code <tópico>.DLT}. Los tópicos
- * consumidos son de otros servicios y <b>no</b> se declaran aquí —ni se crean al suscribirse ({@code allow.auto.create.topics=false})—:
- * solo sus {@code .DLT}. Un grupo nuevo lee desde el principio ({@code earliest}) para reconstruir la genealogía con todo lo
- * ocurrido antes de su primer arranque. {@code trazatex.messaging.enabled=false} apaga todo esto (pruebas sin broker).
- */
 @Configuration
 @EnableKafka
 @EnableScheduling
@@ -53,13 +47,11 @@ class MessagingConfig {
                           @Value("${trazatex.messaging.modify-topic-configs:true}") boolean modifyTopicConfigs) {
         KafkaAdmin admin = new KafkaAdmin(Map.of(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers));
         admin.setModifyTopicConfigs(modifyTopicConfigs);
-        // Sin broker al arrancar el servicio sí arranca: los contenedores no empiezan hasta que el vigilante vea los tópicos
         admin.setFatalIfBrokerNotAvailable(false);
         admin.setOperationTimeout(10);
         return admin;
     }
 
-    /** Los {@code .DLT} de lo que se consume (los declara el consumidor, ver docs/conventions.md). */
     @Bean
     KafkaAdmin.NewTopics deadLetterTopics(@Value("${trazatex.messaging.partitions:1}") int partitions,
                                           @Value("${trazatex.messaging.replicas:1}") int replicas) {
@@ -69,23 +61,16 @@ class MessagingConfig {
         return new KafkaAdmin.NewTopics(topics);
     }
 
-    /** Arranca cada contenedor cuando su tópico ajeno existe (lo programa {@code TopicWatcherJob}). */
     @Bean
     TopicWatcher topicWatcher(KafkaListenerEndpointRegistry registry, KafkaAdmin kafkaAdmin) {
         return new TopicWatcher(registry, kafkaAdmin, ConsumedTopics.ALL);
     }
 
-    /**
-     * {@code traceability.impact}: el único tópico que Traceability produce ({@code PossibleDerivedFailureDetected}, clave {@code failureId}). Sin borrado por tiempo
-     * ({@code retention.ms=-1}) como los demás tópicos de eventos de negocio: quien llegue o se reconstruya después (Quality, Notification, Analytics) lee las fallas
-     * desde el inicio. Con {@code modify-topic-configs=true} (local) también corrige uno que ya existía con otra retención.
-     */
     @Bean
     NewTopic impactTopic(@Value("${trazatex.messaging.partitions:1}") int partitions, @Value("${trazatex.messaging.replicas:1}") int replicas) {
         return TopicBuilder.name(ProducedTopics.IMPACT).partitions(partitions).replicas(replicas).config(TopicConfig.RETENTION_MS_CONFIG, "-1").build();
     }
 
-    /** Lo usa la DLT y el relay del outbox: el mismo productor fiable ({@code acks=all}, idempotente). */
     @Bean
     KafkaTemplate<String, String> outboxKafkaTemplate(@Value("${trazatex.messaging.bootstrap-servers}") String bootstrapServers) {
         return ReliableKafkaProducer.kafkaTemplate(bootstrapServers);
@@ -102,11 +87,6 @@ class MessagingConfig {
         return new OutboxRelay(store, publisher, transactionManager, clock, batchSize);
     }
 
-    /**
-     * {@code max.poll.interval.ms} explícito (por omisión 5 min, el de Kafka): lo que pasa entre dos {@code poll()} sin que el consumidor sea expulsado del grupo. Un
-     * reintento espera dentro del hilo del consumidor y vuelve a leer el mensaje, así que lo que importa es que <b>una espera</b> quepa con holgura (la más larga de
-     * los reintentos del análisis de impacto es de 60 s: una quinta parte). Se valida al arrancar (ver {@link #kafkaListenerContainerFactory}).
-     */
     @Bean
     ConsumerFactory<String, String> traceabilityConsumerFactory(@Value("${trazatex.messaging.bootstrap-servers}") String bootstrapServers,
                                                                 @Value("${trazatex.messaging.consumer.max-poll-interval:PT5M}") Duration maxPollInterval) {
@@ -137,7 +117,6 @@ class MessagingConfig {
         RetrySettings impactRetry = new RetrySettings(impactMaxRetries, impactInitialInterval, impactMultiplier, impactMaxInterval);
         ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(traceabilityConsumerFactory);
-        // Una familia incompleta se resuelve cuando llegan los eventos de Production: más reintentos y más espera que el resto; agotados, DLT con un ERROR
         factory.setCommonErrorHandler(KafkaConsumerErrorHandling.deadLetterErrorHandler(outboxKafkaTemplate,
                 new RetrySettings(maxRetries, initialInterval, multiplier, maxInterval),
                 exception -> ImpactDeadLetterReporter.causeOf(exception) != null ? impactRetry : null,
@@ -145,11 +124,6 @@ class MessagingConfig {
         return factory;
     }
 
-    /**
-     * Una espera de reintento ocurre entre dos {@code poll()}: si fuera de la mitad de {@code max.poll.interval.ms} (o más), un reintento lento o un mensaje largo
-     * podrían sacar al consumidor del grupo y provocar un rebalanceo. Con los valores por omisión (60 s contra 5 min) sobra: es una quinta parte. Si alguien sube
-     * la espera o baja el intervalo hasta romper esa proporción, el servicio no arranca.
-     */
     static void requireWaitsThatFitInThePollInterval(Duration longestWait, Duration maxPollInterval) {
         if (longestWait.multipliedBy(2).compareTo(maxPollInterval) > 0) {
             throw new IllegalStateException("La espera más larga de los reintentos del análisis de impacto (" + longestWait + ") debe ser como máximo la mitad de "

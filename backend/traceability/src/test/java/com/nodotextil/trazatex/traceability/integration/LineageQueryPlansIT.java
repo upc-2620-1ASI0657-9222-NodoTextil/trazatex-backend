@@ -23,17 +23,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Las consultas de lectura usan índices o restricciones, nunca recorren todos los lotes: con {@code EXPLAIN} sobre un grafo con datos no hay
- * ningún {@code AllNodesScan}, {@code NodeByLabelScan} ni {@code NodeIndexScan} (recorrer entero un índice también es leer todos los lotes) y
- * cada punto de entrada es una búsqueda por índice: el QR, el Traceability ID, el prefijo dentro de una empresa y, en cada nivel, el lote de la
- * frontera.
- *
- * <p>El plan que elige Neo4j <b>depende de sus estadísticas</b>, que se muestrean con retraso: justo después de cargar datos están sin muestrear
- * (sin los {@code USING INDEX SEEK} de {@link LineageQueries} el planificador recorría los índices enteros) y más tarde pueden ser favorables por
- * casualidad. Por eso esta prueba tiene su propio Neo4j recién creado (nunca reutiliza uno con estadísticas calentadas por otras pruebas) y comprueba
- * los planes en las dos situaciones: con las estadísticas sin muestrear y después de remuestrearlas.
- */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class LineageQueryPlansIT {
 
@@ -52,7 +41,6 @@ class LineageQueryPlansIT {
             GraphSchema.CONSTRAINTS.forEach(statement -> session.run(statement.cypher()).consume());
             GraphSchema.INDEXES.forEach(statement -> session.run(statement.cypher()).consume());
             session.run("CALL db.awaitIndexes(60)").consume();
-            // ≈ 500 nodos con divisiones y mezclas (capas de lotes unidas por transformaciones), de dos empresas
             session.run("""
                     UNWIND range(0, 10) AS layer
                     UNWIND range(0, 29) AS i
@@ -112,7 +100,6 @@ class LineageQueryPlansIT {
 
     private static final List<String> FRONTIER = List.of("b-5-3", "b-5-4", "b-5-5");
 
-    /** Todas las comprobaciones de los planes; se ejecutan con las estadísticas sin muestrear y otra vez después de remuestrearlas. */
     private static void checkEveryPlan(String statistics) {
         List<Operator> qr = plan(LineageQueries.FIND_BY_QR_CODE, Map.of("qr", "QR-5-3"));
         assertNoScans("QR (" + statistics + ")", qr);

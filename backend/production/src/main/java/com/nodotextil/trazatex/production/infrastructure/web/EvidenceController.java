@@ -24,10 +24,6 @@ import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * US42: fotos de un lote o de una transformación. Adjuntar es del {@code OPERATOR} de la empresa dueña; listar, de su
- * {@code OPERATOR} y su {@code COMPANY_ADMIN}. Cada empresa ve solo las evidencias que subió ella.
- */
 @RestController
 class EvidenceController {
 

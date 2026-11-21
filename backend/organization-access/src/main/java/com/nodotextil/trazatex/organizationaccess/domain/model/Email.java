@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
-/** Correo normalizado (sin espacios, en minúsculas): la unicidad de usuarios e invitaciones es insensible a mayúsculas. */
 public record Email(String value) {
 
     private static final int MAX_LENGTH = 254;

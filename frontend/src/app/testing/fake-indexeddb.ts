@@ -1,6 +1,3 @@
-// Solo para pruebas (lo importan los *.spec.ts). Sin dependencias; no entra en el bundle de la aplicación.
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/** IndexedDB mínimo en memoria: lo justo para `get/put/delete/getAll/openCursor` de un solo almacén. */
 export function fakeIndexedDB() {
   const data = new Map<string, any>();
   const transaction = () => {

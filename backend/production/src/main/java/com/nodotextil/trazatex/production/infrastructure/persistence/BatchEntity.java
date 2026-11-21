@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/** Tabla {@code batches}. {@code version} es el bloqueo optimista: lo incrementa Hibernate en cada UPDATE. */
 @Entity
 @Table(name = "batches")
 class BatchEntity {

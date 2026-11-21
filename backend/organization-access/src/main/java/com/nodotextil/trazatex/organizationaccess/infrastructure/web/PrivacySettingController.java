@@ -24,7 +24,6 @@ class PrivacySettingController {
         this.privacy = privacy;
     }
 
-    /** {@code fields}: nombre de campo configurable → SHARED | PRIVATE. Cambios parciales. */
     record UpdatePrivacyRequest(Map<String, Visibility> fields) {
     }
 

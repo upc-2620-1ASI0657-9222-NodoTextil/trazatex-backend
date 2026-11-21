@@ -17,17 +17,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.time.Instant;
 import java.util.Map;
 
-/**
- * Resuelve un control {@code STARTING}: manda {@code START_EVALUATION} a Production <b>fuera de toda transacción</b> y aplica la respuesta
- * en una transacción propia ({@code REQUIRES_NEW}, la «B»). Lo usan la petición del usuario y el job de recuperación, con el mismo
- * {@code requestId = controlId}: Production es idempotente, así que repetirlo es seguro aunque la primera vez se haya aplicado y la
- * respuesta se haya perdido o Quality haya caído antes de guardarla.
- *
- * <p>Reacción a cada respuesta (docs/architecture/communication.md): 200 → {@code IN_PROGRESS}; 409 o 404 → {@code CANCELLED} con el código de
- * Production como motivo; 400 (u otro 4xx) → {@code CANCELLED} con su código y un ERROR (ampliación acordada con el usuario: sin ella el
- * control quedaría {@code STARTING} para siempre bloqueando el lote); 503, otro 5xx, timeout, sin respuesta o circuito abierto → el control
- * sigue {@code STARTING} y se reprograma. <b>Nunca se cancela por duda</b>: sin respuesta Production pudo haber aplicado el comando.
- */
 @Component
 class ControlStartResolver {
 
@@ -51,9 +40,6 @@ class ControlStartResolver {
         this.requiresNew.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
-    /**
-     * @param attemptsSoFar intentos sin respuesta que ya lleva el control (0 en la petición que lo creó)
-     */
     ControlResolution resolve(QualityControl control, int attemptsSoFar) {
         PhaseCommandOutcome outcome = production.send(PhaseCommand.startEvaluation(control.batchId(), control.id(), control.inspectorId()));
         return requiresNew.execute(tx -> apply(control.id(), outcome, attemptsSoFar));
@@ -102,7 +88,6 @@ class ControlStartResolver {
         };
     }
 
-    /** CONTROL_CANCELLED en la misma transacción; el usuario es el del control (el solicitante, también cuando lo aplica el job). */
     private void cancel(QualityControl control, String reason) {
         control.cancel(reason);
         controls.save(control);

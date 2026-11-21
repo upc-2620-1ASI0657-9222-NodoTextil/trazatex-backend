@@ -8,10 +8,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
-/**
- * Lado de escritura del Transactional Outbox (ADR-004): el caso de uso la llama dentro de su transacción, de modo que
- * la fila del evento se confirma o se revierte junto con el cambio de negocio. Fuera de una transacción falla.
- */
 public class OutboxEventRecorder {
 
     private final OutboxStorePort store;
@@ -37,7 +33,6 @@ public class OutboxEventRecorder {
                 objectMapper.writeValueAsString(event), nextCreatedAt()));
     }
 
-    /** Estrictamente creciente (a la microsegundo, la precisión de PostgreSQL) para que el orden de publicación sea el de registro. */
     private synchronized Instant nextCreatedAt() {
         Instant now = clock.instant().truncatedTo(ChronoUnit.MICROS);
         Instant next = now.isAfter(lastCreatedAt) ? now : lastCreatedAt.plus(1, ChronoUnit.MICROS);

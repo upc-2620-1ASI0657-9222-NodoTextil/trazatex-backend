@@ -29,10 +29,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-/**
- * El consumidor con un {@link MockConsumer}: se controla qué llega en cada {@code poll}, así que "no está listo hasta terminar de
- * leer", la reanudación tras un fallo y el apagado se prueban sin depender de tiempos de Kafka.
- */
 class UserRevocationConsumerTest {
 
     private static final String TOPIC = "orgaccess.user";
@@ -95,8 +91,6 @@ class UserRevocationConsumerTest {
         return Thread.getAllStackTraces().keySet().stream().filter(t -> t.getName().equals(UserRevocationConsumer.THREAD_NAME) && t.isAlive()).toList();
     }
 
-    // ---- (a) tópico vacío ----
-
     @Test
     void anEmptyTopicLeavesTheGatewayReadyRightAway() {
         session(2, Map.of(P0, 0L, P1, 0L));
@@ -108,8 +102,6 @@ class UserRevocationConsumerTest {
         assertThat(logMessages(Level.INFO)).anySatisfy(m -> assertThat(m).contains("0 usuarios INACTIVE cargados de 0 mensajes de orgaccess.user")
                 .contains("{0=vacía, 1=vacía}").contains("{0=0, 1=0}"));
     }
-
-    // ---- no está listo hasta terminar de leer + (e) el log ----
 
     @Test
     void itIsNotLoadedUntilTheEndOfEveryPartitionIsReachedAndItLogsWhatItLoaded() {
@@ -135,7 +127,7 @@ class UserRevocationConsumerTest {
             mock.addRecord(record(P0, 3, A, RevocationEvents.userUpdatedWithUnknownFields(A, "INACTIVE")));
         });
         mock.schedulePollTask(() -> {
-            assertNotLoaded.run();   // P0 ya llegó a su fin, pero P1 todavía no
+            assertNotLoaded.run();
             mock.addRecord(record(P1, 1, C, RevocationEvents.userUpdated(C, "ACTIVE")));
         });
 
@@ -157,10 +149,10 @@ class UserRevocationConsumerTest {
         MockConsumer<String, String> mock = session(1, Map.of(P0, 5L));
         mock.schedulePollTask(() -> {
             mock.addRecord(record(P0, 0, A, "{esto no es json"));
-            mock.addRecord(record(P0, 1, B, "{\"payload\":{\"email\":\"secreto@hilos.pe\",\"status\":\"INACTIVE\"}}"));   // sin userId
-            mock.addRecord(record(P0, 2, C, "{\"payload\":{\"userId\":\"" + C + "\"}}"));   // sin status
+            mock.addRecord(record(P0, 1, B, "{\"payload\":{\"email\":\"secreto@hilos.pe\",\"status\":\"INACTIVE\"}}"));
+            mock.addRecord(record(P0, 2, C, "{\"payload\":{\"userId\":\"" + C + "\"}}"));
             mock.addRecord(record(P0, 3, A, RevocationEvents.userUpdated(A, "INACTIVE")));
-            mock.addRecord(new ConsumerRecord<>(TOPIC, 0, 4, B.toString(), null));   // tumba
+            mock.addRecord(new ConsumerRecord<>(TOPIC, 0, 4, B.toString(), null));
         });
 
         consumer.start();
@@ -172,8 +164,6 @@ class UserRevocationConsumerTest {
         assertThat(logMessages(Level.WARN)).hasSize(4).allSatisfy(m -> assertThat(m).contains("ilegible").doesNotContain("secreto@hilos.pe"));
         assertThat(logMessages(Level.INFO)).singleElement().satisfies(m -> assertThat(m).contains("1 usuarios INACTIVE").contains("4 ilegibles ignorados"));
     }
-
-    // ---- (c) campos desconocidos ----
 
     @Test
     void unknownFieldsAreProcessedAndAnUnknownStatusRevokes() {
@@ -193,11 +183,9 @@ class UserRevocationConsumerTest {
         assertThat(logMessages(Level.WARN)).singleElement().satisfies(m -> assertThat(m).contains("SUSPENDED").contains("no activo"));
     }
 
-    // ---- tópico inexistente al arrancar ----
-
     @Test
     void ifTheTopicDoesNotExistYetItWaitsWithoutBeingReadyAndLoadsWhenItAppears() throws Exception {
-        MockConsumer<String, String> mock = new MockConsumer<>("earliest");   // sin updatePartitions: el tópico no existe
+        MockConsumer<String, String> mock = new MockConsumer<>("earliest");
         mock.updateBeginningOffsets(Map.of(P0, 0L));
         sessions.add(mock);
 
@@ -215,8 +203,6 @@ class UserRevocationConsumerTest {
         assertThat(registry.isRevoked(A)).isTrue();
     }
 
-    // ---- fallos de Kafka ----
-
     @Test
     void afterAKafkaFailureItKeepsTheKnownSetStaysLoadedAndResumesWhereItWas() {
         MockConsumer<String, String> first = session(1, Map.of(P0, 3L));
@@ -225,7 +211,6 @@ class UserRevocationConsumerTest {
             first.addRecord(record(P0, 1, B, RevocationEvents.userUpdated(B, "INACTIVE")));
             first.addRecord(record(P0, 2, A, RevocationEvents.userUpdated(A, "ACTIVE")));
         });
-        // segunda conexión: el offset 0 trae un mensaje "envenenado" que NO debe volver a leerse (se retoma en el 3)
         UUID z = UUID.fromString("dddddddd-0000-0000-0000-000000000004");
         MockConsumer<String, String> second = session(1, Map.of(P0, 5L));
         second.schedulePollTask(() -> {
@@ -249,8 +234,6 @@ class UserRevocationConsumerTest {
         assertThat(created).hasSize(2);
         assertThat(logMessages(Level.WARN)).anySatisfy(m -> assertThat(m).contains("Kafka no responde").contains("último conjunto conocido"));
     }
-
-    // ---- (d) apagado limpio ----
 
     @Test
     void stopEndsTheThreadAndClosesTheKafkaConsumer() {

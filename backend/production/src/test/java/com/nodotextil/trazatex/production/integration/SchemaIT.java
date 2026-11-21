@@ -14,14 +14,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** Migraciones Flyway y restricciones de la base: lo que la aplicación no puede olvidar porque la base lo impide. */
 class SchemaIT extends IntegrationTestBase {
 
     private static final UUID COMPANY_A = UUID.fromString("00000000-0000-0000-0000-0000000000c1");
     private static final UUID COMPANY_B = UUID.fromString("00000000-0000-0000-0000-0000000000c2");
     private static final UUID USER = UUID.fromString("00000000-0000-0000-0000-0000000000a1");
-
-    // ---- ayudas: inserciones directas con valores por defecto válidos y sobrescrituras ----
 
     private void insert(String table, Map<String, Object> values) {
         String columns = String.join(", ", values.keySet());
@@ -104,8 +101,6 @@ class SchemaIT extends IntegrationTestBase {
         return row;
     }
 
-    // ---- migraciones ----
-
     @Test
     void flywayCreatedEveryTable() {
         List<String> tables = jdbc.sql("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'")
@@ -115,8 +110,6 @@ class SchemaIT extends IntegrationTestBase {
                 "company_projection", "outbox", "processed_events", "idempotency_keys", "audit_log", "phase_command_log",
                 "flyway_schema_history");
     }
-
-    // ---- batches ----
 
     @Test
     void aValidBatchRowIsAccepted() {
@@ -172,7 +165,6 @@ class SchemaIT extends IntegrationTestBase {
     void aRegisteredBatchNeedsOriginAndReceptionCharacteristics() {
         assertThatThrownBy(() -> insertBatch("origin", null)).isInstanceOf(DataIntegrityViolationException.class);
         assertThatThrownBy(() -> insertBatch("reception_characteristics", null)).isInstanceOf(DataIntegrityViolationException.class);
-        // las salidas de una transformación nacen sin ellos
         assertThatCode(() -> insertBatch("origin_type", "TRANSFORMATION", "origin", null, "reception_characteristics", null))
                 .doesNotThrowAnyException();
     }
@@ -194,8 +186,6 @@ class SchemaIT extends IntegrationTestBase {
         assertThat(jdbc.sql("SELECT version FROM batches WHERE id = :id").param("id", id).query(Long.class).single()).isZero();
     }
 
-    // ---- batch_compositions ----
-
     @Test
     void compositionRowsNeedTheirBatchAndHaveAValidPercentage() {
         UUID batch = insertBatch();
@@ -210,8 +200,6 @@ class SchemaIT extends IntegrationTestBase {
         assertThatThrownBy(() -> insert("batch_compositions", Map.of("batch_id", UUID.randomUUID(), "position", 0, "component_name", "Lana",
                 "percentage", new java.math.BigDecimal("10")))).isInstanceOf(DataIntegrityViolationException.class);
     }
-
-    // ---- machines ----
 
     @Test
     void aMachineCodeIsUniquePerCompanyIgnoringCase() {
@@ -236,8 +224,6 @@ class SchemaIT extends IntegrationTestBase {
                 "changed_by", USER, "changed_at", NOW))).isInstanceOf(DataIntegrityViolationException.class);
     }
 
-    // ---- transformations ----
-
     @Test
     void aTransformationNeedsAnExistingMachine() {
         assertThatThrownBy(() -> insert("transformations", transformationRow(UUID.randomUUID())))
@@ -253,10 +239,8 @@ class SchemaIT extends IntegrationTestBase {
                 "waste_reason", "Recorte", "shrinkage_kg", new java.math.BigDecimal("15.000"), "end_time", NOW);
         assertThatCode(() -> insert("transformations", completed)).doesNotThrowAnyException();
 
-        // entrada 100 ≠ salida 80 + desperdicio 5 + merma 10
         assertThatThrownBy(() -> insert("transformations", with(completed, "id", UUID.randomUUID(),
                 "shrinkage_kg", new java.math.BigDecimal("10.000")))).isInstanceOf(DataIntegrityViolationException.class);
-        // merma negativa
         assertThatThrownBy(() -> insert("transformations", with(completed, "id", UUID.randomUUID(),
                 "total_output_kg", new java.math.BigDecimal("100.000"), "shrinkage_kg", new java.math.BigDecimal("-5.000"))))
                 .isInstanceOf(DataIntegrityViolationException.class);
@@ -280,7 +264,6 @@ class SchemaIT extends IntegrationTestBase {
         assertThatThrownBy(() -> insert("transformations", noReason)).isInstanceOf(DataIntegrityViolationException.class);
         assertThatThrownBy(() -> insert("transformations", with(noReason, "waste_reason", "   "))).isInstanceOf(DataIntegrityViolationException.class);
         assertThatCode(() -> insert("transformations", with(noReason, "waste_reason", "Recorte"))).doesNotThrowAnyException();
-        // sin desperdicio no hace falta motivo
         assertThatCode(() -> insert("transformations", with(noReason, "id", UUID.randomUUID(), "waste_kg", java.math.BigDecimal.ZERO,
                 "shrinkage_kg", new java.math.BigDecimal("10.000")))).doesNotThrowAnyException();
     }
@@ -307,8 +290,6 @@ class SchemaIT extends IntegrationTestBase {
                 "quantity_kg", new java.math.BigDecimal("10")))).isInstanceOf(DataIntegrityViolationException.class);
     }
 
-    // ---- transfers ----
-
     @Test
     void aTransferNeedsTwoDifferentCompanies() {
         assertThatCode(() -> insert("transfers", transferRow())).doesNotThrowAnyException();
@@ -318,16 +299,13 @@ class SchemaIT extends IntegrationTestBase {
 
     @Test
     void aTransferResolutionIsConsistentWithItsStatus() {
-        // PENDING no tiene resolución
         assertThatThrownBy(() -> insert("transfers", with(transferRow(), "resolved_at", NOW, "resolved_by", USER)))
                 .isInstanceOf(DataIntegrityViolationException.class);
-        // ACCEPTED exige quién y cuándo, y no lleva motivo
         assertThatThrownBy(() -> insert("transfers", with(transferRow(), "status", "ACCEPTED"))).isInstanceOf(DataIntegrityViolationException.class);
         assertThatThrownBy(() -> insert("transfers", with(transferRow(), "status", "ACCEPTED", "resolved_at", NOW, "resolved_by", USER,
                 "rejection_reason", "no"))).isInstanceOf(DataIntegrityViolationException.class);
         assertThatCode(() -> insert("transfers", with(transferRow(), "status", "ACCEPTED", "resolved_at", NOW, "resolved_by", USER)))
                 .doesNotThrowAnyException();
-        // REJECTED exige motivo no vacío
         assertThatThrownBy(() -> insert("transfers", with(transferRow(), "status", "REJECTED", "resolved_at", NOW, "resolved_by", USER)))
                 .isInstanceOf(DataIntegrityViolationException.class);
         assertThatThrownBy(() -> insert("transfers", with(transferRow(), "status", "REJECTED", "resolved_at", NOW, "resolved_by", USER,
@@ -348,8 +326,6 @@ class SchemaIT extends IntegrationTestBase {
         assertThatThrownBy(() -> insert("transfer_batches", Map.of("transfer_id", transfer.get("id"), "position", 1, "batch_id", UUID.randomUUID())))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
-
-    // ---- phase_command_log, company_projection ----
 
     @Test
     void aPhaseCommandIsRegisteredOncePerBatchRequestAndOperation() {

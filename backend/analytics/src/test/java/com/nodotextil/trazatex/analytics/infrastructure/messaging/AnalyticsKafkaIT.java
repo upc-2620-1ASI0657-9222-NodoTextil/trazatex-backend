@@ -38,11 +38,6 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-/**
- * Analytics con Kafka real y PostgreSQL real (I13): los tópicos ajenos que aún no existen no se crean ni se consumen hasta que aparecen, cada
- * tópico se lee con su propio grupo (un mensaje que falla no frena a los demás), y lo ilegible o incompleto va a la {@code .DLT} de su tópico sin
- * dejar nada a medias.
- */
 @SpringBootTest(properties = {
         "trazatex.messaging.enabled=true", "trazatex.messaging.consumer.topic-check-interval=PT1S",
         "trazatex.messaging.consumer.retry.max-retries=2", "trazatex.messaging.consumer.retry.initial-interval=PT0.2S",
@@ -74,7 +69,7 @@ class AnalyticsKafkaIT {
             assertThat(topics()).doesNotContainAnyElementsOf(SOURCES);
             for (var source : ConsumedTopics.ALL) assertThat(registry.getListenerContainer(source.listenerId()).isRunning()).as(source.listenerId()).isFalse();
         });
-        assertThat(topics()).containsAll(SOURCES.stream().map(topic -> topic + ".DLT").toList());       // lo único que declara son las .DLT
+        assertThat(topics()).containsAll(SOURCES.stream().map(topic -> topic + ".DLT").toList());
     }
 
     @Test @Order(2)
@@ -107,7 +102,6 @@ class AnalyticsKafkaIT {
     void anUnreadableOrIncompleteMessageGoesToItsDeadLetterTopicWithoutBlockingOthersOrLeavingTraces() throws Exception {
         UUID company = UUID.randomUUID(), batch = UUID.randomUUID(), withoutVersion = UUID.randomUUID(), marker = UUID.randomUUID();
         send("production.transfer", "basura", "esto no es un evento");
-        // BatchPhaseChanged sin batchVersion: ilegible para Analytics, y su fila en analytics_event se revierte con la transacción
         send("production.batch", batch.toString(), event("BatchPhaseChanged", withoutVersion, Map.of("batchId", batch, "companyId", company)));
         send("production.batch", marker.toString(), event("BatchRegistered", marker, Map.of("batchId", marker, "companyId", company)));
 

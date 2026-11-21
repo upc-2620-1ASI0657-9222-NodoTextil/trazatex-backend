@@ -18,13 +18,6 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.util.UUID;
 
-/**
- * {@code quality.control}: copia el {@code qualityStatus} de {@code QualityStatusChanged} al lote. El tópico es de Quality
- * (siguiente sprint) y puede no existir todavía: este consumidor no lo crea y empieza a leerlo cuando aparezca
- * ({@link TopicWatcherJob}). Ignora lo que no
- * es suyo (p. ej. {@code QualityControlCompleted}, que va a analytics). Un lote inexistente es un error que reintentar no arregla:
- * se registra en ERROR y va directo a la DLT.
- */
 @Component
 @ConditionalOnProperty(name = "trazatex.messaging.enabled", havingValue = "true", matchIfMissing = true)
 class QualityEventsListener {
@@ -47,7 +40,6 @@ class QualityEventsListener {
         this.objectMapper = objectMapper;
     }
 
-    /** {@code autoStartup=false}: lo arranca {@link TopicWatcherJob} cuando el tópico existe (suscribirse a uno ausente inunda el log). */
     @KafkaListener(id = ConsumedTopics.QUALITY_LISTENER_ID, topics = ConsumedTopics.QUALITY_CONTROL, autoStartup = "false",
             groupId = "${trazatex.messaging.consumer.quality.group:production.quality-control}")
     void onMessage(ConsumerRecord<String, String> record) {

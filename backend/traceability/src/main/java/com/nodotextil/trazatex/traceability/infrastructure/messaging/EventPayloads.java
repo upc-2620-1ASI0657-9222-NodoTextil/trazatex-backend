@@ -13,17 +13,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Los payloads del catálogo (docs/architecture/communication.md) tal como llegan; solo los campos que traceability usa, y todo
- * lo demás se ignora (un campo nuevo de Production no rompe a este servicio). Los datos opcionales o ausentes llegan nulos y
- * el comando decide si son obligatorios.
- */
 final class EventPayloads {
 
     private EventPayloads() {
     }
 
-    /** {@code FailureConfirmed}: solo la falla y el lote fallado (causa, cantidad afectada y demás se ignoran). */
     @JsonIgnoreProperties(ignoreUnknown = true)
     record FailureConfirmed(UUID failureId, UUID batchId) {
     }
@@ -32,7 +26,6 @@ final class EventPayloads {
     record Part(String name, BigDecimal percentage) {
     }
 
-    /** {@code composition[]} como componentes del dominio; uno sin nombre o sin porcentaje invalida el evento. */
     static List<CompositionComponent> parts(List<Part> parts) {
         if (parts == null) {
             return null;

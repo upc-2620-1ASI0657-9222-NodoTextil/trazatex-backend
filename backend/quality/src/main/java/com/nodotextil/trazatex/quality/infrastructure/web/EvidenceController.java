@@ -26,10 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * US43: fotos de un control o de una falla. Adjuntar y listar son solo del {@code COMPANY_ADMIN} de la empresa dueña (el control puede estar en
- * cualquier estado); cada empresa ve solo las evidencias que subió ella.
- */
 @RestController
 class EvidenceController {
 
@@ -41,7 +37,6 @@ class EvidenceController {
         this.deletions = deletions;
     }
 
-    /** Exactamente uno de {@code controlId} / {@code failureId}, como parámetro de la misma petición multipart (campo del formulario o de la URL). */
     @PostMapping(value = "/api/quality/evidence", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     @RequiresRole(Role.COMPANY_ADMIN)

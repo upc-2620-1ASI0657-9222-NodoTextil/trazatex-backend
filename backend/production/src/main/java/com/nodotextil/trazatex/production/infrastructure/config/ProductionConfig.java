@@ -40,11 +40,6 @@ class ProductionConfig {
         return new OutboxEventRecorder(store, objectMapper, clock);
     }
 
-    /**
-     * Idempotencia de las escrituras expuestas al frontend (ADR-010): solo actúa si la petición trae {@code Idempotency-Key}
-     * (UUID) y {@code X-User-Id}. Production no tiene rutas públicas, así que nada se exceptúa. El comando interno de
-     * Quality ({@code /internal/**}) tiene su propia idempotencia por {@code (batchId, requestId, operation)}.
-     */
     @Bean
     FilterRegistrationBean<IdempotencyFilter> idempotencyFilter(IdempotencyStorePort store, PlatformTransactionManager transactionManager,
                                                                 ObjectMapper objectMapper, Clock clock) {
@@ -55,13 +50,11 @@ class ProductionConfig {
         return registration;
     }
 
-    /** Códigos aleatorios con {@code SecureRandom}; la fábrica sortea otro si el sorteado ya existe en la base. */
     @Bean
     BatchFactory batchFactory(BatchRepositoryPort batches) {
         return BatchFactory.secure(batches::isCodeTaken);
     }
 
-    /** Una estrategia por tipo, con el mínimo configurado; un mínimo inválido o ausente impide arrancar. */
     @Bean
     TransformationFactory transformationFactory(TransformationProperties properties) {
         TransformationProperties.MinYieldPercent min = properties.minYieldPercent();

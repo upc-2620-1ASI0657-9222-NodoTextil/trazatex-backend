@@ -31,17 +31,12 @@ public class RateLimitService implements RateLimitUseCase {
         };
     }
 
-    /**
-     * Los dos cubos deben cumplirse a la vez. Primero el del usuario: si es él quien abusa, la empresa no gasta nada. Si el del
-     * usuario pasa pero el de la empresa rechaza, se le devuelve el permiso al usuario: no debe perder el suyo por una
-     * petición que no se atendió.
-     */
     private RateLimitDecision checkAuthenticated(AuthenticatedUser user) {
         RateLimit userLimit = policy.user();
         String userKey = user.userId().toString();
         RateLimitDecision byUser = buckets.tryConsume(RateLimitScope.USER, userKey, userLimit);
         if (!byUser.allowed() || user.companyId() == null) {
-            return byUser;   // el Dueño de Licencia no tiene empresa: solo el cubo de usuario
+            return byUser;
         }
         RateLimitDecision byCompany = buckets.tryConsume(RateLimitScope.COMPANY, user.companyId().toString(), policy.company());
         if (!byCompany.allowed()) {

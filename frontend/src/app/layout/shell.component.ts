@@ -23,7 +23,7 @@ const D: Rol = 'Dueño de Licencia';
 export const NAV: NavItem[] = [
   { path: '/trazabilidad', label: 'Trazabilidad', icon: 'trace', roles: [O, A] },
   { path: '/lotes', label: 'Lotes', icon: 'lot', roles: [O, A] },
-  { path: '/procesos', label: 'Procesos', icon: 'process', roles: [O, A] },
+  { path: '/procesos', label: 'Transformaciones', icon: 'process', roles: [O, A] },
   { path: '/calidad', label: 'Calidad', icon: 'quality', roles: [A] },
   { path: '/transferencias', label: 'Transferencias', icon: 'transfer', roles: [O, A] },
   { path: '/analitica', label: 'Analítica', icon: 'analytics', roles: [A] },
@@ -186,7 +186,6 @@ export const NAV: NavItem[] = [
     .nav-item :focus-visible, .nav-item:focus-visible { outline-color: var(--cream); }
     .txt { display: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .expanded .txt { display: inline; }
-    /* El contador va AL LADO de la campana, no encima (FE-I8): así no tapa el icono ni se recorta con «99+». */
     .bell { display: inline-flex; align-items: flex-start; gap: 2px; }
     .dot { flex: none; margin-top: -6px; min-width: 1rem; height: 1rem; padding: 0 0.2rem; display: grid; place-items: center; background: var(--kraft); color: var(--green-950); font: 700 0.58rem/1 var(--f-body); font-style: normal; }
     .profile-icon { flex: none; }
@@ -262,7 +261,6 @@ export class ShellComponent {
   readonly ui = inject(UiService);
   private readonly router = inject(Router);
 
-  /** Nombre accesible de los accesos a la bandeja: el punto visual es aria-hidden, así que el aviso va aquí. */
   readonly etiquetaNotificaciones = computed(() => {
     const unread = this.store.unreadCount();
     return unread > 0 ? 'Notificaciones, ' + (unread > 99 ? 'más de 99' : unread) + ' sin leer' : 'Notificaciones';
@@ -273,7 +271,7 @@ export class ShellComponent {
     const path = this.currentPath().split('?')[0].split('/');
     if (path[1] === 'lotes' && path[2]) { const lot = this.store.lote(decodeURIComponent(path[2])); return lot ? (this.store.esPropio(lot) ? lot.nombre : 'Lote compartido') + ' / ' + lot.id : 'Detalle del lote'; }
     if (path[1] === 'calidad' && path[2]) { const control = this.store.control(path[2]); return control ? control.tipo + ' / ' + this.store.nombreLote(control.loteId) : 'Control de calidad'; }
-    if (path[1] === 'procesos' && path[2]) { const process = this.store.proceso(path[2]); return process ? this.store.nombreProceso(process) : 'Detalle del proceso'; }
+    if (path[1] === 'procesos' && path[2]) { const process = this.store.proceso(path[2]); return process ? this.store.nombreProceso(process) : 'Detalle de la transformación'; }
     return this.currentPath().startsWith('/perfil') ? this.session.usuario().nombres + ' ' + this.session.usuario().apellidos : this.currentPath().startsWith('/notificaciones') ? 'Notificaciones' : this.navActual()?.label ?? 'TrazaTex';
   });
   readonly iconoSeccion = computed(() => this.currentPath().startsWith('/notificaciones') ? 'bell' : this.currentPath().startsWith('/fallas') ? 'failure' : this.currentPath().startsWith('/perfil') ? 'user' : this.navActual()?.icon ?? 'lot');
@@ -318,5 +316,3 @@ export class ShellComponent {
     this.router.navigateByUrl('/login');
   }
 }
-
-

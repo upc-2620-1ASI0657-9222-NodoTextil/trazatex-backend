@@ -14,7 +14,6 @@ import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPac
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
-/** Reglas de dependencia hexagonal (docs/conventions.md). Las de `domain` y `application` se activan al existir esos paquetes. */
 @AnalyzeClasses(packages = "com.nodotextil.trazatex.traceability", importOptions = ImportOption.DoNotIncludeTests.class)
 class ArchitectureTest {
 
@@ -62,8 +61,6 @@ class ArchitectureTest {
             .should().dependOnClassesThat().resideInAnyPackage(
                     ROOT + ".application.usecase..", ROOT + ".application.port.out..", ROOT + ".infrastructure.persistence..")
             .because("los listeners traducen mensajes a llamadas de los puertos de entrada (application.port.in)");
-
-    // ---- ninguna respuesta de consulta sale sin pasar por la política de privacidad (ADR-006) ----
 
     private static final String VIEW = ROOT + ".domain.model.view..";
     private static final String RAW = ROOT + ".domain.model.graph..";
@@ -114,8 +111,6 @@ class ArchitectureTest {
             .because("Traceability solo expone consultas (los cambios llegan por eventos): si algún día hubiera una escritura necesitaría Idempotency-Key (ADR-010)")
             .allowEmptyShould(true);
 
-    // ---- el análisis de impacto es interno: ve todas las empresas y su resultado solo sale por el evento ----
-
     private static final String IMPACT_MODEL = ROOT + ".domain.model.impact..";
 
     @ArchTest
@@ -148,11 +143,10 @@ class ArchitectureTest {
             .because("los datos del grafo sin filtrar solo los tocan la política, la aplicación y el adaptador de persistencia")
             .allowEmptyShould(true);
 
-    /** I11: ni un controlador ni un caso de uso tocan la base; el SQL vive en los adaptadores de {@code infrastructure.persistence}. */
     @ArchTest
     static final ArchRule neitherControllersNorUseCasesUseJdbc = noClasses()
             .that().resideInAnyPackage(ROOT + ".infrastructure.web..", ROOT + ".application..")
             .should().dependOnClassesThat().resideInAPackage("org.springframework.jdbc..")
-            .because("regla 5 de CLAUDE.md: el acceso a datos es un adaptador detrás de un puerto de salida")
+            .because("convención hexagonal: el acceso a datos es un adaptador detrás de un puerto de salida")
             .allowEmptyShould(true);
 }

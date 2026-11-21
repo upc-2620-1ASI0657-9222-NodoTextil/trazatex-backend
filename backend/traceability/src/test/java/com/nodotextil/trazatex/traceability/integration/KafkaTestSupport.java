@@ -22,14 +22,12 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-/** Un Kafka real por clase de prueba (la misma imagen que el docker compose) y lo mínimo para publicar y mirar tópicos. */
 final class KafkaTestSupport {
 
     private KafkaTestSupport() {
     }
 
     static KafkaContainer startKafka() {
-        // el broker de las pruebas es el del compose: no crea tópicos solos (ver TrazatexKafkaContainer)
         KafkaContainer kafka = new TrazatexKafkaContainer();
         kafka.start();
         return kafka;
@@ -59,13 +57,11 @@ final class KafkaTestSupport {
         }
     }
 
-    /** Productor con confirmación de todas las réplicas, como el de los servicios. */
     static KafkaProducer<String, String> producer(String bootstrap) {
         return new KafkaProducer<>(Map.<String, Object>of(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap, ProducerConfig.ACKS_CONFIG, "all",
                 ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class, ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class));
     }
 
-    /** Publica y espera la confirmación del broker. */
     static void send(KafkaProducer<String, String> producer, EventMessages.Message message) {
         sendRaw(producer, message.topic(), message.key(), message.json());
     }
@@ -78,13 +74,11 @@ final class KafkaTestSupport {
         }
     }
 
-    /** Publica sin esperar la confirmación de cada uno (ráfaga); {@code flush} al final. */
     static void burst(KafkaProducer<String, String> producer, List<EventMessages.Message> messages) {
         messages.forEach(message -> producer.send(new ProducerRecord<>(message.topic(), message.key(), message.json())));
         producer.flush();
     }
 
-    /** Todo lo que hay en un tópico (p. ej. una DLT), leyendo desde el inicio con un grupo propio; {@code wait} es lo que se espera de más. */
     static List<ConsumerRecord<String, String>> readAll(String bootstrap, String topic, Duration wait) {
         List<ConsumerRecord<String, String>> records = new ArrayList<>();
         try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(Map.<String, Object>of(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap,

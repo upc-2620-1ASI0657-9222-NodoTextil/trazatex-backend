@@ -14,13 +14,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * La política con la privacidad que se quiera, para probarla sola: arma el {@link Lineage} con la privacidad de las empresas ajenas como lo hace el
- * servicio (la política no guarda estado: la privacidad viaja en la consulta).
- */
 final class PolicyUnderTest {
 
-    /** La privacidad de cada empresa, como la configuraría su administrador. */
     @FunctionalInterface
     interface Lookup {
 

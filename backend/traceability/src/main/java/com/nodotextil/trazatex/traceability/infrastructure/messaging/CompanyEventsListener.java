@@ -15,11 +15,6 @@ import tools.jackson.databind.ObjectMapper;
 import java.util.Map;
 import java.util.function.Consumer;
 
-/**
- * {@code orgaccess.company}: {@code CompanyPrivacyUpdated} y {@code CompanyRegistered} (solo para guardar el nombre de la empresa). Por el
- * mismo tópico llega {@code CompanyStatusChanged}, que es de production y se ignora. El tópico no se borra por tiempo ({@code retention.ms=-1}):
- * un traceability nuevo conoce la privacidad de todas las empresas leyéndolo desde el inicio.
- */
 @Component
 @ConditionalOnProperty(name = "trazatex.messaging.enabled", havingValue = "true", matchIfMissing = true)
 class CompanyEventsListener extends AbstractEventListener {

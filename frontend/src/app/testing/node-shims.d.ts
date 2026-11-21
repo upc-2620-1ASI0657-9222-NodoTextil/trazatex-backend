@@ -1,4 +1,3 @@
-// Solo lo que usan los specs que leen el código fuente (sin añadir @types/node al proyecto). Solo entra en tsconfig.spec.json.
 declare module 'node:fs' {
   export function readdirSync(path: string): string[];
   export function existsSync(path: string): boolean;

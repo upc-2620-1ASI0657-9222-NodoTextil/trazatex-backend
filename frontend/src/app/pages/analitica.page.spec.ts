@@ -65,9 +65,9 @@ describe('Analítica: contrato con el servicio (I6)', () => {
     const page = fixture.componentInstance;
     page.from = '2025-01-01'; page.to = '2026-01-02';
     await page.load(); await render();
-    expect(requests()).toHaveLength(1);                                           // solo la carga inicial
+    expect(requests()).toHaveLength(1);
     expect(el().querySelector('[role="alert"]')?.textContent).toContain('366');
-    page.to = '2026-01-01';                                                       // 366 días: sí se pide
+    page.to = '2026-01-01';
     await page.load(); await render();
     expect(requests()).toHaveLength(2);
     expect(requests()[1]).toBe('GET /analytics/summary?from=2025-01-01&to=2026-01-01');

@@ -47,7 +47,6 @@ test('RNF-05: el formulario y su fotografía sobreviven a recargar y se aíslan 
  await expect(page.getByRole('alert').filter({hasText:'Sin conexión'})).toBeVisible();
  await context.setOffline(false);
  await expect(page.getByRole('alert').filter({hasText:'Sin conexión'})).toHaveCount(0);
- // El estado se confirma en IndexedDB antes de cerrar la página.
  await expect.poll(()=>page.evaluate(()=>new Promise<number>((resolve,reject)=>{
   const request=indexedDB.open('trazatex-drafts',1);
   request.onsuccess=()=>{
@@ -184,7 +183,6 @@ test('RNF-05: Quality conserva la prueba sin registrarla automáticamente',async
  expect(detail.tests.some((t:{criterion:string})=>t.criterion==='Resistencia longitudinal')).toBe(false);
 });
 
-
 test('ADR-010: cerrar tras confirmar el lote conserva su clave hasta completar las fotografías',async({page,request})=>{
  test.setTimeout(90000);
  const user=account('operator/hilanderia/1');
@@ -219,8 +217,6 @@ test('ADR-010: cerrar tras confirmar el lote conserva su clave hasta completar l
   expect(keys).toHaveLength(2);expect(keys[1]).toBe(keys[0]);
   const after=await (await request.get('/api/batches?size=8',{headers})).json();
   expect(after.totalElements).toBe(before.totalElements+1);
-  // Un cambio de datos no puede convertir un reintento incierto en un segundo registro.
-  // Los avisos de error ya no se retiran solos (FE-M9, fila 25): hay que cerrarlos para que no tapen el botón.
   for(const close of await page.locator('.toast--error .toast-close').all())await close.click();
   await restored.getByRole('button',{name:'Atrás',exact:true}).click();
   await restored.getByRole('button',{name:'Atrás',exact:true}).click();
@@ -235,8 +231,6 @@ test('ADR-010: cerrar tras confirmar el lote conserva su clave hasta completar l
  }finally{release();}
 });
 
-
-// ── Ronda 5 · specs nuevos de FE-I4 y FE-I2 (filas 5, 7, 8 y 9 de PENDIENTES_E2E.md). Sin ejecutar hasta la ronda 5b. ──
 const sleep=(ms:number)=>new Promise<void>(resolve=>setTimeout(resolve,ms));
 const idbOperations=(page:Page)=>page.evaluate(()=>new Promise<{key:string;createdAt:number}[]>((resolve,reject)=>{
  const open=indexedDB.open('trazatex-drafts',1);
@@ -289,19 +283,16 @@ test('FE-I4: una operación guardada de más de 23 h se descarta con aviso, sin 
   if(blocked)return route.abort('failed');
   return route.continue();
  });
- // 1) primer intento: la respuesta no llega; queda un registro operation/* con su Idempotency-Key
  await confirmNext(page);await drawer.getByRole('button',{name:'Aceptar',exact:true}).click();
  await expect(page.getByText(/No se pudo confirmar la respuesta del servidor/).first()).toBeVisible({timeout:15000});
  expect(keys).toHaveLength(1);
  expect((await idbOperations(page)).length).toBeGreaterThanOrEqual(1);
- // 2) el registro envejece más de 23 h: el siguiente intento muestra el aviso y NO envía ninguna petición
  expect(await ageOperations(page,24)).toBeGreaterThanOrEqual(1);
  for(const close of await page.getByRole('button',{name:'Cerrar aviso de error'}).all())await close.click();
  await confirmNext(page);await drawer.getByRole('button',{name:'Aceptar',exact:true}).click();
  await expect(page.getByText(/La operación anterior se envió hace más de 23 horas y pudo haberse registrado/)).toBeVisible({timeout:15000});
  sentWhileStale=keys.length;expect(sentWhileStale,'no se envió ninguna petición con el registro caducado').toBe(1);
  expect((await idbOperations(page)).filter(r=>Date.now()-r.createdAt>23*3600*1000),'el registro viejo desapareció de IndexedDB').toHaveLength(0);
- // 3) segundo intento: parte de cero con una clave distinta y deja un registro nuevo
  for(const close of await page.getByRole('button',{name:'Cerrar aviso de error'}).all())await close.click();
  blocked=false;
  await confirmNext(page);await drawer.getByRole('button',{name:'Aceptar',exact:true}).click();
@@ -367,7 +358,6 @@ test('FE-I2 (c): finalizar un control con respuesta de 6 s termina sin falso err
  await expect(page.getByText(/No se pudo confirmar/)).toHaveCount(0);
 });
 
-// RUC sintético válido (módulo 11) con su validación ya en la caché de organization-access: el alta no llama a Chequea.pe (0 llamadas).
 function syntheticRuc():string{
  const digits='20'+String(Math.floor(Math.random()*1e8)).padStart(8,'0');
  const weights=[5,4,3,2,7,6,5,4,3,2];
@@ -412,7 +402,6 @@ test('FE-I2 (fila 8): un comando de Quality que nunca responde avisa a los ~8 s 
  await page.route('**/api/quality/controls/*/tests',async route=>{
   if(route.request().method()!=='POST')return route.continue();
   keys.push(route.request().headers()['idempotency-key']);
-  // nunca responde: no se reenvía al servidor ni se cumple
  });
  const started=Date.now();
  await page.getByRole('button',{name:'Agregar prueba',exact:true}).click();

@@ -32,12 +32,6 @@ import java.time.Duration;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * Valida el JWT con las claves del JWKS de organization-access (ADR-005). Solo acepta RS256 con la clave que indica el
- * {@code kid}: un token {@code none}, HS256 u otro algoritmo, o con un {@code kid} que el JWKS no tiene, se rechaza. Exige
- * {@code sub} (UUID), {@code role}, {@code iat} y {@code exp}. Obtener el JWKS es una llamada bloqueante (con caché), por eso
- * se ejecuta en {@code boundedElastic}.
- */
 public class NimbusTokenVerifierAdapter implements TokenVerifierPort {
 
     private static final Logger log = LoggerFactory.getLogger(NimbusTokenVerifierAdapter.class);
@@ -63,13 +57,11 @@ public class NimbusTokenVerifierAdapter implements TokenVerifierPort {
     }
 
     private Throwable translate(Throwable e) {
-        // Spring conserva la causa Nimbus: distinguir token rechazado de JWKS temporalmente indisponible.
         if (e instanceof JwtException && e.getCause() != null) return translate(e.getCause());
         if (e instanceof ExpiredJWTException) {
             return new AuthenticationFailedException(Reason.TOKEN_EXPIRED, e);
         }
         if (e instanceof RateLimitReachedException) {
-            // kid desconocido y el JWKS ya se recargó hace menos de minReloadInterval: para el cliente, un token sin clave
             log.debug("JWT con kid desconocido; JWKS no recargado (límite de recarga)");
             return new AuthenticationFailedException(Reason.INVALID_TOKEN, e);
         }

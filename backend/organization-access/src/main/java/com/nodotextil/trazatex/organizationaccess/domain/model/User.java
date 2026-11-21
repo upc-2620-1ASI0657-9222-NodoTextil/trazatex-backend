@@ -7,11 +7,6 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * Usuario de TrazaTex. Solo se crea al aceptar una invitación ({@link Invitation#accept}). El Dueño de Licencia no tiene
- * empresa; los demás roles siempre la tienen. Inactivar conserva el historial (US09). Los intentos fallidos de login y el
- * bloqueo no son del usuario sino del correo ({@link LoginAttempts}), para que existan también con correos sin cuenta.
- */
 public final class User {
 
     private final UUID id;
@@ -39,7 +34,6 @@ public final class User {
         this.createdAt = createdAt;
     }
 
-    /** Cuenta nueva y activa. Solo la usa {@link Invitation#accept}. */
     static User createActive(UUID id, UUID companyId, Email email, String firstName, String lastName, String position,
                              String passwordHash, Role role, Instant now) {
         new RequiredFields()
@@ -61,12 +55,6 @@ public final class User {
         return new User(id, companyId, email, firstName, lastName, position, passwordHash, role, status, createdAt);
     }
 
-    // --- Estado (US09) ---
-
-    /**
-     * @param activeAdminsInCompany administradores ACTIVE de la empresa, incluido este usuario si lo es. Una empresa debe
-     *                              conservar al menos un administrador activo.
-     */
     public void deactivate(long activeAdminsInCompany) {
         if (status == UserStatus.INACTIVE) {
             throw new ConflictException(ErrorCodes.INVALID_STATUS_TRANSITION, "El usuario ya está inactivo.");
@@ -78,7 +66,6 @@ public final class User {
         status = UserStatus.INACTIVE;
     }
 
-    /** La capacidad de la licencia (RF-013) se valida antes, con {@link License#ensureUserCapacity}. */
     public void activate() {
         if (status == UserStatus.ACTIVE) {
             throw new ConflictException(ErrorCodes.INVALID_STATUS_TRANSITION, "El usuario ya está activo.");

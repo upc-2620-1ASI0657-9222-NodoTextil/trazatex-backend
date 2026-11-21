@@ -19,7 +19,6 @@ async function secret(input:Locator,value:string){
   },value);
 }
 
-
 test('Portainer autentica, agrupa TrazaTex y permite consultar estado, logs y estadísticas', async ({
   request,
   page,
@@ -151,7 +150,6 @@ test('Spring Boot Admin requiere credenciales y muestra los siete componentes co
   await request.dispose();
 });
 
-
 test('Neo4j autentica el usuario nativo solicitado y conserva la genealogía',async({request})=>{
   const response=await request.post(neo4j+'/db/neo4j/tx/commit',{
     headers:{Authorization:'Basic '+Buffer.from(env['NEO4J_USER']+':'+env['NEO4J_PASSWORD']).toString('base64')},
@@ -163,7 +161,6 @@ test('Neo4j autentica el usuario nativo solicitado y conserva la genealogía',as
   expect(result.results[0].data[0].row[0]).toBe(59);
   expect(result.results[1].data[0].row[0]).toBeGreaterThan(60);
 });
-
 
 test('pgAdmin conecta las otras cuatro bases con sus cuentas individuales',async({page})=>{
   await page.goto(pgadmin+'/login');

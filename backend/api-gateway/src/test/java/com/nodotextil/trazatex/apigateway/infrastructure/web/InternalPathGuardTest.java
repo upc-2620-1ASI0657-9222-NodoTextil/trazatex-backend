@@ -25,11 +25,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * {@code /internal/**} no existe para el exterior (404 como cualquier ruta inexistente) y las rutas con trucos de normalización
- * no llegan al servicio. El caso difícil: aquí el Gateway tiene un enrutamiento <b>trampa</b> {@code /**} hacia el servicio, y
- * aun así nada de {@code /internal} pasa; no depende de que ninguna ruta lo cubra.
- */
 @Import(InternalPathGuardTest.CatchAllRoute.class)
 class InternalPathGuardTest extends GatewayTestSupport {
 

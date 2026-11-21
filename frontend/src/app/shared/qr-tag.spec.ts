@@ -69,7 +69,6 @@ describe('Etiqueta QR imprimible y descargable (FE-M15)', () => {
     expect(css).toMatch(/@media print \{[^]*body\.printing-qr \* \{ visibility: hidden !important; \}/);
     expect(css).toContain('body.printing-qr .qr-printable, body.printing-qr .qr-printable * { visibility: visible !important; }');
     expect(css).toContain('body.printing-qr .qr-actions { display: none !important; }');
-    // el resto de la aplicación sale del flujo (visibility:hidden dejaba varias páginas y repetía la etiqueta fixed)
     expect(css).toContain('body.printing-qr :not(.qr-printable):not(.qr-printable *):not(:has(.qr-printable)) { display: none !important; }');
   });
 });

@@ -11,11 +11,6 @@ import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * {@code GET /api/invitations} y {@code GET /api/companies/current/capacity}, que V2 agregó para el frontend. Ahora pasan por un caso de uso
- * ({@code ManageInvitationsUseCase.listIssuedBy}, {@code ConsultCompanyCapacityUseCase}) en vez de consultar la base desde el controlador o desde la
- * aplicación; estas pruebas fijan el contrato que ya tenían.
- */
 class InvitationListAndCapacityApiIT extends IntegrationTestBase {
 
     UUID company;
@@ -28,8 +23,6 @@ class InvitationListAndCapacityApiIT extends IntegrationTestBase {
         admin = insertUser(company, "Ana", "ana@tejidos.pe", "COMPANY_ADMIN", "ACTIVE");
         otherAdmin = insertUser(company, "Rosa", "rosa@tejidos.pe", "COMPANY_ADMIN", "ACTIVE");
     }
-
-    // ---- invitaciones emitidas ----
 
     @Test
     void theAdminListsOnlyTheInvitationsItIssuedNewestFirstWithTheirEffectiveStatusAndNeverTheToken() throws Exception {
@@ -49,7 +42,6 @@ class InvitationListAndCapacityApiIT extends IntegrationTestBase {
                 .andExpect(jsonPath("$.items[0]", not(hasKey("token"))));
     }
 
-    /** I12: la lista se pagina ({@code page}, {@code size}; por defecto 20, máximo 100) y no mezcla las invitaciones de otro administrador. */
     @Test
     void theListIsPagedNewestFirstWithoutRepeatingOrSkippingAndRejectsInvalidPagination() throws Exception {
         for (int i = 0; i < 5; i++) {
@@ -81,8 +73,6 @@ class InvitationListAndCapacityApiIT extends IntegrationTestBase {
                 .andExpect(jsonPath("$.items[0].role").value("COMPANY_ADMIN"));
         perform(as(GET("/api/invitations"), operator, company, "OPERATOR")).andExpect(status().isForbidden());
     }
-
-    // ---- cupo de la empresa ----
 
     @Test
     void theCapacityCountsActiveUsersAndLivePendingInvitationsOfTheOwnCompanyAgainstTheLicenseLimit() throws Exception {

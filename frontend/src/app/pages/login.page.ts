@@ -4,8 +4,7 @@ import { errorMessage } from '../core/api.service';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Rol } from '../core/models';
-import { SessionService } from '../core/session.service';
-import { UiService } from '../shared/ui';
+import { RolNoCoincide, SessionService } from '../core/session.service';
 
 @Component({
   selector: 'app-login', imports: [FormsModule, IconComponent],
@@ -41,14 +40,14 @@ import { UiService } from '../shared/ui';
                 type="button"
                 [attr.aria-pressed]="rol() === r.rol"
                 [disabled]="busy()"
-                (click)="rol.set(r.rol)"
+                (click)="elegirRol(r.rol)"
               >
                 <app-icon [name]="r.icon" [size]="34" />
                 <span>{{ r.etiqueta }}</span>
               </button>
             }
           </div>
-          <p class="role-hint" id="rol-ayuda">El rol lo define tu cuenta.</p>
+          <p class="role-hint" id="rol-ayuda">Elige el rol registrado en tu cuenta.</p>
           <div class="credentials">
             <label class="login-field">
               <span>Correo</span>
@@ -237,7 +236,6 @@ export class LoginPage {
   protected readonly session = inject(SessionService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
-  private readonly ui = inject(UiService);
   readonly rol = signal<Rol>('Operario');
   readonly roles: { rol: Rol; etiqueta: string; icon: string }[] = [
     { rol: 'Operario', etiqueta: 'Operario', icon: 'process' },
@@ -249,18 +247,24 @@ export class LoginPage {
   password = '';
   readonly error = signal('');
   readonly busy = signal(false);
+  elegirRol(rol: Rol) {
+    this.rol.set(rol);
+    if (this.rolRechazado()) { this.error.set(''); this.rolRechazado.set(false); }
+  }
+  private readonly rolRechazado = signal(false);
   async entrar() {
     if (this.busy()) return;
     this.busy.set(true);
     this.error.set('');
+    this.rolRechazado.set(false);
     try {
-      await this.session.login(this.email.trim(), this.password);
-      // El selector de arriba es solo una ayuda visual: el rol real lo dicta la cuenta. Si no coinciden, se dice cuál es.
-      const real = this.session.rol();
-      if (real !== this.rol()) this.ui.toast('Tu cuenta es de ' + real + '; entraste con ese rol.');
+      await this.session.login(this.email.trim(), this.password, this.rol());
       const target = this.route.snapshot.queryParamMap.get('returnUrl');
       await this.router.navigateByUrl(!this.session.esDueno() && target?.startsWith('/lotes/') && !target.includes('//') ? target : this.session.esDueno() ? '/empresas' : '/trazabilidad');
-    } catch (error) { this.error.set(errorMessage(error)); }
+    } catch (error) {
+      this.rolRechazado.set(error instanceof RolNoCoincide);
+      this.error.set(errorMessage(error));
+    }
     finally { this.busy.set(false); }
   }
 }

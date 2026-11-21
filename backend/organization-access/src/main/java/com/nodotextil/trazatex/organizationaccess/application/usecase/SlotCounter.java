@@ -7,11 +7,6 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * Cupo usado de una empresa (RF-013) = usuarios ACTIVE + invitaciones PENDING <b>vigentes</b> ({@code expires_at > now}): una
- * invitación vencida no ocupa cupo aunque el job de expiración aún no la haya marcado. Llamarlo con la fila de la empresa
- * bloqueada ({@code CompanyRepositoryPort.findByIdForUpdate}) para que el conteo y el alta no se crucen con otra operación.
- */
 @Component
 class SlotCounter {
 

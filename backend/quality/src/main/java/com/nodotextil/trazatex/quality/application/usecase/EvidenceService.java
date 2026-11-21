@@ -33,17 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * US42. <b>No es {@code @Transactional}</b> a propósito: la subida a Cloudinary puede tardar segundos y no debe ocurrir dentro de
- * una transacción que tenga tomado el lote o la transformación. El dueño se lee sin bloqueo, los archivos se suben y solo al final,
- * en una transacción corta, se escriben las filas; así una división o una transferencia simultánea nunca espera a la subida.
- * (Si la petición trae {@code Idempotency-Key}, el filtro ya abrió una transacción, pero esa solo retiene la fila de la clave:
- * nada de aquí toma bloqueos sobre el lote.)
- *
- * <p>Todo o nada: se validan todos los archivos antes de subir ninguno. Cloudinary que no responde no es un error del usuario: la
- * evidencia queda {@code PENDING} con sus bytes en la cola (misma transacción que su fila) y, tras el primer fallo, el resto de la
- * petición va directo a la cola, de modo que el peor caso es un solo timeout.
- */
 @Service
 class EvidenceService implements ManageEvidenceUseCase {
 
@@ -73,7 +62,7 @@ class EvidenceService implements ManageEvidenceUseCase {
 
     @Override
     public EvidenceItems attach(EvidenceOwnerType ownerType, UUID ownerId, List<EvidenceUpload> files, Actor actor) {
-        requireOwnedBy(ownerType, ownerId, actor);          // lectura sin bloqueo; una empresa ajena es "no existe"
+        requireOwnedBy(ownerType, ownerId, actor);
         List<ImageFormat> formats = validate(files);
 
         List<NewEvidence> created = new ArrayList<>();
@@ -85,7 +74,6 @@ class EvidenceService implements ManageEvidenceUseCase {
             ImageFormat format = formats.get(i);
             UUID id = UUID.randomUUID();
             String filename = sanitize(file.originalFilename());
-            // Un microsegundo de diferencia por archivo: así el listado (por fecha) conserva el orden en que llegaron en la petición
             Instant now = batchTime.plus(i, java.time.temporal.ChronoUnit.MICROS);
             if (!storageDown) {
                 try {
@@ -94,7 +82,6 @@ class EvidenceService implements ManageEvidenceUseCase {
                             file.content().length, actor.userId(), url, now), null));
                     continue;
                 } catch (StoragePermanentException rejected) {
-                    // Cloudinary dice que no es una imagen válida: es el escenario 3 de US42, nada queda guardado
                     throw new ValidationException(ErrorCodes.UNSUPPORTED_FILE_FORMAT,
                             "El archivo \"" + filename + "\" no es una imagen válida. Formatos permitidos: " + ImageFormat.ALLOWED_DESCRIPTION + ".",
                             List.of(filename));
@@ -141,7 +128,6 @@ class EvidenceService implements ManageEvidenceUseCase {
         }
     }
 
-    /** Todo o nada: si un archivo falla, ninguno se sube ni se guarda. */
     private List<ImageFormat> validate(List<EvidenceUpload> files) {
         if (files == null || files.isEmpty() || files.stream().anyMatch(f -> f == null || f.content() == null || f.content().length == 0)) {
             throw new ValidationException(ErrorCodes.NO_FILES, "Adjunte al menos una fotografía (campo \"files\"); no puede haber archivos vacíos.", null);
@@ -167,7 +153,6 @@ class EvidenceService implements ManageEvidenceUseCase {
         return formats;
     }
 
-    /** El nombre solo sirve para mostrar: sin ruta, sin caracteres de control y a lo sumo 255 caracteres. */
     static String sanitize(String filename) {
         if (filename == null || filename.isBlank()) {
             return "foto";

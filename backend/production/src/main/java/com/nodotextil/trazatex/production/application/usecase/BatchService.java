@@ -48,7 +48,6 @@ import java.util.UUID;
 @Transactional
 class BatchService implements ManageBatchesUseCase {
 
-    /** Las fechas de los filtros son días calendario en Lima: un lote registrado a las 22:00 del día 3 no cae en el 4. */
     static final ZoneId BUSINESS_ZONE = ZoneId.of("America/Lima");
 
     private final BatchRepositoryPort batches;
@@ -155,9 +154,6 @@ class BatchService implements ManageBatchesUseCase {
         return BatchResult.from(batch);
     }
 
-    // ---- ayudas ----
-
-    /** El lote con su fila bloqueada; uno de otra empresa es "no existe" (no se revela que existe). */
     private Batch lockOwned(UUID batchId, Actor actor) {
         return batches.findByIdForUpdate(batchId).filter(b -> b.companyId().equals(actor.companyId()))
                 .orElseThrow(BatchService::batchNotFound);
@@ -171,7 +167,7 @@ class BatchService implements ManageBatchesUseCase {
         try {
             return java.util.Optional.of(QrCode.parse(text));
         } catch (TrazatexException e) {
-            return java.util.Optional.empty();    // un código mal formado es "no encontrado", igual que uno desconocido
+            return java.util.Optional.empty();
         }
     }
 

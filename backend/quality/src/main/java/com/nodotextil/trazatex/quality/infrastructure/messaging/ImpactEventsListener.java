@@ -21,10 +21,6 @@ import java.util.UUID;
 
 import static com.nodotextil.trazatex.quality.infrastructure.messaging.ProductionEventListeners.require;
 
-/**
- * {@code traceability.impact}: {@code PossibleDerivedFailureDetected} (clave {@code failureId}). Solo registra los avisos; la retención ({@code HOLD})
- * la manda un job (ver {@code RecordDerivedFailureUseCase}). Lo demás que viaje por el tópico se ignora antes del consumo idempotente.
- */
 @Component
 @ConditionalOnProperty(name = "trazatex.messaging.enabled", havingValue = "true", matchIfMissing = true)
 class ImpactEventsListener {
@@ -51,7 +47,6 @@ class ImpactEventsListener {
         this.objectMapper = objectMapper;
     }
 
-    /** {@code autoStartup=false}: lo arranca el vigilante cuando el tópico (de Traceability) existe. */
     @KafkaListener(id = ConsumedTopics.IMPACT_LISTENER_ID, topics = ConsumedTopics.TRACEABILITY_IMPACT, autoStartup = "false",
             groupId = "${trazatex.messaging.consumer.impact.group:quality.traceability-impact}")
     void onMessage(ConsumerRecord<String, String> record) {

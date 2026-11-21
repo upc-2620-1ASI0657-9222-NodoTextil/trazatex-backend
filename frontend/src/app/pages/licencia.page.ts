@@ -9,7 +9,6 @@ import { SHARED } from '../shared/ui';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page page--licencia">
-      
 
       <div class="lic">
         <section class="tag">
@@ -77,7 +76,7 @@ import { SHARED } from '../shared/ui';
     .slot { padding: .8rem .6rem; text-align: center; font-weight: 650; font-size: .84rem; border: 1px solid var(--brown); color: var(--muted); }
     .slot.used { border: 1px solid var(--green-800); background: var(--green-800); color: var(--cream); }
     .slot.used.off { background: var(--canvas-2); color: var(--brown-ink); border-color: var(--brown); }
-    
+
     @media (max-width: 520px) { .slots { overflow-x: clip; } }
   `,
 })
@@ -90,5 +89,3 @@ export class LicenciaPage {
   usedSlots(id: string) { return this.store.licenseUsage()?.companies.find(c => c.companyId === id)?.usedSlots ?? 0; }
   readonly slots = computed(() => Array.from({ length: this.L().limiteEmpresas }, (_, i) => this.empresas()[i] ?? null));
 }
-
-

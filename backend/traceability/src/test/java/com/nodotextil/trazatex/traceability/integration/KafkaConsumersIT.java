@@ -31,15 +31,7 @@ import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Los consumidores con Kafka real (ADR-004): se leen los tópicos desde el principio —lo publicado antes de que el servicio
- * arrancara—, los tipos que traceability no atiende se ignoran sin DLT ni rastro, lo ilegible va a la DLT sin reintentos y sin
- * detener al consumidor, un evento repetido se aplica una vez, {@code quality.control} (de otro servicio, ausente al arrancar) no
- * se crea ni inunda el log y se consume cuando aparece, y cinco consumidores en hilos distintos sobre los mismos nodos no mandan
- * nada a la DLT.
- */
 @SpringBootTest(properties = {"trazatex.messaging.enabled=true", "trazatex.messaging.consumer.topic-check-interval=PT0.5S",
-        // si un ilegible se reintentara, la primera espera (30 s) superaría con creces lo que la prueba aguarda: así se prueba que no se reintenta
         "trazatex.messaging.consumer.retry.max-retries=2", "trazatex.messaging.consumer.retry.initial-interval=PT30S",
         "trazatex.messaging.consumer.retry.max-interval=PT60S"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
@@ -51,11 +43,9 @@ class KafkaConsumersIT extends IntegrationTestBase {
     static final KafkaProducer<String, String> PRODUCER;
     static final Duration PATIENCE = Duration.ofSeconds(60);
     static final OrderScenario.Instance HISTORY = OrderScenario.small(1, null);
-    /** Eventos que traceability no atiende, publicados ANTES que la historia. */
     static final List<Message> IGNORED = new ArrayList<>();
 
     static {
-        // Estado previo: los demás servicios ya crearon sus tópicos y publicaron; quality.control NO existe (no hay creación automática)
         KafkaTestSupport.createTopics(KAFKA.getBootstrapServers(), Map.of("production.batch", 1, "production.transformation", 1,
                 "production.transfer", 1, "orgaccess.company", 1));
         PRODUCER = KafkaTestSupport.producer(KAFKA.getBootstrapServers());
@@ -68,7 +58,6 @@ class KafkaConsumersIT extends IntegrationTestBase {
                 EventMessages.map("transferId", UUID.randomUUID(), "batchIds", List.of(UUID.randomUUID()))));
         IGNORED.add(EventMessages.of("production.batch", "b-x", UUID.randomUUID(), "UnTipoDeEventoDelFuturo", EventMessages.map("x", 1)));
         IGNORED.forEach(message -> KafkaTestSupport.send(PRODUCER, message));
-        // la historia: el caso pequeño completo, en el orden en que ocurrió
         OrderScenario.NAMED_ORDERS.get(0).forEach(name -> KafkaTestSupport.send(PRODUCER, HISTORY.messages().get(name)));
     }
 
@@ -77,7 +66,6 @@ class KafkaConsumersIT extends IntegrationTestBase {
         registry.add("trazatex.messaging.bootstrap-servers", KAFKA::getBootstrapServers);
     }
 
-    /** No se vacía el grafo entre pruebas: la historia se construye al arrancar y cada prueba usa ids propios. */
     @Override
     @BeforeEach
     void emptyGraph() {
@@ -91,8 +79,6 @@ class KafkaConsumersIT extends IntegrationTestBase {
         return KafkaTestSupport.readAll(bootstrap(), topic + ".DLT", wait);
     }
 
-    // ---- 1. desde el principio ----
-
     @Test
     @Order(1)
     void whatWasPublishedBeforeTheServiceStartedIsReadFromTheBeginningAndBuildsTheGraph() {
@@ -101,12 +87,9 @@ class KafkaConsumersIT extends IntegrationTestBase {
         GraphAssertions.assertExpectedGraph(neo4j, HISTORY);
     }
 
-    // ---- 2. lo que no es suyo ----
-
     @Test
     @Order(2)
     void typesTraceabilityDoesNotHandleAreIgnoredWithoutDltOrProcessedEvent() {
-        // todo lo anterior ya se consumió (la historia va después de estos en cada tópico)
         List<UUID> ignored = IGNORED.stream().map(Message::eventId).toList();
 
         assertThat(GraphAssertions.processed(neo4j, ignored)).as("no dejan fila en :ProcessedEvent").isZero();
@@ -117,12 +100,10 @@ class KafkaConsumersIT extends IntegrationTestBase {
                 .as("un CompanyStatusChanged no crea nada (CompanyRegistered sí se consume: guarda el nombre)").containsEntry("n", 0L);
     }
 
-    // ---- 3. tópicos propios y ajenos ----
-
     @Test
     @Order(3)
     void theServiceDeclaresOnlyTheDeadLetterTopicsOfWhatItConsumesAndDoesNotCreateTheForeignOnes(CapturedOutput output) throws Exception {
-        Thread.sleep(2000); // varias pasadas del vigilante con quality.control ausente
+        Thread.sleep(2000);
 
         Set<String> topics = KafkaTestSupport.topics(bootstrap());
 
@@ -131,8 +112,6 @@ class KafkaConsumersIT extends IntegrationTestBase {
         assertThat(topics).as("quality.control y quality.failure son de Quality: traceability no los crea").doesNotContain("quality.control", "quality.failure");
         assertThat(output.getAll()).as("suscribirse a un tópico ausente escribiría un aviso por segundo").doesNotContain("UNKNOWN_TOPIC_OR_PARTITION");
     }
-
-    // ---- 4. ilegibles ----
 
     @Test
     @Order(4)
@@ -165,8 +144,6 @@ class KafkaConsumersIT extends IntegrationTestBase {
                 .orElseThrow()).containsEntry("phase", "PROCESSED").containsEntry("v", 5L);
     }
 
-    // ---- 5. duplicados ----
-
     @Test
     @Order(5)
     void theSameEventDeliveredTwiceIsAppliedOnce() {
@@ -185,8 +162,6 @@ class KafkaConsumersIT extends IntegrationTestBase {
                 .containsEntry("n", 1L).containsEntry("phase", "IN_TRANSFORMATION");
         assertThat(deadLetters("production.batch", Duration.ofSeconds(1))).hasSize(4);
     }
-
-    // ---- 6. quality.control aparece después ----
 
     @Test
     @Order(6)
@@ -209,18 +184,12 @@ class KafkaConsumersIT extends IntegrationTestBase {
         assertThat(deadLetters("quality.control", Duration.ofSeconds(1))).isEmpty();
     }
 
-    // ---- 7. un grupo por tópico ----
-
     @Test
     @Order(7)
     void everyConsumedTopicHasItsOwnGroup() {
         assertThat(KafkaTestSupport.consumerGroups(bootstrap())).contains("traceability.orgaccess-company", "traceability.production-batch",
                 "traceability.production-transformation", "traceability.production-transfer", "traceability.quality-control");
     }
-
-    // ---- 9 (más abajo en el archivo): CompanyRegistered guarda el nombre ----
-
-    // ---- 8. cinco consumidores sobre los mismos nodos ----
 
     @Test
     @Order(8)
@@ -266,8 +235,6 @@ class KafkaConsumersIT extends IntegrationTestBase {
                 output.getAll().split("Fallo transitorio de Neo4j", -1).length - 1);
     }
 
-    // ---- 9. CompanyRegistered: el nombre de la empresa, con la privacidad llegando antes o después ----
-
     @Test
     @Order(9)
     void aCompanyRegisteredFillsTheNameAndNeverTouchesThePrivacyInEitherOrder() {
@@ -280,7 +247,6 @@ class KafkaConsumersIT extends IntegrationTestBase {
                 EventMessages.map("companyId", registeredFirst, "ruc", "20100047218", "businessName", "Tintorería del Sur SAC", "activities", List.of("DYEING"), "status", "ACTIVE"));
         Message privacyAfter = EventMessages.companyPrivacyUpdated(UUID.randomUUID(), registeredFirst, Map.of("ORIGIN", "SHARED"));
 
-        // la privacidad llega ANTES que el alta (no es el orden real de una misma clave, pero Kafka lo permite y el grafo debe resistirlo)
         for (Message message : List.of(privacyBefore, nameAfter, nameBefore, privacyAfter)) {
             KafkaTestSupport.send(PRODUCER, message);
         }

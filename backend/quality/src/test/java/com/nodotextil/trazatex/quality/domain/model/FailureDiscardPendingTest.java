@@ -14,7 +14,6 @@ import static com.nodotextil.trazatex.quality.domain.Fixtures.id;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** Descartar solo confirma la falla cuando Production confirma {@code DISCARD}. */
 class FailureDiscardPendingTest {
 
     static final UUID ADMIN = UUID.fromString("00000000-0000-0000-0000-00000000a0ad");

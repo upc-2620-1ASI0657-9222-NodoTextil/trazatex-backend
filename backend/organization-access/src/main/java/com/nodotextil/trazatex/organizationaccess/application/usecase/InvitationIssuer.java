@@ -17,10 +17,6 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Emisión de invitaciones, común a crear empresa, invitar operario, aprobar solicitud de administrador y al bootstrap.
- * Quien llama bloquea antes la fila de la empresa (o de la licencia) y ya está dentro de la transacción.
- */
 @Component
 public class InvitationIssuer {
 
@@ -39,7 +35,6 @@ public class InvitationIssuer {
         this.links = links;
     }
 
-    /** @param displayName nombre para mostrar tal como lo dio quien invita (no se divide); puede ser nulo */
     public Invitation issue(License license, Role role, UUID companyId, String email, String displayName, String firstName,
                             String lastName, String position, UUID issuedBy, Instant now) {
         Email address = new Email(email);
@@ -53,10 +48,6 @@ public class InvitationIssuer {
         return invitation;
     }
 
-    /**
-     * Una invitación vencida que el job aún no marcó seguiría ocupando el índice único de correos PENDING: se marca EXPIRED
-     * (y se envía a la base) antes de insertar la nueva.
-     */
     private boolean hasLivePendingInvitation(Email address, Instant now) {
         Optional<Invitation> stored = invitations.findStoredPendingByEmail(address);
         if (stored.isEmpty()) {

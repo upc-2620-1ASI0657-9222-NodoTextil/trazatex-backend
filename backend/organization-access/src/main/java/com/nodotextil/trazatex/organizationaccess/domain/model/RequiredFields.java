@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-/** Acumula los datos obligatorios que faltan para responder con la lista completa (US07 esc. 2: "señala los datos pendientes"). */
 public final class RequiredFields {
 
     private final List<String> missing = new ArrayList<>();

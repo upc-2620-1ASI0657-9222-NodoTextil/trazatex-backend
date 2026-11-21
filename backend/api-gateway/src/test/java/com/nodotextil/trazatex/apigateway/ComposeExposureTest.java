@@ -11,14 +11,6 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-/**
- * M8: el compose confía por defecto en {@code X-Forwarded-For} para el límite por IP ({@code TRAZATEX_RATE_LIMIT_TRUST_FORWARDED_FOR=true}).
- * Eso solo es seguro si <b>el gateway no se puede alcanzar directamente</b>: si se publicara en el host, cualquiera enviaría un
- * {@code X-Forwarded-For} inventado y saltaría el límite. Esta prueba lee {@code compose.yaml} y falla si el servicio {@code gateway}
- * publica un puerto, expone uno, usa la red del host o hereda configuración de otro archivo ({@code extends}, que podría traer un {@code ports}).
- *
- * <p>Se omite (no pasa en falso: queda como «skipped») si el backend se ejecuta sin el {@code compose.yaml} de la plataforma al lado.
- */
 class ComposeExposureTest {
 
     private static Path compose() {
@@ -30,7 +22,6 @@ class ComposeExposureTest {
         return null;
     }
 
-    /** Las líneas del bloque de un servicio (sus claves están a 2 espacios de sangría), sin comentarios. */
     static List<String> serviceBlock(List<String> lines, String service) {
         List<String> block = new ArrayList<>();
         boolean inside = false;
@@ -82,7 +73,6 @@ class ComposeExposureTest {
         assumeTrue(file != null, "no hay compose.yaml de la plataforma junto al backend");
         List<String> lines = Files.readAllLines(file);
 
-        // la única forma de llegar al gateway es el Nginx de `web`: el servicio web publica 80 en 127.0.0.1 y depende del gateway
         List<String> web = serviceBlock(lines, "web");
         assertThat(web).anyMatch(line -> line.contains("ports:") && line.contains("127.0.0.1:"));
         assertThat(web).anyMatch(line -> line.contains("depends_on") && line.contains("gateway"));

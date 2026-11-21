@@ -25,10 +25,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class TransformationRepositoryIT extends IntegrationTestBase {
 
-    /**
-     * Lo que hará el caso de uso: bloquear los lotes (que vuelven en orden de id), reponerlos en el orden pedido por el
-     * operario, iniciar en el dominio y guardar todo en una transacción.
-     */
     private Transformation start(TransformationType type, Machine machine, Batch... inputs) {
         return inTx(() -> {
             List<UUID> ids = java.util.Arrays.stream(inputs).map(Batch::id).toList();
@@ -129,7 +125,6 @@ class TransformationRepositoryIT extends IntegrationTestBase {
         Batch input = savedBatch("100");
         Transformation started = start(TransformationType.WEAVING, machine, input);
 
-        // tras recargarla, la tejeduría sigue exigiendo el 80 % configurado: 79,9 kg de 100 se rechaza
         assertThatThrownBy(() -> inTx(() -> {
             Transformation transformation = transformations.findByIdForUpdate(started.id()).orElseThrow();
             List<Batch> locked = batches.findAllForUpdate(List.of(input.id()));
@@ -144,7 +139,6 @@ class TransformationRepositoryIT extends IntegrationTestBase {
         Batch input = savedBatch("100");
         start(TransformationType.SPINNING, machine, input);
 
-        // saltándose la regla del dominio, la base lo impide igual
         assertThatThrownBy(() -> jdbc.sql("""
                         INSERT INTO transformation_inputs (transformation_id, position, batch_id, quantity_kg)
                         SELECT id, 5, :batch, 1 FROM transformations

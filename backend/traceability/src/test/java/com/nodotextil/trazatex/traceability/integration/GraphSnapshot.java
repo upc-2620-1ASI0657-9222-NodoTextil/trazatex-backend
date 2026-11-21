@@ -12,12 +12,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 
-/**
- * El grafo de una corrida en forma canónica: una línea por nodo y por relación, con los ids sustituidos por sus nombres
- * ({@code H1}, {@code cA}...) y las propiedades ordenadas. Dos grafos son iguales si sus líneas, ordenadas, lo son. El mismo
- * formato lo usa {@link OrderScenario} para escribir a mano el grafo esperado, de modo que la comparación no es contra otra
- * corrida del mismo código.
- */
 final class GraphSnapshot {
 
     private GraphSnapshot() {
@@ -31,7 +25,6 @@ final class GraphSnapshot {
         return "REL " + type + " " + from + " -> " + to + " " + formatted(properties, Map.of());
     }
 
-    /** Lo que hay en la base para las entidades de una corrida (identificadas por sus ids), ordenado. */
     static List<String> of(Neo4jClient neo4j, Collection<UUID> entityIds, Map<String, String> names) {
         List<String> ids = entityIds.stream().map(UUID::toString).toList();
         List<String> lines = new ArrayList<>();

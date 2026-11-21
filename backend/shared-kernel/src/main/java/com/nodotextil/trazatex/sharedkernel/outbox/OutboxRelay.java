@@ -11,27 +11,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Relay del Transactional Outbox (ADR-004). Cada servicio lo programa (~1 s) desde {@code infrastructure/messaging}
- * llamando a {@link #publishPending()}.
- *
- * <p>Cada pasada corre en una transacción: lee las filas pendientes (que el adaptador bloquea con
- * {@code FOR UPDATE SKIP LOCKED}), las publica en orden de {@code created_at} con {@code key = aggregateId}, y solo
- * cuando el broker confirma cada una la marca como publicada. Entrega at-least-once: si el servicio cae entre la
- * confirmación y el commit, la fila se vuelve a publicar y los consumidores deben ser idempotentes.
- *
- * <p>Si una publicación falla, el relay no publica los mensajes posteriores <b>del mismo tópico y agregado</b>
- * (para no invertir su orden) pero sigue con los demás; confirma las marcas ya hechas y reintenta en la siguiente pasada.
- * Cada fallo suma un intento y guarda el error en la fila ({@link OutboxStorePort#markFailed}) y se registra un WARN
- * con el {@code eventId}, el tópico y el error. No hay estado {@code FAILED}.
- */
 public class OutboxRelay {
 
     public static final int DEFAULT_BATCH_SIZE = 100;
-    /** Tamaño máximo del error que se guarda en {@code last_error}. */
     public static final int MAX_ERROR_LENGTH = 1000;
 
-    /** @param skipped mensajes que se dejaron pendientes por seguir a uno fallido del mismo agregado */
     public record Result(int published, int failed, int skipped) {
     }
 
@@ -65,7 +49,7 @@ public class OutboxRelay {
 
     private Result publishBatch() {
         List<OutboxMessage> pending = store.findPending(batchSize).stream()
-                .sorted(Comparator.comparing(OutboxMessage::createdAt)) // estable: respeta el orden del almacén en empates
+                .sorted(Comparator.comparing(OutboxMessage::createdAt))
                 .toList();
         Set<String> blocked = new HashSet<>();
         int published = 0;
@@ -97,12 +81,10 @@ public class OutboxRelay {
         try {
             store.markFailed(message.id(), error);
         } catch (RuntimeException e) {
-            // llevar la cuenta de intentos no debe impedir publicar ni confirmar el resto del lote
             log.warn("No se pudo registrar el intento fallido del evento {}: {}", message.id(), e.toString());
         }
     }
 
-    /** {@code Clase: mensaje}, con la causa raíz si es distinta, acotado a {@link #MAX_ERROR_LENGTH}. */
     static String describe(Throwable failure) {
         Throwable root = failure;
         while (root.getCause() != null && root.getCause() != root) {

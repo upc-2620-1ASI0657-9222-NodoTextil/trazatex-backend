@@ -23,7 +23,7 @@ class MachineRepositoryIT extends IntegrationTestBase {
 
         assertThat(loaded.companyId()).isEqualTo(COMPANY);
         assertThat(loaded.internalCode()).isEqualTo("MQ-07");
-        assertThat(loaded.name()).isEqualTo("Cardadora  MQ-07");   // "Cardadora " + " MQ-07 ", recortado
+        assertThat(loaded.name()).isEqualTo("Cardadora  MQ-07");
         assertThat(loaded.type()).isEqualTo("Cardado");
         assertThat(loaded.status()).isEqualTo(MachineStatus.ACTIVE);
         assertThat(loaded.createdAt()).isEqualTo(START);

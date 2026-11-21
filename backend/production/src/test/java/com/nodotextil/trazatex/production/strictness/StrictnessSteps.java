@@ -3,7 +3,6 @@ package com.nodotextil.trazatex.production.strictness;
 import io.cucumber.java.PendingException;
 import io.cucumber.java.es.Dado;
 
-/** Pasos de los .feature de {@code strictness/}: solo sirven para comprobar que el modo estricto de verdad hace fallar. No son de los escenarios. */
 public class StrictnessSteps {
 
     @Dado("^que existe un paso definido$")

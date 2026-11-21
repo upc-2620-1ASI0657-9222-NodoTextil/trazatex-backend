@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component;
 import java.time.Clock;
 import java.util.UUID;
 
-/** {@code processed_events}: {@code INSERT ... ON CONFLICT DO NOTHING}; la PK bloquea a un duplicado concurrente hasta que la otra transacción termine. */
 @Component
 class JdbcProcessedEventAdapter implements ProcessedEventPort {
 

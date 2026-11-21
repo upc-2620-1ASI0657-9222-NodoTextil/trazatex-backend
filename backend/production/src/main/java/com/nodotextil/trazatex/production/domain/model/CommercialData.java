@@ -7,10 +7,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Locale;
 
-/**
- * Datos comerciales opcionales de un producto final (US20, RF-037). Siempre privados: no viajan en ningún evento. Si hay
- * precio, la moneda es obligatoria (código de 3 letras, p. ej. {@code PEN}).
- */
 public record CommercialData(
         String buyerOrDistributor,
         BigDecimal salePrice,

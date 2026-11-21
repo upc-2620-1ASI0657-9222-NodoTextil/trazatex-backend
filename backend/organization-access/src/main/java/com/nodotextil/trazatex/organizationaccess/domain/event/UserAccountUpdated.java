@@ -6,7 +6,6 @@ import com.nodotextil.trazatex.organizationaccess.domain.model.UserStatus;
 
 import java.util.UUID;
 
-/** Tópico {@code orgaccess.user}, clave userId. Lo consume notification. Al aceptar la invitación y al cambiar el estado. */
 public record UserAccountUpdated(
         UUID userId,
         String email,

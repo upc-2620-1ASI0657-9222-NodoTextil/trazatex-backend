@@ -6,7 +6,6 @@ import com.nodotextil.trazatex.sharedkernel.exception.ValidationException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-/** Un componente de la composición de un lote: material y su porcentaje (> 0 y ≤ 100, hasta 2 decimales). */
 public record CompositionComponent(String name, BigDecimal percentage) {
 
     public static final int SCALE = 2;
@@ -36,7 +35,6 @@ public record CompositionComponent(String name, BigDecimal percentage) {
         return new CompositionComponent(name, new BigDecimal(percentage));
     }
 
-    /** Centésimas de punto porcentual (12,34 % → 1234): la aritmética del promedio ponderado es de enteros. */
     int hundredths() {
         return percentage.movePointRight(SCALE).intValueExact();
     }

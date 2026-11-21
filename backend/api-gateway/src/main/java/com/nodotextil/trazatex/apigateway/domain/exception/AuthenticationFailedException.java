@@ -1,6 +1,5 @@
 package com.nodotextil.trazatex.apigateway.domain.exception;
 
-/** La petición no trae una identidad válida: se responde 401. El motivo da el {@code code} del error; el detalle no se expone. */
 public class AuthenticationFailedException extends RuntimeException {
 
     public enum Reason {

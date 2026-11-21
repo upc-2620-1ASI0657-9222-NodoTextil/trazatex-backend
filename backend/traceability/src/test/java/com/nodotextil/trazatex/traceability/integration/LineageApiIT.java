@@ -34,16 +34,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * La API de consultas (US30–US32, US36) como la llama el Gateway: con las cabeceras {@code X-User-Id}, {@code X-Company-Id} y {@code X-User-Role}, sobre
- * un grafo armado por los mismos casos de uso que usan los consumidores y con Neo4j real. Cubre quién puede consultar, qué ve cada empresa en el JSON,
- * el mismo 404 en todos los casos y {@code Cache-Control: no-store} en toda respuesta.
- */
 class LineageApiIT extends IntegrationTestBase {
 
     static final UUID A = UUID.fromString("00000000-0000-0000-0000-0000000000a1");
     static final UUID B = UUID.fromString("00000000-0000-0000-0000-0000000000b2");
-    /** Una empresa que el grafo no conoce (sin lotes ni nodo): p. ej. una inactiva o recién creada. */
     static final UUID NEWCOMER = UUID.fromString("00000000-0000-0000-0000-0000000000c3");
 
     record Caller(UUID userId, UUID companyId, String role) {
@@ -82,8 +76,6 @@ class LineageApiIT extends IntegrationTestBase {
         graph.company(A, "Hilandería Andina SAC").company(B, "Tintorería del Sur SAC");
     }
 
-    // ---- peticiones ----
-
     private static MockHttpServletRequestBuilder as(MockHttpServletRequestBuilder request, Caller caller) {
         MockHttpServletRequestBuilder builder = request.header("X-User-Id", caller.userId().toString()).header("X-User-Role", caller.role());
         return caller.companyId() == null ? builder : builder.header("X-Company-Id", caller.companyId().toString());
@@ -111,9 +103,6 @@ class LineageApiIT extends IntegrationTestBase {
 
     private static final String NO_STORE = "no-store";
 
-    // ---- quién puede consultar ----
-
-    /** Las cuatro rutas de consulta, con un lote que existe (para que un 200 no dependa de nada más). */
     static Stream<String> everyRoute() {
         return Stream.of("/api/traceability/lineages?qrCode=QR-P1", ancestors("P1"), descendants("P1"), lineage("P1"));
     }
@@ -133,11 +122,11 @@ class LineageApiIT extends IntegrationTestBase {
         graph.batch("P1", A);
         String user = OPERATOR_OF_A.userId().toString();
 
-        mockMvc.perform(get(url).header("X-User-Id", user).header("X-Company-Id", A.toString())).andExpect(status().isUnauthorized()); // sin rol
-        mockMvc.perform(get(url).header("X-User-Role", "OPERATOR").header("X-Company-Id", A.toString())).andExpect(status().isUnauthorized()); // sin usuario
-        mockMvc.perform(get(url).header("X-User-Id", user).header("X-User-Role", "OPERATOR")).andExpect(status().isUnauthorized()); // operario sin empresa
+        mockMvc.perform(get(url).header("X-User-Id", user).header("X-Company-Id", A.toString())).andExpect(status().isUnauthorized());
+        mockMvc.perform(get(url).header("X-User-Role", "OPERATOR").header("X-Company-Id", A.toString())).andExpect(status().isUnauthorized());
+        mockMvc.perform(get(url).header("X-User-Id", user).header("X-User-Role", "OPERATOR")).andExpect(status().isUnauthorized());
         mockMvc.perform(get(url).header("X-User-Id", user).header("X-User-Role", "LICENSE_OWNER").header("X-Company-Id", A.toString()))
-                .andExpect(status().isUnauthorized()); // dueño con empresa
+                .andExpect(status().isUnauthorized());
         mockMvc.perform(get(url).header("X-User-Id", "no-es-uuid").header("X-User-Role", "OPERATOR").header("X-Company-Id", A.toString()))
                 .andExpect(status().isUnauthorized());
         mockMvc.perform(get(url).header("X-User-Id", user).header("X-User-Role", "SUPERUSUARIO").header("X-Company-Id", A.toString()))
@@ -174,8 +163,6 @@ class LineageApiIT extends IntegrationTestBase {
 
     @Test
     void aUserOfAnInactiveCompanyCanQueryBecauseTraceabilityNeverLooksAtTheStateOfACompany() throws Exception {
-        // Traceability no guarda el estado de las empresas (ignora CompanyStatusChanged, que es de production; lo prueba KafkaConsumersIT): consultar es
-        // lectura. Una empresa inactiva es, para este servicio, una empresa cualquiera: aquí, una que ni siquiera tiene nodo, con su propio lote y los ajenos
         graph.batch("P1", A);
         graph.chain("C", NEWCOMER, 3);
 
@@ -183,8 +170,6 @@ class LineageApiIT extends IntegrationTestBase {
         getAs(OPERATOR_OF_NEWCOMER, ancestors("C2")).andExpect(status().isOk()).andExpect(jsonPath("$.nodes.length()").value(3));
         getAs(OPERATOR_OF_NEWCOMER, ancestors("P1")).andExpect(status().isOk()).andExpect(jsonPath("$.nodes[0].access").value("SHARED"));
     }
-
-    // ---- qué ve cada empresa ----
 
     @Test
     void theOwnCompanyGetsEveryFieldInTheJsonAndAnotherOnlyTheAlwaysSharedOnes() throws Exception {
@@ -255,11 +240,9 @@ class LineageApiIT extends IntegrationTestBase {
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content().contentTypeCompatibleWith("application/json"));
     }
 
-    // ---- 404: el mismo cuerpo, sin pistas ----
-
     @Test
     void anUnknownAProvisionalAnAnIncompleteAndAnUnreadableBatchAnswerExactlyTheSame404() throws Exception {
-        graph.transform("T", A, List.of("FANTASMA"), "Z"); // FANTASMA solo existe como entrada provisional
+        graph.transform("T", A, List.of("FANTASMA"), "Z");
         graph.batch("SIN-FASE", A).batch("FASE-RARA", A);
         neo4j.query("MATCH (b:Batch {batchId: $id}) REMOVE b.phase").bind(id("SIN-FASE").toString()).to("id").run();
         neo4j.query("MATCH (b:Batch {batchId: $id}) SET b.phase = 'FLOTANDO'").bind(id("FASE-RARA").toString()).to("id").run();
@@ -289,8 +272,6 @@ class LineageApiIT extends IntegrationTestBase {
         }
     }
 
-    // ---- 400 ----
-
     @Test
     void aBatchIdThatIsNotAUuidIs400LikeEveryOtherMalformedParameter() throws Exception {
         for (String route : List.of("ancestors", "descendants", "lineage")) {
@@ -305,7 +286,6 @@ class LineageApiIT extends IntegrationTestBase {
         graph.batch("P1", A);
 
         getAs(OPERATOR_OF_A, "/api/traceability/lineages").andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("MISSING_SEARCH_CRITERIA"));
-        // los espacios van como parámetro (en la URL, MockMvc volvería a codificar un %20)
         mockMvc.perform(as(get("/api/traceability/lineages").queryParam("qrCode", "").queryParam("traceabilityId", "   "), OPERATOR_OF_A))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("MISSING_SEARCH_CRITERIA"));
         getAs(OPERATOR_OF_A, "/api/traceability/lineages?qrCode=QR-P1&page=-1").andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_PAGINATION"));
@@ -314,8 +294,6 @@ class LineageApiIT extends IntegrationTestBase {
                 .andExpect(jsonPath("$.code").value("INVALID_PARAMETER")).andExpect(jsonPath("$.details[0]").value("page"));
         getAs(OPERATOR_OF_A, "/api/traceability/lineages?qrCode=QR-P1&size=1000").andExpect(status().isOk()).andExpect(jsonPath("$.size").value(100));
     }
-
-    // ---- búsqueda ----
 
     @Test
     void theSearchFindsByQrAnywhereAndByTraceabilityIdPrefixOnlyAmongTheOwnBatches() throws Exception {
@@ -329,7 +307,7 @@ class LineageApiIT extends IntegrationTestBase {
         getAs(OPERATOR_OF_A, "/api/traceability/lineages?traceabilityId=TT-AAA9").andExpect(jsonPath("$.items.length()").value(1))
                 .andExpect(jsonPath("$.items[0].traceabilityId").value("TT-AAA9"));
         getAs(OPERATOR_OF_A, "/api/traceability/lineages?traceabilityId=TT-AAA&qrCode=QR-AAA9").andExpect(jsonPath("$.totalElements").value(0));
-        getAs(ADMIN_OF_A, "/api/traceability/lineages?traceabilityId=tt-aaa").andExpect(jsonPath("$.totalElements").value(2)); // normaliza lo escrito a mano
+        getAs(ADMIN_OF_A, "/api/traceability/lineages?traceabilityId=tt-aaa").andExpect(jsonPath("$.totalElements").value(2));
     }
 
     @Test
@@ -357,16 +335,10 @@ class LineageApiIT extends IntegrationTestBase {
         getAs(OPERATOR_OF_A, "/api/traceability/lineages?qrCode=QR-P1").andExpect(jsonPath("$.totalElements").value(1));
     }
 
-    // ---- name: el nombre libre del lote sale solo a la empresa dueña (OWN), en todas las salidas ----
-
     static final String NAME_OF_A = "Pedido urgente Andina";
     static final String NAME_OF_A_OUTPUT = "Salida teñida Andina";
     static final String NAME_OF_B = "Pedido urgente Tintorería";
 
-    /**
-     * A registra NA y B registra NB, ambos con nombre; A los mezcla en TX y obtiene NX, también con nombre. Con {@code privacy} = {@code "privado"} ninguna
-     * empresa configuró nada; con {@code "compartido"} las dos comparten todos los campos configurables.
-     */
     private void namedBatchesOfTwoCompanies(String privacy) {
         graph.named("NA", NAME_OF_A).named("NB", NAME_OF_B).named("NX", NAME_OF_A_OUTPUT)
                 .batch("NA", A).batch("NB", B).transform("TX", A, List.of("NA", "NB"), "NX");
@@ -387,7 +359,6 @@ class LineageApiIT extends IntegrationTestBase {
         }
     }
 
-    /** Hacia atrás (US31), hacia adelante (US32) y completa (US36), vistas por la dueña (OWN) y por la otra empresa (SHARED), privado o compartido. */
     @ParameterizedTest(name = "configuración: {0}")
     @ValueSource(strings = {"privado", "compartido"})
     void theBatchNameAppearsOnlyInOwnNodesOfEveryGenealogyView(String privacy) throws Exception {
@@ -410,7 +381,6 @@ class LineageApiIT extends IntegrationTestBase {
             assertThat(seenByA.toString()).as("%s: A no recibe el nombre de B en ningún lugar", context).doesNotContain(NAME_OF_B);
             assertThat(seenByB.toString()).as("%s: B no recibe los nombres de A en ningún lugar", context).doesNotContain(NAME_OF_A, NAME_OF_A_OUTPUT);
         }
-        // control: la prueba mira nodos de los dos tipos de acceso y, con "compartido", lo configurable sí sale
         JsonNode foreignForA = node(body(getAs(OPERATOR_OF_A, ancestors("NX"))), "NB");
         assertThat(foreignForA.get("access").asString()).isEqualTo("SHARED");
         assertThat(foreignForA.has("supplierName")).isEqualTo(privacy.equals("compartido"));
@@ -418,7 +388,6 @@ class LineageApiIT extends IntegrationTestBase {
         assertThat(node(body(getAs(OPERATOR_OF_B, descendants("NB"))), "NB").get("name").asString()).isEqualTo(NAME_OF_B);
     }
 
-    /** Búsqueda por QR (US30, cualquier empresa) y por Traceability ID (prefijo propio o exacto ajeno): el resumen no lleva name, ni propio ni ajeno. */
     @ParameterizedTest(name = "configuración: {0}")
     @ValueSource(strings = {"privado", "compartido"})
     void noSearchResultCarriesTheBatchNameNeitherOwnNorShared(String privacy) throws Exception {
@@ -441,18 +410,16 @@ class LineageApiIT extends IntegrationTestBase {
         assertThat(accesses).as("se probaron resultados propios y ajenos").containsExactly("OWN", "SHARED");
     }
 
-    // ---- Cache-Control: no-store en toda respuesta ----
-
     @ParameterizedTest
     @ValueSource(strings = {"GET", "POST", "PUT", "DELETE", "PATCH"})
     void everyResponseIsNotCacheableWhateverTheOutcome(String method) throws Exception {
         graph.batch("P1", A);
         HttpMethod http = HttpMethod.valueOf(method);
-        List<String> urls = List.of("/api/traceability/lineages?qrCode=QR-P1", ancestors("P1"), descendants("P1"), lineage("P1"), // 200 (GET) o 405
-                "/api/traceability/batches/" + UUID.randomUUID() + "/lineage", // 404
-                "/api/traceability/batches/no-es-uuid/lineage", // 400
-                "/api/traceability/lineages", // 400
-                "/api/traceability/no-existe", "/api/traceability", "/api/traceability/", "/api/traceability/batches/" + id("P1")); // 404 de ruta o 405
+        List<String> urls = List.of("/api/traceability/lineages?qrCode=QR-P1", ancestors("P1"), descendants("P1"), lineage("P1"),
+                "/api/traceability/batches/" + UUID.randomUUID() + "/lineage",
+                "/api/traceability/batches/no-es-uuid/lineage",
+                "/api/traceability/lineages",
+                "/api/traceability/no-existe", "/api/traceability", "/api/traceability/", "/api/traceability/batches/" + id("P1"));
         for (Caller caller : new Caller[]{OPERATOR_OF_A, LICENSE_OWNER, null}) {
             for (String url : urls) {
                 MockHttpServletRequestBuilder request = MockMvcRequestBuilders.request(http, url);

@@ -17,13 +17,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * I11 e I12: {@code GET /api/quality/controls|failures|batches} son páginas {@code {items,page,size,totalElements,totalPages}} de la propia empresa
- * (RNF-03), las arma un caso de uso y no el controlador, y una página cuesta las mismas consultas con 3 filas que con 25 (sin N+1).
- */
 class QualityListingApiIT extends FlowTestBase {
 
-    /** Inserta {@code count} controles de la empresa, el 0 es el más reciente; cada uno con {@code testsEach} pruebas. */
     List<UUID> controls(UUID company, int count, int testsEach) {
         List<UUID> ids = new ArrayList<>();
         for (int i = 0; i < count; i++) {
@@ -44,7 +39,6 @@ class QualityListingApiIT extends FlowTestBase {
         return ids;
     }
 
-    /** Una falla {@code OPEN} por control (y por lote), la 0 es la más reciente. */
     List<UUID> failures(UUID company, int count) {
         List<UUID> controls = controls(company, count, 0);
         List<UUID> ids = new ArrayList<>();
@@ -98,7 +92,7 @@ class QualityListingApiIT extends FlowTestBase {
     @Test
     void aPageCostsTheSameQueriesWithThreeRowsAsWithTwentyFive() throws Exception {
         controls(COMPANY_A, 3, 2);
-        getAs(ADMIN_OF_A, "/api/quality/controls?size=100").andExpect(status().isOk());      // calienta
+        getAs(ADMIN_OF_A, "/api/quality/controls?size=100").andExpect(status().isOk());
         int few = StatementCounter.during(() -> getAs(ADMIN_OF_A, "/api/quality/controls?size=100").andExpect(status().isOk()));
         controls(COMPANY_A, 22, 2);
         int many = StatementCounter.during(() -> getAs(ADMIN_OF_A, "/api/quality/controls?size=100").andExpect(jsonPath("$.items.length()").value(25)));

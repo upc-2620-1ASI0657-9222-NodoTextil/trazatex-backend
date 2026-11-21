@@ -9,7 +9,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/** {@code totalOutputKg}, {@code wasteKg}, {@code shrinkageKg} y {@code endTime} son nulos hasta que se finaliza. */
 public record TransformationResult(
         UUID id,
         UUID companyId,

@@ -25,11 +25,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Los tres tópicos que Production produce no pueden perder historia por antigüedad: Traceability reconstruye la genealogía
- * leyéndolos desde el inicio. Caso de tu Kafka local: los tópicos <b>ya existen</b> con la retención por defecto (7 días) y con
- * datos; al arrancar el servicio quedan sin borrado por tiempo, sin perder mensajes ni cambiar las particiones.
- */
 @SpringBootTest(properties = {"trazatex.messaging.enabled=true", "trazatex.cloudinary.url=", "trazatex.evidence.upload.enabled=false"})
 class EventTopicsRetentionIT extends IntegrationTestBase {
 

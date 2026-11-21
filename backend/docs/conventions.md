@@ -4,7 +4,6 @@
 
 ```
 Trazatex-microservices/
-├── CLAUDE.md
 ├── README.md
 ├── pom.xml                      # POM padre (packaging pom): versiones, plugins, módulos
 ├── mvnw, .mvn/
@@ -103,4 +102,4 @@ Pruebas obligatorias por servicio: un evento duplicado no aplica el efecto dos v
 
 ## Control de versiones
 
-No se usa git por ahora: no ejecutes `git init`, `git add`, `git commit`, `git push` ni crees ramas. Antes de cada fase el usuario hace una copia de la carpeta.
+El código se versiona con git en el repositorio de la organización: cada cambio entra por una rama y un pull request hacia `main`.

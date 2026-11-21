@@ -528,6 +528,11 @@ export class NuevoLoteDialog {
             >
               <app-icon name="plus" [size]="14" /> Agregar hijo
             </button>
+            <div class="split-progress" [class.ok]="restante() === 0" [class.bad]="restante() < 0" role="status" aria-live="polite" data-testid="split-progress">
+              <span>Distribuido: <b class="num">{{ cifra(suma()) }} de {{ cifra(lote().cantidadKg) }} kg</b></span>
+              <span class="small">{{ restante() > 0 ? 'Faltan ' + cifra(restante()) + ' kg' : restante() < 0 ? 'Excede en ' + cifra(-restante()) + ' kg' : 'Cantidad completa' }}</span>
+              <span class="bar" aria-hidden="true"><i [style.width.%]="avance()"></i></span>
+            </div>
           }
           @case (2) {
             <div class="sum-line" [class.ok]="cuadra()" [class.bad]="!cuadra()">
@@ -599,6 +604,12 @@ export class NuevoLoteDialog {
     </app-dialog>
   `,
   styles: `
+    .split-progress { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .25rem .75rem; margin-top: .6rem; padding: .55rem .7rem; border: 1px solid var(--hair-2); background: var(--cream-50); }
+    .split-progress.ok { border-color: var(--green-600); }
+    .split-progress.bad { border-color: var(--carmine); }
+    .split-progress .bar { flex-basis: 100%; height: 4px; background: var(--hair); }
+    .split-progress .bar i { display: block; height: 100%; background: var(--green-700); transition: width 120ms ease; }
+    .split-progress.bad .bar i { background: var(--carmine); }
     .child {
       display: grid;
       grid-template-columns: 4rem minmax(8rem, 1fr) 7rem auto 2rem;
@@ -638,6 +649,9 @@ export class DividirLoteDialog {
   readonly suma = computed(
     () => Math.round(this.hijos().reduce((a, b) => a + (+b || 0), 0) * 1000) / 1000,
   );
+  readonly restante = computed(() => Math.round((this.lote().cantidadKg - this.suma()) * 1000) / 1000);
+  readonly avance = computed(() => (this.lote().cantidadKg > 0 ? Math.min(100, (this.suma() / this.lote().cantidadKg) * 100) : 0));
+  cifra(v: number) { return v.toLocaleString('es-PE', { maximumFractionDigits: 3 }); }
   readonly cuadra = computed(
     () =>
       this.suma() === this.lote().cantidadKg &&

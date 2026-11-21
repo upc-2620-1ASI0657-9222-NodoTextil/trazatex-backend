@@ -14,7 +14,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-/** Doble en memoria del puerto: registra lo que el servicio guarda y encola, sin base de datos. */
 class InMemoryNotificationStore implements NotificationStorePort {
     final Set<UUID> processed = new HashSet<>();
     final List<NotificationNotice> notices = new ArrayList<>();

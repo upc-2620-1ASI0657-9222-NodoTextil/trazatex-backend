@@ -62,6 +62,3 @@ export class PerfilPage {
     this.router.navigateByUrl('/login');
   }
 }
-
-
-

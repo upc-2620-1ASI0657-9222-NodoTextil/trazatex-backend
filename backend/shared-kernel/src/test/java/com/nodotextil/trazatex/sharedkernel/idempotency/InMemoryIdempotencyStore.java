@@ -9,11 +9,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Doble de prueba que imita lo que exige {@link IdempotencyStorePort} a una base real: la reserva es parte de la
- * transacción (si se revierte, la clave desaparece) y un {@code tryReserve} concurrente sobre la misma clave espera
- * a que la transacción dueña confirme o revierta, como haría la PK de PostgreSQL.
- */
 class InMemoryIdempotencyStore implements IdempotencyStorePort {
 
     private static final class Entry {

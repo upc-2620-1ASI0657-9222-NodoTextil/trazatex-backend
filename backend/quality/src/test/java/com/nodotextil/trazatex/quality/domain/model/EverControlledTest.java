@@ -10,10 +10,6 @@ import static com.nodotextil.trazatex.quality.domain.Fixtures.finished;
 import static com.nodotextil.trazatex.quality.domain.Fixtures.id;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * {@code everControlled} pasa a {@code true} <b>solo</b> cuando un control termina ({@code FINISHED}): ni iniciarlo ni cancelarlo lo
- * tocan. De eso depende que un lote {@code POTENTIAL_DERIVED_FAILURE} reciba una evaluación o una reevaluación (US34).
- */
 class EverControlledTest {
 
     @Test
@@ -34,7 +30,6 @@ class EverControlledTest {
         QualityControl.start(id(), batch, INSPECTOR, null, NOW).cancel("INVALID_PHASE_TRANSITION");
 
         assertThat(batch.everControlled()).isFalse();
-        // y como nunca tuvo un control, una revisión por falla derivada sigue siendo una Evaluación (US34 esc. 1)
         batch.applyConfirmedDerivedHold(NOW);
         assertThat(batch.qualityStatus()).isEqualTo(QualityStatus.POTENTIAL_DERIVED_FAILURE);
         assertThat(batch.controlTypeToStart()).isEqualTo(ControlType.EVALUATION);

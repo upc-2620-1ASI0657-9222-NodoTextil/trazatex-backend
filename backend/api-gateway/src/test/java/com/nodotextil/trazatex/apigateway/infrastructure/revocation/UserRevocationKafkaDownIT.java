@@ -8,7 +8,6 @@ import org.springframework.test.context.DynamicPropertySource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Kafka inalcanzable al arrancar: el Gateway no se cae ni deja pasar a nadie autenticado; sigue vivo y atiende lo público. */
 class UserRevocationKafkaDownIT extends RevocationItSupport {
 
     @DynamicPropertySource

@@ -8,7 +8,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** Migraciones Flyway y restricciones de la base (C): lo que la aplicación no puede olvidar porque la base lo impide. */
 class SchemaIT extends IntegrationTestBase {
 
     @Test

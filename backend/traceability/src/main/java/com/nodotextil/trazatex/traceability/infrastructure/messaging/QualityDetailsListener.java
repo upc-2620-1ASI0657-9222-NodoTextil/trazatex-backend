@@ -16,11 +16,6 @@ import tools.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Los detalles de calidad que se muestran en la genealogía: los valores de las pruebas ({@code QualityControlCompleted} en {@code quality.control}) y la causa de
- * falla ({@code QualityFailureUpdated} en {@code quality.failure}). Cada tópico con su propio grupo, para no interferir con los consumidores de estado e impacto.
- * Traduce el mensaje a un comando y llama al puerto de entrada; lo demás se ignora.
- */
 @Component
 @ConditionalOnProperty(name = "trazatex.messaging.enabled", havingValue = "true", matchIfMissing = true)
 class QualityDetailsListener {

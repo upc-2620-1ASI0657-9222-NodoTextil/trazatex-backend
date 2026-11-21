@@ -35,17 +35,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/**
- * Con el tiempo de respuesta no se puede saber si una cuenta existe: fuera del bloqueo hay <b>una</b> verificación BCrypt
- * en todos los casos (contra el hash real o contra uno de relleno del mismo costo) y bloqueado no hay ninguna. Se comprueba
- * contando las verificaciones y el costo del hash, no midiendo milisegundos (eso sería inestable).
- */
 class AuthenticationServiceTest {
 
     private static final Instant NOW = Instant.parse("2026-10-19T12:00:00Z");
     private static final Email EMAIL = new Email("ana@hilos.pe");
 
-    /** BCrypt real, que registra cada verificación y contra qué hash se hizo. */
     static class RecordingHasher implements PasswordHasherPort {
         private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
         final List<String> verifiedAgainst = new ArrayList<>();

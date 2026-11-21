@@ -32,7 +32,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-/** El rollback del registro en processed_events lo comprueba EventConsumptionKafkaIT con la base real (aquí el registro es un Set). */
 class EventListenersTest {
 
     private final ObjectMapper mapper = JsonMapper.builder().build();
@@ -57,8 +56,6 @@ class EventListenersTest {
     private ConsumerRecord<String, String> companyRecord(BaseDomainEvent event) {
         return record(ConsumedTopics.ORGACCESS_COMPANY, event);
     }
-
-    // ---- empresas ----
 
     @Test
     void companyRegisteredAppliesTheCatalogFieldsAndIgnoresTheRest() {
@@ -110,8 +107,6 @@ class EventListenersTest {
 
         verifyNoInteractions(projection);
     }
-
-    // ---- calidad ----
 
     private ConsumerRecord<String, String> qualityRecord(BaseDomainEvent event) {
         return record(ConsumedTopics.QUALITY_CONTROL, event);

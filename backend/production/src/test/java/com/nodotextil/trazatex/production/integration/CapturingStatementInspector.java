@@ -5,11 +5,6 @@ import org.hibernate.resource.jdbc.spi.StatementInspector;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-/**
- * Guarda el SQL real que Hibernate envía a la base (se registra con la propiedad
- * {@code hibernate.session_factory.statement_inspector}). Permite comprobar con EXPLAIN la consulta de verdad y no una
- * parecida escrita a mano.
- */
 public class CapturingStatementInspector implements StatementInspector {
 
     private static final int LIMIT = 2000;

@@ -3,7 +3,6 @@ package com.nodotextil.trazatex.organizationaccess.domain.model;
 import java.security.SecureRandom;
 import java.util.Base64;
 
-/** Token aleatorio e impredecible del enlace de invitación: 256 bits de {@link SecureRandom} en Base64 URL (43 caracteres). */
 public record InvitationToken(String value) {
 
     private static final int BYTES = 32;
@@ -22,7 +21,6 @@ public record InvitationToken(String value) {
         return new InvitationToken(Base64.getUrlEncoder().withoutPadding().encodeToString(bytes));
     }
 
-    /** No muestra el valor para que el token no termine en los logs. */
     @Override
     public String toString() {
         return "InvitationToken[****]";

@@ -130,4 +130,3 @@ public class IndicatorSteps {
         assertThat(jdbc.sql("SELECT count(*) FROM analytics_event").query(Integer.class).single()).isEqualTo(eventCount);
     }
 }
-

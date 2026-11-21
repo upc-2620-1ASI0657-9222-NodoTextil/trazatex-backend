@@ -2,7 +2,6 @@ package com.nodotextil.trazatex.traceability.acceptance;
 
 import io.cucumber.java.Before;
 
-/** Cada escenario empieza con el grafo vacío. */
 public class Hooks {
 
     private final Platform platform;

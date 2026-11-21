@@ -13,14 +13,11 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** US10 (maquinaria) y los escenarios de US16 que hablan de una maquinaria que no se puede usar. */
 public class MachineSteps extends StepSupport {
 
     public MachineSteps(World world, ProductionApi api, Outbox outbox, JdbcClient jdbc, ObjectMapper json) {
         super(world, api, outbox, jdbc, json);
     }
-
-    // ---- US10 esc. 1 ----
 
     @Dado("^que el administrador completa código, nombre y tipo$")
     public void theAdministratorFillsInCodeNameAndType() {
@@ -41,8 +38,6 @@ public class MachineSteps extends StepSupport {
         assertThat(detail.body().path("history").get(0).path("from").isNull()).as("el registro es la primera fila del historial").isTrue();
         assertThat(detail.body().path("history").get(0).path("to").asString()).isEqualTo("ACTIVE");
     }
-
-    // ---- US10 esc. 2 ----
 
     @Dado("^que existe una maquinaria registrada$")
     public void aMachineExists() {
@@ -80,8 +75,6 @@ public class MachineSteps extends StepSupport {
                     .isAfterOrEqualTo(java.time.Instant.parse(history.get(i - 1).path("changedAt").asString()));
         }
     }
-
-    // ---- US10 esc. 3 y US16 esc. 3: una maquinaria que no está activa no se puede usar ----
 
     private void anOutOfServiceAndAnInactiveMachineExist() {
         JsonNode outOfService = registerMachine();

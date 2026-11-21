@@ -25,7 +25,6 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 import java.util.List;
 
-/** Todo error HTTP sale como {@code ApiError { code, message, details, timestamp }}. */
 @RestControllerAdvice
 class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
@@ -42,7 +41,6 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
                 "El valor del parámetro '" + e.getName() + "' no es válido.", List.of(e.getName())));
     }
 
-    /** Red de seguridad: las restricciones únicas de la base (correo, RUC, invitación pendiente) ganan a la carrera de dos peticiones. */
     @ExceptionHandler(DataIntegrityViolationException.class)
     ResponseEntity<ApiError> handleIntegrity(DataIntegrityViolationException e) {
         log.warn("Violación de integridad: {}", e.getMostSpecificCause().getMessage());
@@ -55,7 +53,6 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return respond(HttpStatus.INTERNAL_SERVER_ERROR, ApiError.of("INTERNAL_ERROR", "Ocurrió un error inesperado."));
     }
 
-    /** Errores estándar de Spring MVC (JSON mal formado, método no permitido, ruta inexistente...) con el mismo cuerpo. */
     @Override
     protected ResponseEntity<Object> handleExceptionInternal(Exception ex, Object body, HttpHeaders headers,
                                                              HttpStatusCode statusCode, WebRequest request) {

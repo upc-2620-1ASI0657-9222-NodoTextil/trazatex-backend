@@ -24,10 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * ADR-004 sobre Neo4j: el {@code :ProcessedEvent}, el cambio del grafo y el {@code :OutboxEvent} comparten UNA transacción
- * ({@code IdempotentEventHandler} + {@code Neo4jTransactionManager}): se confirman o se revierten juntos.
- */
 class IdempotentGraphWritesIT extends IntegrationTestBase {
 
     @Autowired
@@ -54,7 +50,6 @@ class IdempotentGraphWritesIT extends IntegrationTestBase {
         return BaseDomainEvent.of("BatchRegistered", UUID.randomUUID().toString(), Map.of("x", 1));
     }
 
-    /** El efecto de un consumidor de verdad: cambia el grafo y deja un evento en el outbox. */
     private void effect(BaseDomainEvent event) {
         neo4j.query("MERGE (b:Batch {batchId: $id}) ON CREATE SET b.provisional = true").bind(event.aggregateId()).to("id").run();
         recorder.record("Batch", "traceability.impact", BaseDomainEvent.of("PossibleDerivedFailureDetected", event.aggregateId(), Map.of("ok", true)));
@@ -63,8 +58,6 @@ class IdempotentGraphWritesIT extends IntegrationTestBase {
     private boolean mark(UUID id) {
         return Boolean.TRUE.equals(tx.execute(s -> processedEvents.markProcessed(id, "BatchRegistered")));
     }
-
-    // ---- ProcessedEventPort ----
 
     @Test
     void anEventIsMarkedOnlyTheFirstTime() {
@@ -99,8 +92,6 @@ class IdempotentGraphWritesIT extends IntegrationTestBase {
         }
         assertThat(count("ProcessedEvent")).isEqualTo(1);
     }
-
-    // ---- una sola transacción: grafo + ProcessedEvent + OutboxEvent ----
 
     @Test
     void theGraphChangeTheProcessedEventAndTheOutboxEventAreCommittedTogether() {

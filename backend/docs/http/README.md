@@ -121,7 +121,7 @@ Va **después** de `08` en la misma corrida (usa `operatorToken`, `adminToken` y
 
 ## Carpetas `10-notification` y `11-analytics` (fases 07 y 08)
 
-Numeración: la carpeta `09` ya es Quality, así que Notification es `10` y Analytics `11` (el prompt de la fase 07 decía `09-notification`, que chocaba con `09-quality`; ya está corregido).
+Numeración: la carpeta `09` ya es Quality, así que Notification es `10` y Analytics `11` (el enunciado de la fase 07 decía `09-notification`, que chocaba con `09-quality`; ya está corregido).
 
 - **`10-notification`** (16 peticiones). Depende de `07-production`: usa `transferId` (paso 16), la transferencia que A inició hacia B y que B aceptó (paso 17), y los tokens `adminToken`, `adminBToken` y `operatorBToken` que dejaron los logins. Comprueba que B (destino) recibe `TRANSFER_RECEIVED` y A (origen) `TRANSFER_ACCEPTED`, que ninguna ve la de la otra, que marcar como leída es idempotente, que una ajena responde `404` igual que una inexistente, y la paginación (`size` recortado a 100, `INVALID_PAGINATION`, `INVALID_PARAMETER`). El primer paso espera 2,5 s a que Notification lea el tópico (consistencia eventual).
 - **`11-analytics`** (10 peticiones). El periodo es lo que va del año en America/Lima (se calcula en un script previo: nunca pasa de 366 días). Comprueba los cuatro bloques de EP05, que la empresa B no recibe el documento de A ni cambia con un `companyId` en la URL, `403` para el operario, `401` sin token, los cuatro casos de `INVALID_PERIOD` y que `/api/analytics` (sin `/summary`) ya no existe.

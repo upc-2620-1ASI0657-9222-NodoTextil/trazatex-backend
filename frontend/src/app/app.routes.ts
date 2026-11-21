@@ -6,7 +6,6 @@ import { ShellComponent } from './layout/shell.component';
 
 const auth: CanActivateFn = (_route, state) => inject(SessionService).loggedIn() || inject(Router).createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
 
-                                                                                   
 const roles =
   (...allowed: Rol[]): CanActivateFn =>
   () =>
@@ -28,11 +27,10 @@ export const routes: Routes = [
       { path: 'trazabilidad', canActivate: [roles(O, A)], loadComponent: () => import('./pages/trazabilidad/trazabilidad.page').then((m) => m.TrazabilidadPage), title: 'Trazabilidad / TrazaTex' },
       { path: 'lotes', canActivate: [roles(O, A)], loadComponent: () => import('./pages/lotes/lotes.page').then((m) => m.LotesPage), title: 'Lotes / TrazaTex' },
       { path: 'lotes/:id', canActivate: [roles(O, A)], loadComponent: () => import('./pages/lotes/lote-detalle.page').then((m) => m.LoteDetallePage), title: 'Lote / TrazaTex' },
-      { path: 'procesos', canActivate: [roles(O, A)], loadComponent: () => import('./pages/procesos/procesos.page').then((m) => m.ProcesosPage), title: 'Procesos / TrazaTex' },
-      { path: 'procesos/:id', canActivate: [roles(O, A)], loadComponent: () => import('./pages/procesos/proceso-detalle.page').then((m) => m.ProcesoDetallePage), title: 'Proceso / TrazaTex' },
+      { path: 'procesos', canActivate: [roles(O, A)], loadComponent: () => import('./pages/procesos/procesos.page').then((m) => m.ProcesosPage), title: 'Transformaciones / TrazaTex' },
+      { path: 'procesos/:id', canActivate: [roles(O, A)], loadComponent: () => import('./pages/procesos/proceso-detalle.page').then((m) => m.ProcesoDetallePage), title: 'Transformación / TrazaTex' },
       { path: 'calidad', canActivate: [roles(A)], loadComponent: () => import('./pages/calidad/calidad.page').then((m) => m.CalidadPage), title: 'Calidad / TrazaTex' },
       { path: 'calidad/:id', canActivate: [roles(A)], loadComponent: () => import('./pages/calidad/control-detalle.page').then((m) => m.ControlDetallePage), title: 'Calidad / TrazaTex' },
-      // Una redirección con cadena descarta el parámetro y aterrizaba en «Calidad»: se devuelve un UrlTree para conservar ?seccion=fallas.
       { path: 'fallas', redirectTo: () => inject(Router).parseUrl('/analitica?seccion=fallas'), pathMatch: 'full' },
       { path: 'fallas/:id', canActivate: [roles(A)], loadComponent: () => import('./pages/fallas/falla-detalle.page').then((m) => m.FallaDetallePage), title: 'Fallas / TrazaTex' },
       { path: 'transferencias', canActivate: [roles(O, A)], loadComponent: () => import('./pages/transferencias.page').then((m) => m.TransferenciasPage), title: 'Transferencias / TrazaTex' },
@@ -48,4 +46,3 @@ export const routes: Routes = [
   },
   { path: '**', redirectTo: '' },
 ];
-

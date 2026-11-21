@@ -25,13 +25,13 @@ type Vista = 'curso' | 'fin' | 'todos';
           }
         </ng-template>
 
-      <app-subnav panel="procesos" [items]="vistas()" [(active)]="vista" (activeChange)="page.set(0)" label="Vistas de procesos" />
+      <app-subnav panel="procesos" [items]="vistas()" [(active)]="vista" (activeChange)="page.set(0)" label="Vistas de transformaciones" />
       <div appTabPanel="procesos" [tabActive]="vista()">
 
       <div class="filters">
         <label class="search">
           <app-icon name="search" [size]="16" />
-          <input class="input" placeholder="Buscar proceso o lote" [ngModel]="q()" (ngModelChange)="q.set($event); page.set(0)" aria-label="Buscar procesos" />
+          <input class="input" placeholder="Buscar transformación o lote" [ngModel]="q()" (ngModelChange)="q.set($event); page.set(0)" aria-label="Buscar transformaciones" />
         </label>
         <button class="btn btn--ghost" type="button" (click)="verFiltros.set(true)"><app-icon name="filter" [size]="16" /> Filtros</button>
       </div>
@@ -42,7 +42,7 @@ type Vista = 'curso' | 'fin' | 'todos';
             <button type="button" class="row-card {{ p.fin ? 'row-card--ok' : 'row-card--warn' }}" [class.is-sel]="selId() === p.id" (click)="selId.set(p.id)">
               <span class="rc-id">{{ store.referencia(p.id) }}</span>
               <app-icon class="rc-figure" name="process" [size]="42" />
-              <span class="rc-state">{{ p.fin ? 'Finalizado' : 'En curso' }}{{ store.esMezcla(p) ? ' / mezcla' : '' }}</span>
+              <span class="rc-state">{{ p.fin ? 'Finalizada' : 'En curso' }}{{ store.esMezcla(p) ? ' / mezcla' : '' }}</span>
               <span class="rc-title">{{ store.nombreProceso(p) }}</span>
               <span class="rc-meta">{{ p.entradas.length }} entrada(s) / {{ p.salidasIds.length || '—' }} salida(s) / <span class="num">{{ p.inicio | fecha: false }}</span>@if (session.esDueno()) { / {{ store.nombreEmpresa(p.empresaId) }}}</span>
             </button>
@@ -52,14 +52,14 @@ type Vista = 'curso' | 'fin' | 'todos';
       } @else if (store.loading()) {
         <app-skeleton />
       } @else {
-        <div class="empty"><strong>Sin procesos en esta vista</strong><span>Cambia de vista o ajusta la búsqueda.</span></div>
+        <div class="empty"><strong>Sin transformaciones en esta vista</strong><span>Cambia de vista o ajusta la búsqueda.</span></div>
       }
       </div>
     </div>
 
     @if (verFiltros()) {
-      <app-drawer title="Filtros de procesos" (closed)="verFiltros.set(false)">
-        <label class="field"><span>Tipo de proceso</span>
+      <app-drawer title="Filtros de transformaciones" (closed)="verFiltros.set(false)">
+        <label class="field"><span>Tipo de transformación</span>
           <select class="select" [ngModel]="fTipo()" (ngModelChange)="fTipo.set($event); page.set(0)">
             <option value="">Todos los tipos</option>
             @for (t of tipos; track t) { <option [value]="t">{{ t }}</option> }
@@ -143,7 +143,6 @@ export class ProcesosPage {
   readonly session = inject(SessionService);
   readonly router = inject(Router);
 
-                                                                      
   readonly preNuevo = input<string | undefined>(undefined, { alias: 'nuevo' });
 
   readonly tipos = TIPOS_TRANSFORMACION;
@@ -183,10 +182,9 @@ export class ProcesosPage {
   private en = (p: Proceso, v: Vista) => v === 'todos' || (v === 'curso' ? !p.fin : !!p.fin);
   readonly vistas = computed<SubnavItem[]>(() => [
     { id: 'curso', label: 'En curso', count: this.base().filter((p) => !p.fin).length },
-    { id: 'fin', label: 'Finalizados', count: this.base().filter((p) => !!p.fin).length },
-    { id: 'todos', label: 'Todos', count: this.base().length },
+    { id: 'fin', label: 'Finalizadas', count: this.base().filter((p) => !!p.fin).length },
+    { id: 'todos', label: 'Todas', count: this.base().length },
   ]);
   readonly lista = computed(() => this.base().filter((p) => this.en(p, this.vista())));
   readonly pagina = computed(() => paginar(this.lista(), this.page(), this.size()));
 }
-

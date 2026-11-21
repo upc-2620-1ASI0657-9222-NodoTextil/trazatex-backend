@@ -15,7 +15,6 @@ headers {
 }
 
 script:post-response {
-  // Kafka UI entrega los mensajes como eventos SSE ("data: {...}"). Se toma el ÚLTIMO InvitationCreated de ese correo
   const wanted = (bru.getEnvVar("ownerEmail") || "").toLowerCase();
   let found = null;
   String(res.body).split("\n").forEach(function (line) {

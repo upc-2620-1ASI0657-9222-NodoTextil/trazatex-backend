@@ -29,12 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * El grafo en Neo4j con Cypher parametrizado. Todo es {@code MERGE} por la clave única de cada nodo: el resultado no depende
- * del orden de llegada de los eventos ni de que se repitan (el contrato está en {@link LineageGraphPort}). Los nodos y las
- * relaciones se crean por separado, nodo primero: un {@code MERGE} de un patrón completo crearía duplicados si el nodo ya existe.
- * Los lotes de un evento se procesan en orden de id para que dos consumidores no se bloqueen en orden cruzado.
- */
 @Component
 class Neo4jLineageGraphAdapter implements LineageGraphPort {
 
@@ -42,11 +36,9 @@ class Neo4jLineageGraphAdapter implements LineageGraphPort {
 
     private enum Kind { TEXT, DECIMAL, DATETIME, BOOLEAN }
 
-    /** Un componente de la composición tal como se guarda (JSON). */
     private record Part(String name, BigDecimal percentage) {
     }
 
-    /** Un dato de identidad: nunca se sobrescribe, solo se completa. */
     private record Field(String name, Kind kind, Object value) {
     }
 
@@ -58,16 +50,12 @@ class Neo4jLineageGraphAdapter implements LineageGraphPort {
         this.objectMapper = objectMapper;
     }
 
-    // ---- BatchRegistered ----
-
     @Override
     public void registerBatch(RegisterBatchCommand c) {
         completeBatch(c.eventId(), c.batchId(), batchFields(c.traceabilityId(), c.qrCode(), c.materialType(), c.composition(),
                 c.quantityKg(), c.origin(), c.supplierName(), c.receptionCharacteristics(), c.createdAt(), false, c.name()),
                 c.companyId(), QualityStatus.NOT_REVIEWED);
     }
-
-    // ---- BatchSplit ----
 
     @Override
     public void applyBatchSplit(ApplyBatchSplitCommand c) {
@@ -85,8 +73,6 @@ class Neo4jLineageGraphAdapter implements LineageGraphPort {
                     .bind(c.parentBatchId().toString()).to("parent").bind(child.batchId().toString()).to("child").run();
         }
     }
-
-    // ---- TransformationCompleted ----
 
     @Override
     public void applyTransformationCompleted(ApplyTransformationCompletedCommand c) {
@@ -116,7 +102,6 @@ class Neo4jLineageGraphAdapter implements LineageGraphPort {
         List<ApplyTransformationCompletedCommand.Output> outputs = new ArrayList<>(c.outputs());
         outputs.sort(Comparator.comparing(output -> output.batchId().toString()));
         for (ApplyTransformationCompletedCommand.Output output : outputs) {
-            // una salida nace sin origen, proveedor ni recepción (decisión de 04a) y con la fecha en que terminó la transformación
             completeBatch(c.eventId(), output.batchId(), batchFields(output.traceabilityId(), output.qrCode(), output.materialType(),
                     output.composition(), output.quantityKg(), null, null, null, c.completedAt(), output.finalProduct(), output.name()),
                     c.companyId(), QualityStatus.NOT_REVIEWED);
@@ -127,8 +112,6 @@ class Neo4jLineageGraphAdapter implements LineageGraphPort {
                     .bind(c.transformationId().toString()).to("transformation").bind(output.batchId().toString()).to("batch").run();
         }
     }
-
-    // ---- BatchPhaseChanged ----
 
     @Override
     public boolean applyBatchPhaseChanged(ApplyBatchPhaseChangedCommand c) {
@@ -148,8 +131,6 @@ class Neo4jLineageGraphAdapter implements LineageGraphPort {
         return true;
     }
 
-    // ---- TransferAccepted ----
-
     @Override
     public void applyTransferAccepted(ApplyTransferAcceptedCommand c) {
         neo4j.query("MERGE (c:Company {companyId: $company})").bind(c.toCompanyId().toString()).to("company").run();
@@ -167,8 +148,6 @@ class Neo4jLineageGraphAdapter implements LineageGraphPort {
         }
     }
 
-    // ---- QualityStatusChanged ----
-
     @Override
     public void applyQualityStatus(ApplyQualityStatusCommand c) {
         neo4j.query("""
@@ -178,11 +157,8 @@ class Neo4jLineageGraphAdapter implements LineageGraphPort {
                 .bind(c.batchId().toString()).to("batchId").bind(c.newStatus().name()).to("status").run();
     }
 
-    // ---- CompanyRegistered ----
-
     @Override
     public void registerCompany(ApplyCompanyRegisteredCommand c) {
-        // El nombre se completa si falta y nunca se pisa; solo se toca businessName, así que la privacidad (que puede haber llegado antes) queda intacta
         Object stored = neo4j.query("""
                         MERGE (c:Company {companyId: $company})
                         WITH c, c.businessName AS stored
@@ -196,8 +172,6 @@ class Neo4jLineageGraphAdapter implements LineageGraphPort {
         }
     }
 
-    // ---- CompanyPrivacyUpdated ----
-
     @Override
     public void saveCompanyPrivacy(UUID companyId, CompanyPrivacy privacy) {
         Map<String, String> asText = new LinkedHashMap<>();
@@ -206,12 +180,9 @@ class Neo4jLineageGraphAdapter implements LineageGraphPort {
                 .bind(companyId.toString()).to("company").bind(objectMapper.writeValueAsString(asText)).to("privacy").run();
     }
 
-    // ---- piezas comunes ----
-
     private List<Field> batchFields(String traceabilityId, String qrCode, String materialType, List<CompositionComponent> composition,
                                     BigDecimal quantityKg, String origin, String supplierName, String receptionCharacteristics,
                                     Instant createdAt, boolean finalProduct, String name) {
-        // Jackson escribe los componentes de un record siempre en el mismo orden: el mismo dato da siempre el mismo texto
         List<Part> parts = composition.stream().map(part -> new Part(part.name(), part.percentage())).toList();
         List<Field> fields = new ArrayList<>();
         fields.add(new Field("name", Kind.TEXT, name));
@@ -228,11 +199,6 @@ class Neo4jLineageGraphAdapter implements LineageGraphPort {
         return fields;
     }
 
-    /**
-     * Completa un lote que nace (por {@code BatchRegistered}, {@code BatchSplit} o {@code TransformationCompleted}): los datos de
-     * identidad solo si faltan y el estado inicial —{@code AVAILABLE}, sin retención, empresa del evento— solo si el nodo aún no
-     * tiene {@code batchVersion}. El {@code qualityStatus} inicial, solo si aún no hay uno.
-     */
     private void completeBatch(UUID eventId, UUID batchId, List<Field> fields, UUID companyId, QualityStatus initialQualityStatus) {
         String initialState = """
                 , n.phase = CASE WHEN n.batchVersion IS NULL THEN $initialPhase ELSE n.phase END
@@ -251,10 +217,6 @@ class Neo4jLineageGraphAdapter implements LineageGraphPort {
         return completeIdentity(label, key, id, fields, extraSet, Map.of());
     }
 
-    /**
-     * {@code MERGE} del nodo y, en la misma sentencia, completa los datos que faltan con {@code coalesce(guardado, nuevo)}.
-     * Devuelve lo que estaba guardado <b>antes</b> (una proyección tomada antes del {@code SET}) para detectar conflictos.
-     */
     private Map<String, Object> completeIdentity(String label, String key, UUID id, List<Field> fields, String extraSet,
                                                  Map<String, Object> extraParams) {
         StringBuilder projection = new StringBuilder();
@@ -281,7 +243,6 @@ class Neo4jLineageGraphAdapter implements LineageGraphPort {
         return (Map<String, Object>) value;
     }
 
-    /** Un dato ya guardado que el evento contradice: se conserva el guardado y se registra un ERROR (el evento no va a la DLT). */
     private void logConflicts(UUID eventId, String label, UUID id, List<Field> fields, Map<String, Object> stored) {
         for (Field field : fields) {
             Object before = stored.get(field.name());
@@ -310,12 +271,10 @@ class Neo4jLineageGraphAdapter implements LineageGraphPort {
         return Instant.parse(value.toString());
     }
 
-    /** Un lote que un evento nombra pero cuyo evento de creación aún no llegó: solo su id, marcado provisional. */
     private void placeholderBatch(UUID batchId) {
         neo4j.query("MERGE (b:Batch {batchId: $batchId}) ON CREATE SET b.provisional = true").bind(batchId.toString()).to("batchId").run();
     }
 
-    /** {@code OWNS_BATCH} siempre sigue al {@code companyId} del nodo: una sola relación, desde su empresa actual. */
     private void syncOwner(UUID batchId) {
         neo4j.query("""
                         MATCH (b:Batch {batchId: $batchId}) WHERE b.companyId IS NOT NULL

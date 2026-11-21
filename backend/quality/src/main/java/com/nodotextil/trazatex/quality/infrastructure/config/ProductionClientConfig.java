@@ -13,7 +13,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import tools.jackson.databind.ObjectMapper;
 
-/** El comando interno de Production detrás de su puerto, con timeout, circuit breaker y retry (ADR-007, ADR-009). */
 @Configuration
 @EnableConfigurationProperties(ProductionClientProperties.class)
 class ProductionClientConfig {

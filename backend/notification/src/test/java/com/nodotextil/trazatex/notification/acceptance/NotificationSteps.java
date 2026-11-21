@@ -70,4 +70,3 @@ public class NotificationSteps {
         assertThat(alert.path("data").path("failureId").asText()).isEqualTo(failure.toString());
     }
 }
-

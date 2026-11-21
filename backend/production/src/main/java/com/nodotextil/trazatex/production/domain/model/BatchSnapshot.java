@@ -3,7 +3,6 @@ package com.nodotextil.trazatex.production.domain.model;
 import java.time.Instant;
 import java.util.UUID;
 
-/** Todos los datos de un lote, para que el adaptador de persistencia lo reconstruya con {@link Batch#restore}. */
 public record BatchSnapshot(
         UUID id,
         TraceabilityId traceabilityId,

@@ -20,10 +20,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * 03a: las rutas de api.md llegan a organization-access tal cual; las de notification y analytics, a su servicio; lo que no es una ruta registrada da 404
- * (las de production, ver ProductionRoutingTest; las de traceability, TraceabilityRoutingTest; las de quality, QualityRoutingTest).
- */
 class GatewayRoutingTest extends GatewayTestSupport {
 
     @BeforeEach
@@ -77,7 +73,6 @@ class GatewayRoutingTest extends GatewayTestSupport {
                 .expectBody().jsonPath("$.code").isEqualTo("LICENSE_LIMIT_REACHED");
     }
 
-    /** Las rutas que V2 registró para notification y analytics llegan a su servicio tal cual, con la identidad que inyecta el Gateway, y a ningún otro. */
     @ParameterizedTest
     @CsvSource({"/api/notifications, notification", "/api/notifications/7/read, notification", "/api/analytics, analytics",
             "/api/analytics/summary, analytics"})
@@ -98,7 +93,6 @@ class GatewayRoutingTest extends GatewayTestSupport {
         }
     }
 
-    /** Lo que no es una ruta registrada da 404 con ApiError, también lo que solo empieza como una de ellas. */
     @ParameterizedTest
     @ValueSource(strings = {"/api/no-registrado/recurso", "/api/qualityx/1", "/api/notificationsx", "/api/analytics-summary"})
     void rutasNoRegistradasDan404ConApiError(String path) {

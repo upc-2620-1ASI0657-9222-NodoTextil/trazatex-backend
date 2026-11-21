@@ -10,12 +10,9 @@ import java.util.UUID;
 
 public interface ManageAdminRequestsUseCase {
 
-    /** US07. */
     AdminRequestResult request(RequestAdminCommand command, Actor actor);
 
-    /** El Dueño ve todas; el administrador, las de su empresa. */
     List<AdminRequestResult> list(Actor actor);
 
-    /** US08. {@code decision} es APPROVED o REJECTED. */
     AdminRequestResult decide(UUID requestId, AdminRequestStatus decision, Actor actor);
 }

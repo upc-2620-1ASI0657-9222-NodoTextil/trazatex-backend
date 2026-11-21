@@ -20,10 +20,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * US27, en tres fases y ninguna dentro de la transacción del llamador: <b>A</b> deja el descarte pendiente (la falla sigue {@code OPEN}), luego
- * {@code DISCARD} a Production y <b>B</b> aplica la respuesta ({@link FailureDiscardResolver}). No es {@code @Transactional} a propósito.
- */
 @Component
 class FailureDiscardService {
 

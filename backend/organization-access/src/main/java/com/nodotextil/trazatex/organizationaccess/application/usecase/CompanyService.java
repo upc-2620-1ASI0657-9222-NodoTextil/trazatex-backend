@@ -74,7 +74,6 @@ class CompanyService implements ManageCompaniesUseCase {
         new Email(command.adminEmail());
         Instant now = clock.instant();
 
-        // La fila de la licencia serializa la creación de empresas: dos simultáneas no superan el límite.
         License license = licenses.findForUpdate()
                 .orElseThrow(() -> new NotFoundException("LICENSE_NOT_FOUND", "La licencia no está inicializada."));
         license.ensureCanCreateCompany(companies.count());

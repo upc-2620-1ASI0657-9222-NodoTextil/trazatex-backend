@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-/** Marca EXPIRED las invitaciones PENDING vencidas (organization-access.md). La verificación al leer o aceptar no depende de este job. */
 @Component
 class InvitationExpirationJob {
 

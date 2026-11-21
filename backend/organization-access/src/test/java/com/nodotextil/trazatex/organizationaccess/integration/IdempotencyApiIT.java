@@ -9,7 +9,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** ADR-010 con el filtro del shared-kernel montado sobre los endpoints reales y PostgreSQL. */
 class IdempotencyApiIT extends IntegrationTestBase {
 
     UUID company;

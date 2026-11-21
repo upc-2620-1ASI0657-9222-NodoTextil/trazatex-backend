@@ -7,10 +7,6 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Una transferencia con un resumen de sus lotes: la empresa destino todavía no es dueña de ellos (no puede consultarlos
- * por id) y necesita saber qué le llega. Es lo mínimo para decidir: código, nombre, tipo de material y cantidad.
- */
 public record TransferDetailResult(TransferResult transfer, List<BatchSummary> batches) {
 
     public record BatchSummary(UUID batchId, String traceabilityId, String name, String materialType, BigDecimal quantityKg) {

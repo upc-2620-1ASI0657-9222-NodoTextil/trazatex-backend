@@ -21,15 +21,11 @@ import static com.nodotextil.trazatex.traceability.application.usecase.FakeLinea
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** El recorrido de la genealogía (US31, US32, US36) sobre un grafo en memoria: niveles, diamantes, el corte de 10, los incompletos y el costo. */
 class LineageTraversalTest {
 
     private final FakeLineageReadPort graph = new FakeLineageReadPort();
     private final LineageQueryService service = new LineageQueryService(graph, new LineageAuthorizationPolicy());
 
-    // ---- ayudas ----
-
-    /** nombre del nodo → nivel, de los lotes y las transformaciones de la respuesta */
     private static Map<String, Integer> levels(VisibleLineage lineage) {
         return lineage.nodes().stream().collect(Collectors.toMap(node -> label(node), VisibleNode::level));
     }
@@ -54,8 +50,6 @@ class LineageTraversalTest {
     private String t(String name) {
         return "T:" + id(name).toString().substring(0, 4);
     }
-
-    // ---- niveles y direcciones ----
 
     @Test
     void ancestorsOfASplitChainAreListedLevelByLevelWithTheirRelationships() {
@@ -121,11 +115,9 @@ class LineageTraversalTest {
         assertThat(edges(result, nameOf("A", "B", "C", "D"))).contains("SPLIT_INTO D>B");
     }
 
-    // ---- el corte de 10 niveles ----
-
     @Test
     void aGenealogyOfExactlyTenLevelsIsNotTruncated() {
-        graph.chain("n", 11); // n0 → … → n10
+        graph.chain("n", 11);
 
         VisibleLineage result = service.ancestors(id("n10"), COMPANY_A);
 
@@ -137,7 +129,7 @@ class LineageTraversalTest {
 
     @Test
     void aGenealogyOfElevenLevelsIsCutAtTenAndSaysSo() {
-        graph.chain("n", 12); // n0 → … → n11
+        graph.chain("n", 12);
 
         VisibleLineage back = service.ancestors(id("n11"), COMPANY_A);
         VisibleLineage forward = service.descendants(id("n0"), COMPANY_A);
@@ -152,7 +144,6 @@ class LineageTraversalTest {
 
     @Test
     void aTransformationHopCountsAsOneLevelForTheLimit() {
-        // 11 saltos alternando división y transformación: 12 lotes
         graph.batch("m0");
         for (int i = 1; i <= 11; i++) {
             graph.batch("m" + i);
@@ -172,14 +163,12 @@ class LineageTraversalTest {
 
     @Test
     void anEdgeBetweenTwoIncludedNodesAtTheLimitIsKeptAndIsNotATruncation() {
-        // S tiene dos padres: p1 (cadena de 10 hacia atrás) y q; q también es padre de p10 → arista q→p10 entre dos nodos incluidos
         graph.chain("p", 11).batch("S", "q").split("p0", "q").split("p1", "S").split("q", "S");
         graph.split("q", "p10");
-        // p0 → p1 → … → p10 y S colgando de p1: la cadena hacia atrás de S es S ← p1 ← p0; hay que alargarla para llegar al nivel 10
         FakeLineageReadPort long_ = new FakeLineageReadPort();
         long_.batch("S", "q").chain("p", 10);
-        long_.split("p9", "S");           // S ← p9 ← p8 … ← p0 (10 niveles: p9 es el 1, p0 el 10)
-        long_.split("q", "S").split("q", "p0"); // q es padre de S (nivel 1) y del último antecesor p0 (nivel 10)
+        long_.split("p9", "S");
+        long_.split("q", "S").split("q", "p0");
         LineageQueryService local = new LineageQueryService(long_, new LineageAuthorizationPolicy());
 
         VisibleLineage result = local.ancestors(id("S"), COMPANY_A);
@@ -188,8 +177,6 @@ class LineageTraversalTest {
         assertThat(result.edges()).as("la arista q → p0 une dos nodos incluidos").anyMatch(e -> e.type() == EdgeType.SPLIT_INTO && e.from().equals(id("q")) && e.to().equals(id("p0")));
         assertThat(result.truncated()).isFalse();
     }
-
-    // ---- nodos incompletos ----
 
     @Test
     void theTraversalStopsAtAnIncompleteNodeAndDoesNotCrossIt() {
@@ -251,8 +238,6 @@ class LineageTraversalTest {
         assertThatThrownBy(() -> service.descendants(id("P"), COMPANY_A)).hasMessage("El lote no existe.");
     }
 
-    // ---- la vista completa ----
-
     @Test
     void theCompleteViewJoinsBothDirectionsWithTheTransferHistoryAndTheOtherViewsDoNotCarryIt() {
         graph.batch("A", "B", "C").split("A", "B").split("B", "C").companyName(COMPANY_A, "Hilandería Andina SAC").companyName(COMPANY_B, "Tintorería del Sur SAC")
@@ -277,8 +262,8 @@ class LineageTraversalTest {
 
     @Test
     void inTheCompleteViewTruncatedIsTrueIfEitherSideIsCutAndCompleteOnlyIfBothAre() {
-        graph.chain("n", 13); // n0 … n12: se consulta n11 (hacia atrás 11 saltos: cortado; hacia adelante 1 y nada incompleto)
-        graph.chain("m", 13).provisional("y").split("m12", "y"); // m0 … m12 y un hijo incompleto de m12
+        graph.chain("n", 13);
+        graph.chain("m", 13).provisional("y").split("m12", "y");
 
         VisibleLineage cutBack = service.lineage(id("n11"), COMPANY_A);
         VisibleLineage incompleteForward = service.lineage(id("m12"), COMPANY_A);
@@ -289,11 +274,8 @@ class LineageTraversalTest {
         assertThat(incompleteForward.truncated()).as("hacia atrás son 12 saltos: también cortado").isTrue();
     }
 
-    // ---- el costo ----
-
     @Test
     void aGraphWithManyMoreCrossingPathsThanNodesIsWalkedWithAFixedNumberOfLevelQueries() {
-        // 11 capas de 2 lotes; cada lote de una capa se divide en los dos de la siguiente: 2^10 caminos entre la primera y la última
         graph.batch("a0", "b0");
         for (int layer = 1; layer <= 10; layer++) {
             graph.batch("a" + layer, "b" + layer);
@@ -305,7 +287,7 @@ class LineageTraversalTest {
         VisibleLineage forward = service.descendants(id("a0"), COMPANY_A);
 
         assertThat(back.nodes()).as("22 lotes, no 1024 caminos").hasSize(21);
-        assertThat(back.edges()).hasSize(4 * 10 - 2); // las dos aristas de la capa 10 que no van al nodo consultado no se recorren
+        assertThat(back.edges()).hasSize(4 * 10 - 2);
         assertThat(parentCalls).as("una consulta por nivel (10) más la que comprueba si hay algo pasado el límite").isLessThanOrEqualTo(11);
         assertThat(graph.childCalls).isLessThanOrEqualTo(11);
         assertThat(forward.nodes()).hasSize(21);

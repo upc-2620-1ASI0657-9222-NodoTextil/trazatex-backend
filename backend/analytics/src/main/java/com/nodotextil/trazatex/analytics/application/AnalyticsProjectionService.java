@@ -15,17 +15,6 @@ import java.time.OffsetDateTime;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * Alimenta el modelo de lectura (CQRS) con los eventos de Production y Quality. Cada evento se guarda tal cual llegó y, si cambia un lote,
- * su nacimiento, su empresa dueña o su estado de calidad.
- * <p>
- * <b>Orden.</b> Los tópicos llegan en cualquier orden entre sí y el reloj de cada servicio no es monótono, así que la empresa dueña no se
- * decide por la hora: es la del {@code BatchPhaseChanged} con mayor {@code batchVersion} (communication.md). Un evento de creación nunca pisa
- * una versión mayor. El resultado de reprocesar todo el histórico, en cualquier orden, es el mismo (ver la prueba de reconstrucción).
- * <p>
- * Un evento repetido ({@code event_id} ya guardado) no cambia nada. Uno ilegible o sin los datos que necesita lanza
- * {@link MalformedEventException}: va a la {@code .DLT} sin reintentos, y la transacción no deja nada a medias.
- */
 @Service
 public class AnalyticsProjectionService {
     private static final Set<String> TRANSFERS = Set.of("TransferInitiated", "TransferAccepted", "TransferRejected");
@@ -61,11 +50,10 @@ public class AnalyticsProjectionService {
                 if (status.isBlank()) throw malformed(e, "newStatus");
                 store.quality(e.eventId(), uuid(e, p, "batchId"), status, e.occurredAt());
             }
-            default -> { /* solo se guarda: QualityFailureUpdated, QualityControlCompleted, Transfer*, FailureConfirmed... */ }
+            default -> { }
         }
     }
 
-    /** Cuándo ocurrió el hecho: la fecha de negocio del payload si la trae (finalización o aceptación), si no la del evento. */
     private Instant businessAt(BaseDomainEvent e, JsonNode p) {
         String field = switch (e.type()) {
             case "TransformationCompleted" -> "completedAt";

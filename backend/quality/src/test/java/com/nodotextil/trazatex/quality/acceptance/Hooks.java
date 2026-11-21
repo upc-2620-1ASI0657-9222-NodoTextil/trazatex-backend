@@ -8,7 +8,6 @@ import io.cucumber.java.Scenario;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
-/** Cada escenario empieza con la base vacía, el circuito cerrado y Production respondiendo bien. */
 public class Hooks {
 
     private final JdbcClient jdbc;
@@ -31,7 +30,6 @@ public class Hooks {
         CloudinaryStub.reset();
         circuitBreakers.circuitBreaker("cloudinary").reset();
         PdfSwitch.start();
-        // El URI es opaco (classpath:features/us25-finalizar-control-de-calidad.feature): la historia es lo que va antes del primer guion del nombre
         String name = scenario.getUri().toString();
         name = name.substring(name.lastIndexOf('/') + 1);
         world.story = name.substring(0, name.indexOf('-'));

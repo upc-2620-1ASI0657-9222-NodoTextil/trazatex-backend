@@ -13,11 +13,6 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * El escenario ejecutable de Notification (US35) es el texto exacto de {@code docs/domain/user-stories.md}: título y cada paso. Si alguien edita
- * el {@code .feature} a mano o cambia la historia sin regenerar, esta prueba falla. Las pruebas de abajo comprueban la prueba: aplican cada tipo
- * de cambio a una copia y exigen que se note.
- */
 class FeaturesMatchUserStoriesTest {
 
     private static final Path DOCS = Path.of("..", "docs", "domain", "user-stories.md");

@@ -8,7 +8,6 @@ import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
-/** Entrega al controlador el {@link Actor} que dejó {@link AuthenticationInterceptor}. */
 class ActorArgumentResolver implements HandlerMethodArgumentResolver {
 
     @Override

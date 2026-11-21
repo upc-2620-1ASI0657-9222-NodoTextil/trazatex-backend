@@ -22,16 +22,10 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
-/**
- * SendGrid detrás de {@link EmailSenderPort} (ADR-007): conexión de 2 s, lectura de 8 s y circuit breaker. Clasifica cada respuesta:
- * 429, 408 y 5xx son transitorios; el resto de 4xx es permanente y <b>no cuenta para el circuito</b> (una clave inválida no es una caída del
- * proveedor). Ni el cuerpo del correo (puede llevar un token) ni la respuesta del proveedor llegan a un log ni a {@code last_error}.
- */
 @Component
 public class SendGridEmailSender implements EmailSenderPort {
     private static final Logger log = LoggerFactory.getLogger(SendGridEmailSender.class);
 
-    /** Una respuesta 4xx permanente: se ignora en el circuito. */
     static final class PermanentRejection extends RuntimeException {
         final int status;
         PermanentRejection(int status) { super("SENDGRID_HTTP_" + status, null, false, false); this.status = status; }

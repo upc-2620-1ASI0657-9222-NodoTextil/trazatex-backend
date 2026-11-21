@@ -28,11 +28,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Lectura del grafo para las consultas (ver {@link LineageQueries}: texto fijo y todo por parámetro). Devuelve datos <b>sin filtrar</b>, también
- * los incompletos: decidir qué se puede devolver es de {@code LineageAuthorizationPolicy}. Un dato que no se puede leer (una fase o un tipo
- * desconocido, una composición ilegible) llega nulo y el nodo se trata como incompleto: ante la duda, no se muestra.
- */
 @Component
 class Neo4jLineageReadAdapter implements LineageReadPort {
 
@@ -113,7 +108,6 @@ class Neo4jLineageReadAdapter implements LineageReadPort {
                 parsed.warnings().forEach(warning -> log.warn("Privacidad de la empresa {}: {}", company, warning));
                 privacy.put(company, parsed.privacy());
             } catch (RuntimeException e) {
-                // Lo que no se puede leer no se comparte: sin configuración legible, todo PRIVATE
                 log.warn("La privacidad guardada de la empresa {} no se puede leer: se trata como todo PRIVATE ({})", company, e.toString());
             }
         });
@@ -140,8 +134,6 @@ class Neo4jLineageReadAdapter implements LineageReadPort {
         List<BatchData> items = neo4j.query(LineageQueries.SEARCH_BY_PREFIX).bindAll(parameters).fetch().all().stream().map(row -> batch(map(row.get("batch")))).toList();
         return new BatchPage(items, total);
     }
-
-    // ---- del nodo a los datos ----
 
     private static List<String> ids(Collection<UUID> ids) {
         return ids.stream().map(UUID::toString).distinct().toList();

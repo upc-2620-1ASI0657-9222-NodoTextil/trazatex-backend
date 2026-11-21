@@ -11,11 +11,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
-/**
- * Comando interno de Quality (ADR-009): <b>solo red interna</b>, el Gateway responde 404 a {@code /internal/**}. No lleva
- * identidad (Quality no tiene la del usuario) ni roles: está fuera de {@code /api/**}, así que ni el interceptor de identidad ni
- * el {@code IdempotencyFilter} lo alcanzan; la idempotencia es por {@code (batchId, requestId, operation)}.
- */
 @RestController
 @RequestMapping("/internal/batches")
 class InternalBatchController {

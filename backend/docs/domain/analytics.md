@@ -1,6 +1,6 @@
 # Analytics — dominio (implementado)
 
-Fuentes: US37–US40 (EP05); `communication.md` (catálogo), `overview.md`, `data.md`, `api.md`, ADR-004, ADR-008. No hay una figura del informe para este contexto; lo que sigue es lo implementado y las decisiones del usuario (2026-10 y 2026-11-04).
+Fuentes: US37–US40 (EP05); `communication.md` (catálogo), `overview.md`, `data.md`, `api.md`, ADR-004, ADR-008. No hay una figura del informe para este contexto; lo que sigue es lo implementado y las decisiones del equipo (2026-10 y 2026-11-04).
 
 Analytics es el **lado de lectura (CQRS)**: no tiene comandos de negocio ni publica eventos; solo consume los de Production y Quality, los guarda como hechos y responde consultas por periodo. El reporte PDF ya no es suyo (ADR-011: pasó a Quality).
 

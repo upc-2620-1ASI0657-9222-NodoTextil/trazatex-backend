@@ -13,7 +13,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 
-/** Un Production simulado para toda la JVM de pruebas: el comando interno {@code /internal/batches/{id}/phase-transitions}. */
 public final class ProductionStub {
 
     public static final WireMockServer SERVER = new WireMockServer(wireMockConfig().dynamicPort());
@@ -38,7 +37,6 @@ public final class ProductionStub {
         return "{\"code\":\"" + code + "\",\"message\":\"mensaje de " + code + "\",\"details\":[],\"timestamp\":\"2026-10-23T12:00:00Z\"}";
     }
 
-    /** Production aplica cualquier comando: 200 con la fase siguiente de {@code START_EVALUATION}. */
     public static void answersOk() {
         SERVER.stubFor(post(urlPathMatching("/internal/batches/.*/phase-transitions")).willReturn(aResponse().withStatus(200)
                 .withHeader("Content-Type", "application/json")

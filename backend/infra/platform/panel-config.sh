@@ -26,8 +26,6 @@ chmod 644 /config/servers.json
 chown 5050:5050 /config/pgpass
 chmod 600 /config/pgpass
 
-
-# pgAdmin resuelve PassFile dentro del almacenamiento privado del usuario.
 storage_user="${PGADMIN_EMAIL//@/_}"
 [[ "$storage_user" =~ ^[a-zA-Z0-9_.-]+$ && "$storage_user" != "." && "$storage_user" != ".." ]] || { echo "Directorio de pgAdmin no válido."; exit 1; }
 storage_dir="/pgadmin-data/storage/$storage_user"

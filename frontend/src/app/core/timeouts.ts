@@ -1,30 +1,14 @@
-/**
- * Plazos del cliente por tipo de operación (ADR-010, enmienda del 2026-11-04). Esta tabla es el ÚNICO sitio donde se
- * clasifican las rutas: `ApiService` solo llama a `timeoutFor()`. Una ruta que ninguna regla reconoce usa
- * `DEFAULT_TIMEOUT_MS`. Al añadir una ruta al backend hay que decidir aquí si merece un plazo propio y registrarla en
- * `service-routes.ts` (la prueba `timeouts.spec.ts` y `npm run check:routes` fallan si falta).
- *
- * Un plazo agotado NO aborta la operación en el servidor: el cliente deja de esperar, muestra «No se pudo confirmar la
- * respuesta» y conserva los datos y la `Idempotency-Key` pendiente. El reintento reutiliza la misma clave (el servidor
- * las guarda 24 h) y por eso es seguro repetirlo.
- */
 export const DEFAULT_TIMEOUT_MS = 2500;
 
 export interface TimeoutRule {
-  /** Nombre corto, también usado por las pruebas. */
   readonly name: string;
   readonly ms: number;
-  /** Por qué ese plazo: el límite del colaborador más lento que interviene (ver `docs/architecture`). */
   readonly reason: string;
-  /** Métodos a los que aplica; sin definir, a todos. */
   readonly methods?: readonly string[];
-  /** Ruta del Gateway sin `/api` y sin query. Sin definir, no se mira la ruta. */
   readonly path?: RegExp;
-  /** Solo cuerpos `multipart/form-data` (`FormData`). */
   readonly multipart?: true;
 }
 
-/** Orden = prioridad: gana la primera regla que coincide. */
 export const TIMEOUT_RULES: readonly TimeoutRule[] = [
   {
     name: 'subida multipart',
@@ -57,11 +41,9 @@ export const TIMEOUT_RULES: readonly TimeoutRule[] = [
 
 export interface ResolvedTimeout {
   readonly ms: number;
-  /** Regla que decidió el plazo; `undefined` cuando cae en el plazo por defecto. */
   readonly rule?: TimeoutRule;
 }
 
-/** Ruta del Gateway sin `/api`, sin query ni barra final. */
 export function normalizePath(path: string): string {
   const clean = path.split('?')[0].replace(/^\/api(?=\/)/, '');
   return clean.length > 1 ? clean.replace(/\/+$/, '') : clean;

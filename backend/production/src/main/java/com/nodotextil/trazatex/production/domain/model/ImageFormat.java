@@ -2,10 +2,6 @@ package com.nodotextil.trazatex.production.domain.model;
 
 import java.util.Optional;
 
-/**
- * Formatos de imagen admitidos (US42): JPEG, PNG y WebP. El formato se decide por los <b>primeros bytes</b> del archivo, nunca por
- * la extensión ni por el {@code Content-Type} que declara el cliente.
- */
 public enum ImageFormat {
     JPEG("image/jpeg", "jpg"),
     PNG("image/png", "png"),
@@ -51,7 +47,6 @@ public enum ImageFormat {
         if (startsWith(content, PNG_MAGIC)) {
             return Optional.of(PNG);
         }
-        // WebP: contenedor RIFF ("RIFF" + tamaño de 4 bytes + "WEBP")
         if (content.length >= 12 && content[0] == 'R' && content[1] == 'I' && content[2] == 'F' && content[3] == 'F'
                 && content[8] == 'W' && content[9] == 'E' && content[10] == 'B' && content[11] == 'P') {
             return Optional.of(WEBP);

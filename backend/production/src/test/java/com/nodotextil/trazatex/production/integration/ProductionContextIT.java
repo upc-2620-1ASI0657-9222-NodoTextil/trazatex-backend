@@ -15,7 +15,6 @@ import java.math.BigDecimal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** El servicio arranca completo contra PostgreSQL real: Flyway, entidades validadas y las fábricas con la configuración por defecto. */
 class ProductionContextIT extends IntegrationTestBase {
 
     @Autowired
@@ -24,7 +23,7 @@ class ProductionContextIT extends IntegrationTestBase {
     @Test
     void theApplicationStartsWithFlywayAndTheValidatedEntities() {
         assertThat(jdbc.sql("SELECT version FROM flyway_schema_history WHERE success ORDER BY installed_rank").query(String.class).list())
-                .containsExactly("1", "2", "3", "4", "5", "6", "7"); // V6__evidence_deletion.sql (agregada en V2); V7__evidence_purge_retry.sql (ronda final: la purga aplaza la evidencia que falla)
+                .containsExactly("1", "2", "3", "4", "5", "6", "7");
         assertThat(context.getBean(IdempotencyStorePort.class)).isNotNull();
         assertThat(context.getBean(OutboxStorePort.class)).isNotNull();
     }

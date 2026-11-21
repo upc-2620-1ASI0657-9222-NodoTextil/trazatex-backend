@@ -19,11 +19,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * Convierte un hecho que otro servicio publicó en (a) una notificación dentro de la aplicación y/o (b) un correo. Todo el efecto de un evento
- * —marca de procesado, notificación y correos de sus destinatarios— ocurre en <b>una</b> transacción: o queda todo o no queda nada, y reentregar
- * el evento no duplica nada.
- */
 @Service
 public class NotificationService {
     private final NotificationStorePort store;
@@ -73,11 +68,6 @@ public class NotificationService {
         }
     }
 
-    /**
-     * US35: <b>una alerta por falla y por empresa afectada</b> (no una por lote), con todos sus lotes en {@code data.batchIds}. Se genera por el
-     * aviso de Traceability, sin importar qué haga Quality con cada lote después (retenerlo o {@code NO_ACTION}): quien administra la empresa
-     * debe enterarse igual.
-     */
     private void derivedFailure(BaseDomainEvent e, JsonNode p) {
         UUID failure = id(p,"failureId"), source = id(p,"sourceBatchId");
         if (failure == null || source == null || !p.path("affected").isArray())

@@ -4,7 +4,6 @@ import com.nodotextil.trazatex.organizationaccess.application.port.out.Invitatio
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-/** {@code TRAZATEX_FRONTEND_URL} + {@code /invitations/<token>}. La ruta del frontend es una convención de este servicio. */
 @Component
 class PropertiesInvitationLinkAdapter implements InvitationLinkPort {
 

@@ -7,11 +7,6 @@ import com.nodotextil.trazatex.production.domain.model.QualityStatus;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * Lo que ve otra empresa al escanear el QR de un lote ajeno: solo los campos <b>siempre compartidos</b> (docs/domain/
- * traceability.md). Production no conoce la privacidad configurable; la vista completa entre empresas es la genealogía de
- * Traceability. No incluye la identidad del operario ni los datos comerciales (siempre privados).
- */
 public record SharedBatchResult(
         UUID batchId,
         String traceabilityId,

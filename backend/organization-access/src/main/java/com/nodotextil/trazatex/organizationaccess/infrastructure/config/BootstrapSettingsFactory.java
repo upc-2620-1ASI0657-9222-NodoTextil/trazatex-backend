@@ -6,7 +6,6 @@ import com.nodotextil.trazatex.organizationaccess.domain.model.Email;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Valida las variables {@code TRAZATEX_*} del bootstrap (ADR-013): todas son obligatorias; si falta alguna el servicio no arranca. */
 final class BootstrapSettingsFactory {
 
     private BootstrapSettingsFactory() {
@@ -46,7 +45,6 @@ final class BootstrapSettingsFactory {
                 return parsed;
             }
         } catch (NumberFormatException ignored) {
-            // se informa abajo
         }
         problems.add(variable + " debe ser un entero mayor o igual a 1");
         return null;

@@ -31,21 +31,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * RNF-04: p95 ≤ 5 s con 100 consultas simultáneas sobre un grafo de ≈500 nodos con mezclas y divisiones (en forma de diamante), por HTTP real contra
- * traceability (servidor embebido en un puerto, cliente {@code java.net.http}, sin pasar por el Gateway: la medición principal es del servicio) y con Neo4j con
- * la misma memoria que el compose (heap de 512 MB, caché de 256 MB: {@code TrazatexNeo4jContainer}).
- *
- * <p>Cada <b>oleada</b> lanza 100 peticiones en el mismo instante (todas esperan un cerrojo y salen juntas); se hacen varias oleadas de calentamiento (no se
- * miden: JIT, conexiones, estadísticas de Neo4j) y luego 10 medidas, 1000 peticiones en total. Cada petición mide de punta a punta en el cliente (desde que
- * se envía hasta tener el cuerpo completo). La dirección (ancestros, descendientes, completa) y el lote de partida varían entre peticiones y entre oleadas.
- * Cualquier error (estado distinto de 200, excepción, una respuesta distinta de la que da esa misma consulta sola o <b>un nodo que muestra u oculta un campo
- * contra lo que su empresa configuró</b>) cuenta y deben ser 0.
- *
- * <p>Se mide en dos escenarios con el mismo grafo: <b>privado</b> (dos empresas que no comparten nada: el filtro B2B oculta todo lo ajeno) y <b>con empresas que
- * comparten distintos campos</b> (cuatro empresas dueñas de los lotes por posición; las ajenas comparten, respectivamente, proveedor-cantidad-maquinaria,
- * origen-composición-desperdicio y todo). En ambos, cada nodo de cada respuesta se comprueba contra la configuración de su empresa.
- */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "trazatex.messaging.enabled=false")
 class LineageConcurrencyPerformanceIT {
 
@@ -58,7 +43,6 @@ class LineageConcurrencyPerformanceIT {
     static final UUID COMPANY_B = UUID.fromString("00000000-0000-0000-0000-0000000000b2");
     static final UUID USER = UUID.fromString("00000000-0000-0000-0000-00000000a0a1");
 
-    /** Una forma de repartir el grafo entre empresas y de qué comparte cada una (los nombres de los campos del JSON). */
     private record Scenario(String label, List<UUID> owners, Map<UUID, Set<String>> shared) {
     }
 
@@ -66,7 +50,6 @@ class LineageConcurrencyPerformanceIT {
     static final UUID COMPANY_D = UUID.fromString("00000000-0000-0000-0000-0000000000d4");
     static final List<String> BATCH_CONFIGURABLE = List.of("supplierName", "origin", "quantityKg", "composition", "receptionCharacteristics");
     static final List<String> TRANSFORMATION_CONFIGURABLE = List.of("machineName", "machineType", "shrinkageKg", "wasteKg", "wasteReason");
-    /** Campo configurable de la privacidad → campos del JSON que controla. */
     static final Map<String, List<String>> JSON_FIELDS = Map.of("SUPPLIER", List.of("supplierName"), "ORIGIN", List.of("origin"), "QUANTITY", List.of("quantityKg"),
             "COMPOSITION", List.of("composition"), "RECEPTION_CHARACTERISTICS", List.of("receptionCharacteristics"), "MACHINERY", List.of("machineName", "machineType"),
             "SHRINKAGE", List.of("shrinkageKg"), "WASTE", List.of("wasteKg"), "WASTE_REASON", List.of("wasteReason"));
@@ -90,7 +73,6 @@ class LineageConcurrencyPerformanceIT {
     @Autowired
     ObjectMapper json;
 
-    /** Una consulta: la ruta y los nodos que debe devolver (lo que da esa misma consulta ejecutada sola). */
     private record Query(String name, String path, int nodes, int edges) {
     }
 
@@ -101,7 +83,6 @@ class LineageConcurrencyPerformanceIT {
         client = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).connectTimeout(Duration.ofSeconds(10)).build();
     }
 
-    /** Carga el diamante con las empresas del escenario y la privacidad de cada una (como la dejaría su último {@code CompanyPrivacyUpdated}). */
     private void load(Scenario scenario) {
         neo4j.query("MATCH (n) DETACH DELETE n").run();
         DiamondGraph.load(neo4j, scenario.owners());
@@ -117,10 +98,6 @@ class LineageConcurrencyPerformanceIT {
         }
     }
 
-    /**
-     * Revisa cada nodo de una respuesta contra la configuración de su empresa: quien consulta es {@code owners[0]}, así que lo suyo sale completo y de las demás
-     * solo lo que comparten (un campo oculto no está en el JSON). @return el primer incumplimiento, o nulo
-     */
     private static String privacyViolation(JsonNode body, Scenario scenario) {
         for (JsonNode node : body.get("nodes")) {
             UUID company = UUID.fromString(node.get("companyId").asString());
@@ -144,7 +121,6 @@ class LineageConcurrencyPerformanceIT {
         return "/api/traceability/batches/" + DiamondGraph.batchId(layer, position) + "/" + direction;
     }
 
-    /** 36 consultas distintas: ancestros desde las capas altas, descendientes desde las bajas y la completa desde las del medio, con distintas posiciones. */
     private List<Query> queries() {
         List<Query> list = new ArrayList<>();
         for (int position : new int[]{2, 9, 14, 21}) {
@@ -166,7 +142,6 @@ class LineageConcurrencyPerformanceIT {
                 .header("X-User-Role", "OPERATOR").timeout(Duration.ofSeconds(60)).GET().build();
     }
 
-    /** Cada consulta sola, antes de la carga: lo que debe devolver también bajo carga. */
     private List<Query> baseline(Scenario scenario) throws Exception {
         List<Query> expected = new ArrayList<>();
         for (Query query : queries()) {
@@ -184,7 +159,6 @@ class LineageConcurrencyPerformanceIT {
     private record Sample(long nanos, boolean ok, String problem) {
     }
 
-    /** Una oleada: 100 peticiones que salen en el mismo instante. */
     private List<Sample> wave(List<Query> queries, int waveNumber, ExecutorService pool, Scenario scenario) throws Exception {
         CountDownLatch ready = new CountDownLatch(CONCURRENT);
         CountDownLatch go = new CountDownLatch(1);
@@ -230,7 +204,6 @@ class LineageConcurrencyPerformanceIT {
         return text.length() > 160 ? text.substring(0, 160) + "…" : text;
     }
 
-    /** Percentil por rango más cercano sobre una lista ordenada (milisegundos). */
     private static double percentile(List<Long> sortedNanos, double p) {
         int index = (int) Math.ceil(p / 100.0 * sortedNanos.size()) - 1;
         return sortedNanos.get(Math.max(0, Math.min(index, sortedNanos.size() - 1))) / 1_000_000.0;

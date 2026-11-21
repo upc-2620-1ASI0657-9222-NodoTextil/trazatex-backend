@@ -20,10 +20,6 @@ import java.util.function.Consumer;
 
 import static com.nodotextil.trazatex.traceability.infrastructure.messaging.EventPayloads.parts;
 
-/**
- * {@code production.batch}: {@code BatchRegistered}, {@code BatchSplit} y {@code BatchPhaseChanged}. Los lotes de distintas
- * claves de este tópico y los de los demás tópicos llegan sin orden entre sí; el grafo lo resuelve (ver {@code LineageGraphPort}).
- */
 @Component
 @ConditionalOnProperty(name = "trazatex.messaging.enabled", havingValue = "true", matchIfMissing = true)
 class BatchEventsListener extends AbstractEventListener {

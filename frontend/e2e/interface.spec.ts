@@ -1,10 +1,11 @@
 import { test, expect, Page } from './base';
 import { readFileSync } from 'node:fs';
-import { account, env, ensureAccount, invitationId, confirmNext, unfold } from './support';
+import { account, chooseLoginRole, env, ensureAccount, invitationId, confirmNext, unfold } from './support';
 import { credentialsFile } from './paths';
 async function login(page: Page, name: string) {
   const user = account(name, name === 'owner' ? env['TRAZATEX_OWNER_EMAIL'] : undefined);
   await page.goto('/login');
+  await chooseLoginRole(page, name);
   await page.getByLabel('Correo', { exact: true }).fill(user.email);
   await page.getByLabel('Contraseña', { exact: true }).fill(user.password);
   await page.getByRole('button', { name: 'Ingresar', exact: true }).click();
@@ -28,7 +29,6 @@ for (const name of ['owner', 'admin-a', 'operator-a']) {
           .first()
           .click();
         await expect(page).toHaveURL(new RegExp(href + '$'));
-        // El único h1 es el del shell (<span role="heading" aria-level="1">), no un elemento <h1>: FE-I8.
         await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
         await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
         const searches = page.locator('input[aria-label^="Buscar"]:visible');
@@ -70,7 +70,6 @@ for (const name of ['owner', 'admin-a', 'operator-a']) {
         }
         const pager = page.locator('app-pager:visible');
         if (await pager.count()) {
-          // el selector de tamaño solo existe cuando el total admite más de un tamaño (app-pager: sizes().length > 1)
           if (await pager.getByLabel('Elementos por página').count()) {
             await pager.getByLabel('Elementos por página').selectOption('20');
             await pager.getByLabel('Elementos por página').selectOption('6');
@@ -183,7 +182,6 @@ test('administrador cambia el estado de su maquinaria y lo conserva al recargar'
 }) => {
   await login(page, 'admin-a');
   await page.getByRole('link', { name: 'Maquinaria', exact: true }).click();
-  // La prueba registra su propia máquina (nueva = Activa): no depende de lo que dejaron otras pruebas ni de otra pasada.
   await page.getByRole('button', { name: 'Registrar maquinaria', exact: true }).click();
   const form = page.getByRole('dialog');
   const own = 'UI-' + Date.now();
@@ -321,7 +319,6 @@ test('administrador solicita otro administrador y el dueño rechaza la solicitud
   await expect(requestRow).toContainText('Pendiente');
   await page.getByRole('button', { name: 'Cerrar sesión', exact: true }).click();
   await login(page, 'owner');
-  // el dueño ya puede tener avisos de otras solicitudes: se espera a que el de ESTA exista antes de abrir la lista (la más reciente va primero)
   const ownerToken = (await ensureAccount(page.request, account('owner', env['TRAZATEX_OWNER_EMAIL']))).token;
   await expect.poll(async () => {
     const response = await page.request.get('/api/notifications?size=100', { headers: { Authorization: 'Bearer ' + ownerToken } });
@@ -746,7 +743,6 @@ test('el dueño inactiva y reactiva una empresa sin perder su información', asy
   const owner = await ensureAccount(request, account('owner', env['TRAZATEX_OWNER_EMAIL']));
   const headers = { Authorization: 'Bearer ' + owner.token };
   const companies = await (await request.get('/api/companies', { headers })).json();
-  // Instalación sembrada: la empresa «a» es la de la administración sembrada de la hilandería; si no, la que registra production.spec.
   const seededId = process.env['TRAZATEX_CREDENTIALS_PATH']
     ? JSON.parse(readFileSync(credentialsFile(), 'utf8')).accounts.find((x: { key: string }) => x.key === 'admin/hilanderia')?.companyId
     : undefined;

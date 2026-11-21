@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router, provideRouter } from '@angular/router';
-import { SessionService } from './session.service';
+import { RolNoCoincide, SessionService } from './session.service';
 import { ApiService, errorMessage } from './api.service';
 import { authInterceptor } from './auth.interceptor';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -83,10 +83,23 @@ describe('Sesión y acceso HTTP', () => {
     await assertion;
     expect(session.loggedIn()).toBe(false);
   });
+  it('H4: si el rol elegido no es el de la cuenta, no guarda la sesión ni cambia el rol', async () => {
+    const login = session.login('operator@example.test', 'unit-test-password', 'Administrador de Empresa');
+    const assertion = expect(login).rejects.toBeInstanceOf(RolNoCoincide);
+    http.expectOne('/api/auth/login').flush(result('OPERATOR'));
+    await assertion;
+    expect(session.loggedIn()).toBe(false);
+    expect(session.token()).toBeNull();
+    expect(sessionStorage.getItem('trazatex.auth')).toBeNull();
+  });
+  it('H4: con el rol correcto inicia sesión con el rol de la cuenta', async () => {
+    const login = session.login('operator@example.test', 'unit-test-password', 'Administrador de Empresa');
+    http.expectOne('/api/auth/login').flush(result('COMPANY_ADMIN'));
+    await login;
+    expect(session.esAdmin()).toBe(true);
+  });
   it('traduce errores de autorización y conexión al español', () => {
     expect(errorMessage(new HttpErrorResponse({ status: 403 }))).toContain('permiso');
-    // status 0 es también el resultado de un plazo agotado (ADR-010): el mensaje debe indicar que la respuesta
-    // no se pudo confirmar y que los datos se conservan para reintentar.
     expect(errorMessage(new HttpErrorResponse({ status: 0 }))).toBe(
       'No se pudo confirmar la respuesta del servidor. Conserva los datos y vuelve a intentarlo.',
     );

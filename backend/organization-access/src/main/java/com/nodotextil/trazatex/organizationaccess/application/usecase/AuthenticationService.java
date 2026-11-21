@@ -23,21 +23,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
 
-/**
- * US05, RNF-06, ADR-005. Lo que ve quien llama es idéntico exista o no la cuenta:
- * <ul>
- *   <li><b>Intentos por correo normalizado</b> ({@link LoginAttempts}), no por usuario: un correo sin cuenta se bloquea igual
- *       que uno con cuenta, así que el 423 no revela si la cuenta existe. La fila del correo se bloquea ({@code FOR UPDATE})
- *       mientras se cuenta: intentos simultáneos no se saltan el límite de 3.</li>
- *   <li><b>Tiempo</b>: fuera del bloqueo siempre se hace una verificación BCrypt, contra el hash real si el usuario existe y
- *       está activo y contra un hash de relleno (mismo costo) si no existe o está inactivo. Bloqueado no se verifica nada,
- *       exista o no la cuenta.</li>
- *   <li>Los fallos <b>no revierten</b> la transacción ({@code noRollbackFor}): el contador tiene que quedar guardado aunque la
- *       respuesta sea un error.</li>
- * </ul>
- * Un correo con formato inválido no se registra (no puede ser una cuenta): siempre 401 genérico. El estado de la empresa no
- * impide iniciar sesión (decisión del usuario): una empresa INACTIVE entra en solo lectura.
- */
 @Service
 @Transactional(noRollbackFor = {InvalidCredentialsException.class, AccountLockedException.class})
 class AuthenticationService implements AuthenticateUseCase {
@@ -47,7 +32,6 @@ class AuthenticationService implements AuthenticateUseCase {
     private final PasswordHasherPort hasher;
     private final TokenIssuerPort tokens;
     private final Clock clock;
-    /** Hash de relleno con el mismo costo que los reales: se verifica contra él cuando no hay un usuario activo con ese correo. */
     private final String paddingHash;
 
     AuthenticationService(UserRepositoryPort users, LoginAttemptsRepositoryPort attempts, PasswordHasherPort hasher,

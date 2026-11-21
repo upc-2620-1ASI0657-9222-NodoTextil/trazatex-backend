@@ -27,11 +27,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * ADR-004 de extremo a extremo con Kafka real: los eventos de Production salen del outbox hacia Kafka después del commit,
- * nunca con rollback, con la clave y el sobre del catálogo y en orden por lote (incluido el padre de una división, cuyo
- * {@code BatchSplit} comparte clave con su {@code BatchRegistered} y su {@code BatchPhaseChanged}).
- */
 @SpringBootTest(properties = {"trazatex.messaging.enabled=true", "trazatex.cloudinary.url=", "trazatex.evidence.upload.enabled=false"})
 class KafkaPublicationIT extends ApiTestBase {
 
@@ -56,8 +51,6 @@ class KafkaPublicationIT extends ApiTestBase {
         startOffsets = endOffsets();
     }
 
-    // ---- utilidades de Kafka ----
-
     private KafkaConsumer<String, String> consumer() {
         Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA.getBootstrapServers());
@@ -77,7 +70,6 @@ class KafkaPublicationIT extends ApiTestBase {
         }
     }
 
-    /** Todo lo publicado en el tópico desde que empezó la prueba. */
     private List<ConsumerRecord<String, String>> published(String topic) {
         try (KafkaConsumer<String, String> consumer = consumer()) {
             List<TopicPartition> partitions = startOffsets.keySet().stream().filter(tp -> tp.topic().equals(topic)).toList();
@@ -109,8 +101,6 @@ class KafkaPublicationIT extends ApiTestBase {
         return envelopes.stream().map(e -> e.path("type").asString()).toList();
     }
 
-    // ---- pruebas ----
-
     @Test
     void theServiceDeclaresItsTopics() throws Exception {
         Properties props = new Properties();
@@ -119,7 +109,6 @@ class KafkaPublicationIT extends ApiTestBase {
             var descriptions = admin.describeTopics(TOPICS).allTopicNames().get();
             assertThat(descriptions).containsKeys(TOPICS.toArray(String[]::new));
             descriptions.values().forEach(topic -> assertThat(topic.partitions()).hasSize(1));
-            // Traceability reconstruye la genealogía desde el inicio: sin borrado por tiempo ni compactación
             for (String topic : TOPICS) {
                 var config = admin.describeConfigs(List.of(new org.apache.kafka.common.config.ConfigResource(
                         org.apache.kafka.common.config.ConfigResource.Type.TOPIC, topic))).all().get().values().iterator().next();
@@ -143,7 +132,6 @@ class KafkaPublicationIT extends ApiTestBase {
         assertThat(events.get(2).path("payload").path("previousPhase").asString()).isEqualTo("AVAILABLE");
         assertThat(events.get(2).path("payload").path("newPhase").asString()).isEqualTo("SPLIT");
         assertThat(events.get(1).path("payload").path("parentBatchId").asString()).isEqualTo(parentId);
-        // los hijos no llevan BatchRegistered ni BatchPhaseChanged: nacen en BatchSplit
         for (JsonNode child : events.get(1).path("payload").path("children")) {
             assertThat(publishedWithKey("production.batch", child.path("batchId").asString())).isEmpty();
         }
@@ -196,7 +184,7 @@ class KafkaPublicationIT extends ApiTestBase {
 
         postAs(OPERATOR_OF_A, "/api/transfers", obj("targetCompanyId", COMPANY_B, "batchIds", List.of(idOf(held))))
                 .andExpect(status().isConflict());
-        Thread.sleep(1500);   // varias pasadas del relay
+        Thread.sleep(1500);
 
         assertThat(endOffsets()).isEqualTo(before);
         assertThat(count("SELECT count(*) FROM outbox WHERE event_type <> 'BatchRegistered'")).isZero();

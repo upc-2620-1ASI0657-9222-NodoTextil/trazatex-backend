@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** Rendimiento mínimo por tipo (decisión del usuario): SPINNING 60 %, WEAVING 80 %, DYEING 80 %. */
 class TransformationStrategyTest {
 
     private static final long SEED = 20261020L;
@@ -39,7 +38,6 @@ class TransformationStrategyTest {
         return type == TransformationType.SPINNING ? "60" : "80";
     }
 
-    /** Un balance coherente (la merma cierra) con las entradas y salidas dadas en gramos. */
     private static BalanceSummary balance(long inputGrams, long outputGrams) {
         long shrinkage = Math.max(0, inputGrams - outputGrams);
         return new BalanceSummary(grams(inputGrams), grams(outputGrams), Quantity.ZERO,
@@ -70,7 +68,6 @@ class TransformationStrategyTest {
         assertThatCode(() -> strategy.validate(balance(100_000, 80_000))).doesNotThrowAnyException();
         assertThatThrownBy(() -> strategy.validate(balance(100_000, 79_999)))
                 .isInstanceOfSatisfying(ValidationException.class, e -> assertThat(e.code()).isEqualTo(ErrorCodes.YIELD_BELOW_MINIMUM));
-        // el mismo balance que SPINNING acepta (70 %) aquí se rechaza
         assertThatThrownBy(() -> strategy.validate(balance(100_000, 70_000))).isInstanceOf(ValidationException.class);
     }
 
@@ -88,7 +85,6 @@ class TransformationStrategyTest {
 
     @Test
     void theDisplayedYieldIsTruncatedSoItNeverLooksLikeItMeetsTheMinimum() {
-        // 59,999 % redondearía a 60,00; truncado dice 59,99 y el rechazo no resulta contradictorio
         assertThatThrownBy(() -> new SpinningStrategy(new BigDecimal("60")).validate(balance(100_000, 59_999)))
                 .isInstanceOfSatisfying(ValidationException.class, e -> assertThat(e.getMessage()).contains("59,99 %").doesNotContain("60,00 %"));
     }
@@ -116,7 +112,6 @@ class TransformationStrategyTest {
         assertThatThrownBy(() -> all.validate(balance(5_000, 4_999))).isInstanceOf(ValidationException.class);
     }
 
-    /** Propiedad (≥ 1000 casos por tipo): acepta exactamente cuando salida × 100 ≥ entrada × mínimo, sin redondeos. */
     @ParameterizedTest(name = "{0}")
     @EnumSource(TransformationType.class)
     void acceptsExactlyWhenTheYieldReachesTheMinimum(TransformationType type) {
@@ -129,7 +124,6 @@ class TransformationStrategyTest {
         for (int i = 0; i < CASES; i++) {
             long input = 1 + random.nextInt(5_000_000);
             long boundary = (input * minimumPercent) / 100;
-            // la mitad de los casos cae a ±2 g del umbral; el resto, al azar
             long output = i % 2 == 0
                     ? Math.max(1, Math.min(input, boundary + random.nextInt(5) - 2))
                     : 1 + (long) (random.nextDouble() * input);
@@ -149,8 +143,6 @@ class TransformationStrategyTest {
         assertThat(accepted).isGreaterThan(100);
         assertThat(rejected).isGreaterThan(100);
     }
-
-    // --- fábrica ------------------------------------------------------------------------------------------------
 
     @Test
     void theFactoryRequiresOneStrategyPerType() {

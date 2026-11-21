@@ -52,7 +52,7 @@ Notification consume `orgaccess.user`, `orgaccess.invitation`, `production.trans
 
 ## Decisiones (cerradas: «implementado así»)
 
-Las seis preguntas del borrador se cierran con lo que el servicio hace hoy (2026-11-04, a pedido del usuario, que las contrastará con el informe). El motivo de cada una queda aquí para poder revisarla.
+Las seis preguntas del borrador se cierran con lo que el servicio hace hoy (2026-11-04, a pedido del equipo, que las contrastará con el informe). El motivo de cada una queda aquí para poder revisarla.
 
 1. **`TransferAccepted`: se avisa a los administradores de la empresa de origen, con aplicación y correo.** La propuesta decía «sin correo»; se implementó con correo. *Motivo:* todos los avisos a una empresa siguen un solo camino (`notice`: notificación dentro de la aplicación y correo en la misma transacción), y quien inició la transferencia suele no estar dentro de la aplicación cuando el destinatario la resuelve; un canal distinto solo para este caso añadía una excepción sin ganar nada.
 2. **Solicitud de administrador (US07): el `LICENSE_OWNER` recibe aviso.** organization-access publica `AdminRequestSubmitted` y Notification crea el aviso (aplicación + correo). *Motivo:* sin él el dueño de la licencia solo se enteraba al listar las solicitudes.

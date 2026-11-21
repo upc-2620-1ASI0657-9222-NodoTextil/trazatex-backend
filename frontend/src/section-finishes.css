@@ -14,7 +14,6 @@
 .page--calidad { --section-ink: #98704b; }
 .page--fallas { --section-ink: #824936; }
 
-
 .page:not(.login-page) > .page-head,
 .work-page > .page-head {
   position: relative;
@@ -100,7 +99,6 @@
 .page--licencia .kpis .kpi:first-child .capacity-percent { color: #fff9ed; }
 .page--licencia .sheet-head .capacity-percent { color: var(--cream-50); }
 
-
 .page--licencia .tag {
   background: #fff;
   background-image: none;
@@ -153,7 +151,6 @@ app-login .login-card h2 { font-weight: 700 !important; white-space: nowrap; }
 .topbar .header-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; }
 .topbar .header-actions .btn--ghost { border-color: var(--green-800); color: var(--green-900); background: #f6f1e4; }
 
-/* Superficies de la aplicacion empresarial. El acceso conserva su identidad. */
 app-shell *, app-shell *::before, app-shell *::after { background-image: none !important; }
 app-shell :is(.btn, .row-card, .sheet, .fold, .panel-list, .review, .mini, .d-section, .dialog, .drawer, .filters, .topbar, .rail, .trace-detail, .trace-filters, .trace-controls, .trace-search, .inbox, .inbox li, .metric-row, .rel li, .history li, .tests li, .sum-line, .balance, .dl dt, .dl dd) { border: 0; }
 app-shell .input:not([aria-invalid="true"]):not(.ng-invalid.ng-touched), app-shell .select:not([aria-invalid="true"]), app-shell .textarea:not([aria-invalid="true"]) { border: 0; background-color: #fff; box-shadow: none; }
@@ -196,7 +193,6 @@ app-shell .subnav button[aria-selected="true"] { background: var(--canvas-2); co
 app-shell .subnav .n { color: inherit; background: transparent; }
 app-shell .kpi { background: var(--cream-50); color: var(--green-900); }
 app-shell .kpi :is(.label, .v, small, .capacity-percent) { color: var(--green-900); }
-/* La primera tarjeta es oscura (polish.css): su valor va en crema; sin esto quedaba verde oscuro sobre verde oscuro (1,08:1). */
 app-shell .kpi:nth-child(1) :is(.v, small, .capacity-percent) { color: var(--cream); }
 app-shell .sheet-head :is(.sheet-title, .capacity-percent, .label, .muted) { color: var(--cream-50); }
 app-shell .page--licencia .tag > .label { color: var(--cream-50); }

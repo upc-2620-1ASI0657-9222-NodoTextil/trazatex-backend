@@ -33,10 +33,6 @@ class OrganizationAccessConfig {
         return new OutboxEventRecorder(store, objectMapper, clock);
     }
 
-    /**
-     * Idempotencia de las escrituras expuestas al frontend (ADR-010). Solo actúa si la petición trae {@code Idempotency-Key};
-     * en los endpoints {@code @PublicEndpoint} (sin identidad) la ignora.
-     */
     @Bean
     FilterRegistrationBean<IdempotencyFilter> idempotencyFilter(IdempotencyStorePort store,
                                                                 PlatformTransactionManager transactionManager,

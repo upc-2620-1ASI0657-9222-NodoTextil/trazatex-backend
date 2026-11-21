@@ -8,11 +8,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Tópico {@code production.batch}, clave batchId. Lo consumen traceability, quality y analytics. Solo lo que el catálogo
- * define: ni quién lo registró ni datos comerciales. {@code name} (agregado en V2) es el nombre libre del lote: opcional (nulo en
- * eventos anteriores) y solo para la empresa dueña; Traceability no lo muestra en una vista {@code SHARED} (communication.md).
- */
 public record BatchRegistered(
         UUID batchId,
         String traceabilityId,
@@ -39,7 +34,6 @@ public record BatchRegistered(
         Instant createdAt) {
         this(batchId, traceabilityId, qrCode, companyId, materialType, composition, quantityKg, origin, supplierName, receptionCharacteristics, createdAt, null);
     }
-
 
     public static final String TYPE = "BatchRegistered";
 

@@ -52,11 +52,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * US23 / US34 de punta a punta contra PostgreSQL real y un Production simulado (el comando interno): lo que hace el control con cada
- * respuesta de la tabla de communication.md, qué recibe el usuario, que con Production caído el control nunca queda {@code IN_PROGRESS}, que
- * repetir el comando con el mismo {@code requestId} no duplica nada y que el job cubre la caída entre el comando y el guardado.
- */
 @SpringBootTest(properties = {
         "trazatex.messaging.enabled=false", "trazatex.quality.start.job-enabled=false",
         "trazatex.production.read-timeout=PT0.5S", "trazatex.production.connect-timeout=PT0.5S",
@@ -100,8 +95,6 @@ class ControlStartApiIT extends IntegrationTestBase {
         productionBreaker = breakers.circuitBreaker("production");
         productionBreaker.reset();
     }
-
-    // ---- ayudas ----
 
     UUID seed(BatchPhase phase, QualityStatus status, boolean hold, boolean everControlled) {
         BatchProjection batch = BatchProjection.restore(UUID.randomUUID(), COMPANY_A, phase, hold, status, everControlled, 1, START);
@@ -151,8 +144,6 @@ class ControlStartApiIT extends IntegrationTestBase {
     List<String> requestIdsFor(UUID batch) {
         return ProductionStub.requestsFor(batch).stream().map(r -> json.readTree(r.getBodyAsString()).path("requestId").asString()).toList();
     }
-
-    // ---- 200: Production confirma ----
 
     @Test
     void whenProductionConfirmsTheControlIsInProgressAndTheUserGets201_US23Scenario1() throws Exception {
@@ -213,8 +204,6 @@ class ControlStartApiIT extends IntegrationTestBase {
         result.andExpect(status().isCreated()).andExpect(jsonPath("$.internalObservations").value("revisar humedad"));
     }
 
-    // ---- 409 / 404 / 400: Production no lo aplicó ----
-
     @ParameterizedTest
     @ValueSource(strings = {"INVALID_PHASE_TRANSITION", "BATCH_IS_FINAL_PRODUCT", "COMPANY_INACTIVE", "COMPANY_UNKNOWN"})
     void aConflictCancelsTheControlKeepingProductionsCodeAsTheReasonEvenThoughTheRequestRollsBack(String code) throws Exception {
@@ -233,7 +222,6 @@ class ControlStartApiIT extends IntegrationTestBase {
         assertThat(audit()).extracting(row -> row.get("action")).containsExactly("CONTROL_CANCELLED", "CONTROL_STARTED");
         assertThat(audit()).filteredOn(row -> "CONTROL_CANCELLED".equals(row.get("action"))).singleElement()
                 .satisfies(row -> assertThat(row).containsEntry("user_id", ADMIN_A).containsEntry("reason", code));
-        // El filtro de idempotencia revirtió la clave (respuesta no 2xx), pero el control cancelado y su motivo se conservaron
         assertThat(jdbc.sql("SELECT count(*) FROM idempotency_keys").query(Long.class).single()).isZero();
     }
 
@@ -277,8 +265,6 @@ class ControlStartApiIT extends IntegrationTestBase {
         assertThat(ProductionStub.requestsFor(batch)).hasSize(1);
         assertThat(output.getAll()).contains("ERROR").contains("la petición de Quality está mal");
     }
-
-    // ---- Production caído: 202 y el control no queda IN_PROGRESS ----
 
     static Stream<Arguments> productionDown() {
         return Stream.of(
@@ -381,14 +367,12 @@ class ControlStartApiIT extends IntegrationTestBase {
         assertThat(ProductionStub.requestsFor(batch)).hasSize(callsBefore);
     }
 
-    // ---- caída entre el comando y el guardado ----
-
     @Test
     void ifQualityDiesBetweenTheCommandAndSavingTheAnswerTheJobRepeatsTheSameCommandAndTheControlEndsInProgress() throws Exception {
         UUID batch = seedAvailable();
-        ProductionStub.answersOk();   // Production SÍ aplicó el comando...
+        ProductionStub.answersOk();
         Mockito.doThrow(new IllegalStateException("el proceso cayó antes de guardar la respuesta")).doCallRealMethod()
-                .when(controlsSpy).findByIdForUpdate(any());   // ...pero Quality no llegó a guardarlo
+                .when(controlsSpy).findByIdForUpdate(any());
 
         start(batch).andExpect(status().isInternalServerError());
 
@@ -408,8 +392,6 @@ class ControlStartApiIT extends IntegrationTestBase {
                 .containsOnly(control.toString());
         assertThat(requestIdsFor(batch).size()).isBetween(initialRequests.size() + 1, initialRequests.size() + 2);
     }
-
-    // ---- circuit breaker ----
 
     @Test
     void withTheCircuitOpenNothingIsSentTheUserGets202AndNoAttemptIsCounted() throws Exception {
@@ -434,8 +416,6 @@ class ControlStartApiIT extends IntegrationTestBase {
         assertThat(column(control, "status", String.class)).isEqualTo("IN_PROGRESS");
     }
 
-    // ---- espera creciente, sin tope de intentos ----
-
     @Test
     void theWaitGrowsFrom15SecondsToFiveMinutesTheControlIsNeverCancelledAndFromTheThirdAttemptEachFailureIsAnError(CapturedOutput output) throws Exception {
         UUID batch = seedAvailable();
@@ -456,8 +436,6 @@ class ControlStartApiIT extends IntegrationTestBase {
         assertThat(column(control, "status", String.class)).as("sin tope de intentos: nunca se cancela por cansancio").isEqualTo("STARTING");
         assertThat(output.getAll()).contains("sigue en STARTING tras 3 intentos").contains("Control atascado en STARTING");
     }
-
-    // ---- varias instancias del job ----
 
     @Test
     void severalJobInstancesNeverTakeTheSameControlTwice() throws Exception {
@@ -503,8 +481,6 @@ class ControlStartApiIT extends IntegrationTestBase {
         }
     }
 
-    // ---- un solo control activo por lote ----
-
     @Test
     void twoSimultaneousStartsOnTheSameBatchLetExactlyOneThrough() throws Exception {
         UUID batch = seedAvailable();
@@ -529,8 +505,6 @@ class ControlStartApiIT extends IntegrationTestBase {
         assertThat(controlsOf(batch)).isEqualTo(1);
         assertThat(ProductionStub.requestsFor(batch)).hasSize(1);
     }
-
-    // ---- reglas de dominio: ni siquiera se llama a Production ----
 
     static Stream<Arguments> unstartableBatches() {
         return Stream.of(
@@ -565,8 +539,6 @@ class ControlStartApiIT extends IntegrationTestBase {
         start(batch).andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("BATCH_QUALITY_UNKNOWN"));
         assertThat(ProductionStub.allRequests()).isEmpty();
     }
-
-    // ---- otra empresa y permisos (convención de Production: lo ajeno «no existe») ----
 
     @Test
     void aBatchOfAnotherCompanyIsExactlyLikeOneThatDoesNotExist() throws Exception {

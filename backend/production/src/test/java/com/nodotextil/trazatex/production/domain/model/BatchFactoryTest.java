@@ -28,10 +28,8 @@ import static com.nodotextil.trazatex.production.domain.Fixtures.factory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** Registro (US12) y división (US15). */
 class BatchFactoryTest {
 
-    /** Semilla fija: los casos son aleatorios pero idénticos en cada corrida, así que cualquier fallo se reproduce. */
     private static final long SEED = 20261020L;
     private static final int CASES = 1500;
 
@@ -39,8 +37,6 @@ class BatchFactoryTest {
         return new BatchFactory.Registration("Algodón Pima", "Fibra", composition("Algodón", "70", "Poliéster", "30"),
                 Quantity.ofKg("250.5"), "Piura", "Textiles del Norte", "Fibra limpia, humedad 8 %");
     }
-
-    // --- registro (US12) ---------------------------------------------------------------------------------------
 
     @Test
     void registersAnAvailableNotReviewedBatchWithNewCodes() {
@@ -103,11 +99,8 @@ class BatchFactoryTest {
         assertThat(batch.traceabilityId().value()).hasSize(13);
     }
 
-    // --- unicidad de los códigos ------------------------------------------------------------------------------
-
     @Test
     void whenACodeIsTakenTheFactoryDrawsAnotherOne() {
-        // el primer Traceability ID que sorteará esta semilla ya "existe" en la base
         String alreadyUsed = TraceabilityId.generate(new Random(99)).value();
         BatchFactory factory = new BatchFactory(new Random(99), UUID::randomUUID, alreadyUsed::equals);
 
@@ -140,8 +133,6 @@ class BatchFactoryTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Traceability ID libre");
     }
-
-    // --- división (US15) ----------------------------------------------------------------------------------------
 
     @Test
     void splitsIntoChildrenThatInheritTheParentData() {
@@ -183,7 +174,7 @@ class BatchFactoryTest {
     void childrenInheritAHeldQualityStatusOnlyAsACopy() {
         BatchFactory factory = factory(3);
         Batch parent = factory.register(registration(), COMPANY, OPERATOR, NOW);
-        parent.showQualityStatus(QualityStatus.FAILED);   // un FAILED ya liberado: la retención (hold) es false
+        parent.showQualityStatus(QualityStatus.FAILED);
 
         BatchFactory.SplitResult result = factory.split(parent, List.of(
                 new BatchFactory.ChildSpec(null, Quantity.ofKg("1")),
@@ -235,7 +226,6 @@ class BatchFactoryTest {
         assertThat(held.phase()).isEqualTo(BatchPhase.AVAILABLE);
     }
 
-    /** Propiedad (≥ 1000 casos): una división cuyos hijos suman exactamente al padre se acepta y conserva la masa. */
     @ParameterizedTest(name = "caso {index}")
     @MethodSource("exactPartitions")
     void aDivisionThatAddsUpExactlyConservesMassAndInvariants(long parentGrams, List<Long> childGrams, QualityStatus status) {
@@ -266,7 +256,6 @@ class BatchFactoryTest {
         assertThat(total).as("la masa se conserva exactamente").isEqualTo(parent.quantity());
     }
 
-    /** Propiedad (≥ 1000 casos): si la suma difiere del padre aunque sea en 1 g, se rechaza y nada cambia. */
     @ParameterizedTest(name = "caso {index}")
     @MethodSource("inexactPartitions")
     void aDivisionThatDoesNotAddUpIsRejectedAndChangesNothing(long parentGrams, List<Long> childGrams) {
@@ -289,7 +278,6 @@ class BatchFactoryTest {
         return childGrams.stream().map(g -> new BatchFactory.ChildSpec(null, grams(g))).toList();
     }
 
-    /** Reparte {@code total} gramos en {@code parts} partes positivas con {@code parts − 1} cortes distintos. */
     private static List<Long> partition(Random random, long total, int parts) {
         TreeSet<Long> cuts = new TreeSet<>();
         while (cuts.size() < parts - 1) {
@@ -312,7 +300,7 @@ class BatchFactoryTest {
             int parts = 2 + random.nextInt(6);
             long total = parts + random.nextInt(5_000_000);
             if (i % 10 == 0) {
-                total = parts;      // el caso límite: todos los hijos de 1 g
+                total = parts;
             }
             return org.junit.jupiter.params.provider.Arguments.of(total, partition(random, total, parts),
                     statuses[random.nextInt(statuses.length)]);
@@ -328,7 +316,7 @@ class BatchFactoryTest {
             int victim = random.nextInt(parts);
             long delta = random.nextBoolean() ? 1 : -1;
             if (delta < 0 && children.get(victim) == 1) {
-                delta = 1;   // una parte no puede quedar en 0
+                delta = 1;
             }
             if (random.nextInt(4) == 0) {
                 delta = delta * (1 + random.nextInt(1000));
